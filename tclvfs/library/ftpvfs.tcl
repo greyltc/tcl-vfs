@@ -29,7 +29,7 @@ proc vfs::ftp::Mount {dirurl local} {
 	set user anonymous
     }
     
-    set fd [::ftp::Open $host $user $pass $path]
+    set fd [::ftp::Open $host $user $pass -output ::vfs::log]
     if {$fd == -1} {
 	error "Mount failed"
     }

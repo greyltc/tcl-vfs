@@ -1,3 +1,9 @@
+2003-06-16  Vince Darley <vincentdarley@sourceforge.net>
+
+	* library/ftpvfs.tcl: added '-output ::vfs::log' to ftp
+        initialisation code to avoid messages being dumped to stderr
+        when errors occur.
+	
 2003-05-16  Vince Darley <vincentdarley@sourceforge.net>
 
 	* library/tkvfs.tcl: added 'tk' widget hierarchy vfs.  Use:
