@@ -22,6 +22,7 @@
 #include <tcl.h>
 /* Required to access the 'stat' structure fields, and TclInExit() */
 #include "tclInt.h"
+#include "tclPort.h"
 
 /*
  * Windows needs to know which symbols to export.  Unix does not.
