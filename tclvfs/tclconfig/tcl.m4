@@ -499,7 +499,7 @@ AC_DEFUN(TEA_ENABLE_THREADS, [
 	*THREADS=1*)
 	    if test "${TCL_THREADS}" = "0"; then
 		AC_MSG_WARN([
-    Building ${PACKAGE} without threads enabled, but building against a Tcl
+    Building ${PACKAGE_NAME} without threads enabled, but building against a Tcl
     that IS thread-enabled.])
 	    fi
 	    ;;
@@ -545,7 +545,7 @@ AC_DEFUN(TEA_ENABLE_THREADS, [
 
 AC_DEFUN(TEA_ENABLE_SYMBOLS, [
     dnl Make sure we are initialized
-    AC_REQUIRE([TEA_INIT])
+    AC_REQUIRE([TEA_CONFIG_CFLAGS])
 
     if test "${TEA_PLATFORM}" = "windows" ; then
 	tcl_dbgx=d
@@ -556,19 +556,22 @@ AC_DEFUN(TEA_ENABLE_SYMBOLS, [
     AC_MSG_CHECKING([for build with symbols])
     AC_ARG_ENABLE(symbols, [  --enable-symbols        build with debugging symbols [--disable-symbols]],    [tcl_ok=$enableval], [tcl_ok=no])
     if test "$tcl_ok" = "no"; then
-	CFLAGS_DEFAULT='$(CFLAGS_OPTIMIZE)'
-	LDFLAGS_DEFAULT='$(LDFLAGS_OPTIMIZE)'
+	CFLAGS_DEFAULT="${CFLAGS_OPTIMIZE}"
+	LDFLAGS_DEFAULT="${LDFLAGS_OPTIMIZE}"
 	DBGX=""
 	TCL_DBGX=""
 	AC_MSG_RESULT([no])
     else
-	CFLAGS_DEFAULT='$(CFLAGS_DEBUG)'
-	LDFLAGS_DEFAULT='$(LDFLAGS_DEBUG)'
+	CFLAGS_DEFAULT="${CFLAGS_DEBUG}"
+	LDFLAGS_DEFAULT="${LDFLAGS_DEBUG}"
 	DBGX=${tcl_dbgx}
 	TCL_DBGX=${tcl_dbgx}
 	if test "$tcl_ok" = "yes"; then
 	    AC_MSG_RESULT([yes (standard debugging)])
 	fi
+    fi
+    if test "${TEA_PLATFORM}" != "windows" ; then
+	LDFLAGS_DEFAULT="${LDFLAGS}"
     fi
 
     AC_SUBST(TCL_DBGX)
@@ -679,15 +682,17 @@ AC_DEFUN(TEA_ENABLE_LANGINFO, [
 #       TCL_LIB_FILE -  Name of the file that contains the Tcl library, such
 #                       as libtcl7.8.so or libtcl7.8.a.
 #       TCL_LIB_SUFFIX -Specifies everything that comes after the "libtcl"
-#                       in the shared library name, using the $VERSION variable
-#                       to put the version in the right place.  This is used
-#                       by platforms that need non-standard library names.
-#                       Examples:  ${VERSION}.so.1.1 on NetBSD, since it needs
-#                       to have a version after the .so, and ${VERSION}.a
-#                       on AIX, since the Tcl shared library needs to have
-#                       a .a extension whereas shared objects for loadable
-#                       extensions have a .so extension.  Defaults to
-#                       ${VERSION}${SHLIB_SUFFIX}.
+#                       in the shared library name, using the
+#                       ${PACKAGE_VERSION} variable to put the version in
+#                       the right place.  This is used by platforms that
+#                       need non-standard library names.
+#                       Examples:  ${PACKAGE_VERSION}.so.1.1 on NetBSD,
+#                       since it needs to have a version after the .so, and
+#                       ${PACKAGE_VERSION}.a on AIX, since the Tcl shared
+#                       library needs to have a .a extension whereas shared
+#                       objects for loadable extensions have a .so
+#                       extension.  Defaults to
+#                       ${PACKAGE_VERSION}${SHLIB_SUFFIX}.
 #       TCL_NEEDS_EXP_FILE -
 #                       1 means that an export file is needed to link to a
 #                       shared library.
@@ -714,7 +719,7 @@ AC_DEFUN(TEA_ENABLE_LANGINFO, [
 #		STLIB_LD
 #		SHLIB_LD
 #		SHLIB_CFLAGS
-#		SHLIB_LDFLAGS
+#		SHLIB_LD_FLAGS
 #		LDFLAGS_DEBUG
 #		LDFLAGS_OPTIMIZE
 #--------------------------------------------------------------------
@@ -788,8 +793,8 @@ AC_DEFUN(TEA_CONFIG_CFLAGS, [
     EXTRA_CFLAGS=""
     TCL_EXPORT_FILE_SUFFIX=""
     UNSHARED_LIB_SUFFIX=""
-    TCL_TRIM_DOTS='`echo ${VERSION} | tr -d .`'
-    ECHO_VERSION='`echo ${VERSION}`'
+    TCL_TRIM_DOTS='`echo ${PACKAGE_VERSION} | tr -d .`'
+    ECHO_VERSION='`echo ${PACKAGE_VERSION}`'
     TCL_LIB_VERSIONS_OK=ok
     CFLAGS_DEBUG=-g
     CFLAGS_OPTIMIZE=-O
@@ -805,6 +810,7 @@ dnl FIXME: Replace AC_CHECK_PROG with AC_CHECK_TOOL once cross compiling is fixe
 dnl AC_CHECK_TOOL(AR, ar, :)
     AC_CHECK_PROG(AR, ar, ar)
     STLIB_LD='${AR} cr'
+    LD_LIBRARY_PATH_VAR="LD_LIBRARY_PATH"
     case $system in
 	windows)
 	    # This is a 2-stage check to make sure we have the 64-bit SDK
@@ -970,6 +976,7 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 
 	    DL_OBJS="tclLoadDl.o"
 	    LDFLAGS=""
+	    LD_LIBRARY_PATH_VAR="LIBPATH"
 
 	    # AIX v<=4.1 has some different flags than 4.2+
 	    if test "$system" = "AIX-4.1" -o "`uname -v`" -lt "4" ; then
@@ -988,7 +995,7 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 		    LDFLAGS="-q64"
 		    RANLIB="${RANLIB} -X64"
 		    AR="${AR} -X64"
-		    SHLIB_LDFLAGS="-b64"
+		    SHLIB_LD_FLAGS="-b64"
 		fi
 	    fi
 
@@ -1007,7 +1014,7 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 		DL_LIBS="-ldl"
 		LD_SEARCH_FLAGS='-L${LIB_RUNTIME_DIR}'
 		TCL_NEEDS_EXP_FILE=1
-		TCL_EXPORT_FILE_SUFFIX='${VERSION}\$\{DBGX\}.exp'
+		TCL_EXPORT_FILE_SUFFIX='${PACKAGE_VERSION}\$\{DBGX\}.exp'
 	    fi
 
 	    # On AIX <=v4 systems, libbsd.a has to be linked in to support
@@ -1073,6 +1080,7 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 		LDFLAGS="-Wl,-E"
 		LD_SEARCH_FLAGS='-Wl,+s,+b,${LIB_RUNTIME_DIR}:.'
 	    fi
+	    LD_LIBRARY_PATH_VAR="SHLIB_PATH"
 
 	    # Users may want PA-RISC 1.1/2.0 portable code - needs HP cc
 	    #EXTRA_CFLAGS="+DAportable"
@@ -1117,6 +1125,7 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 		LDFLAGS="-Wl,-E"
 		LD_SEARCH_FLAGS='-Wl,+s,+b,${LIB_RUNTIME_DIR}:.'
 	    fi
+	    LD_LIBRARY_PATH_VAR="SHLIB_PATH"
 	    ;;
 	IRIX-4.*)
 	    SHLIB_CFLAGS="-G 0"
@@ -1127,7 +1136,7 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 	    DL_LIBS=""
 	    LDFLAGS="-Wl,-D,08000000"
 	    LD_SEARCH_FLAGS='-L${LIB_RUNTIME_DIR}'
-	    SHARED_LIB_SUFFIX='${VERSION}\$\{DBGX\}.a'
+	    SHARED_LIB_SUFFIX='${PACKAGE_VERSION}\$\{DBGX\}.a'
 	    ;;
 	IRIX-5.*)
 	    SHLIB_CFLAGS=""
@@ -1271,7 +1280,7 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 	    LDFLAGS="-Wl,-Bexport"
 	    LD_SEARCH_FLAGS=""
 	    ;;
-	NetBSD-*|FreeBSD-[[1-2]].*|OpenBSD-*)
+	NetBSD-*|FreeBSD-[[1-2]].*)
 	    # Not available on all versions:  check for include file.
 	    AC_CHECK_HEADER(dlfcn.h, [
 		# NetBSD/SPARC needs -fPIC, -fpic will not do.
@@ -1311,6 +1320,30 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 	    UNSHARED_LIB_SUFFIX='${TCL_TRIM_DOTS}\$\{DBGX\}.a'
 	    TCL_LIB_VERSIONS_OK=nodots
 	    ;;
+	OpenBSD-*)
+	    SHLIB_LD="${CC} -shared"
+	    SHLIB_LD_LIBS='${LIBS}'
+	    SHLIB_SUFFIX=".so"
+	    DL_OBJS="tclLoadDl.o"
+	    DL_LIBS=""
+	    LDFLAGS=""
+	    LD_SEARCH_FLAGS=""
+	    AC_MSG_CHECKING(for ELF)
+	    AC_EGREP_CPP(yes, [
+#ifdef __ELF__
+	yes
+#endif
+	    ],
+		[AC_MSG_RESULT(yes)
+		SHARED_LIB_SUFFIX='${TCL_TRIM_DOTS}\$\{DBGX\}.so.1.0'],
+		[AC_MSG_RESULT(no)
+		SHARED_LIB_SUFFIX='${TCL_TRIM_DOTS}\$\{DBGX\}.so.1.0']
+	    )
+
+	    # OpenBSD doesn't do version numbers with dots.
+	    UNSHARED_LIB_SUFFIX='${TCL_TRIM_DOTS}\$\{DBGX\}.a'
+	    TCL_LIB_VERSIONS_OK=nodots
+	    ;;
 	FreeBSD-*)
 	    # FreeBSD 3.* and greater have ELF.
 	    SHLIB_CFLAGS="-fPIC"
@@ -1339,13 +1372,14 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 	Rhapsody-*|Darwin-*)
 	    SHLIB_CFLAGS="-fno-common"
 	    SHLIB_LD="cc -dynamiclib \${LDFLAGS}"
-	    TCL_SHLIB_LD_EXTRAS="-compatibility_version ${TCL_MAJOR_VERSION} -current_version \${VERSION} -install_name \${LIB_RUNTIME_DIR}/\${TCL_LIB_FILE} -prebind -seg1addr 0xa000000"
+	    TCL_SHLIB_LD_EXTRAS="-compatibility_version ${TCL_MAJOR_VERSION} -current_version \${PACKAGE_VERSION} -install_name \${LIB_RUNTIME_DIR}/\${TCL_LIB_FILE} -prebind -seg1addr 0xa000000"
 	    SHLIB_LD_LIBS='${LIBS}'
 	    SHLIB_SUFFIX=".dylib"
 	    DL_OBJS="tclLoadDyld.o"
 	    DL_LIBS=""
 	    LDFLAGS="-prebind"
 	    LD_SEARCH_FLAGS=""
+	    LD_LIBRARY_PATH_VAR="DYLD_LIBRARY_PATH"
 	    CFLAGS_OPTIMIZE="-O3"
 	    EXTRA_CFLAGS="-arch ppc -pipe"
 	    ;;
@@ -1718,7 +1752,7 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 		    ;;
 		IRIX*)
 		    ;;
-		NetBSD-*|FreeBSD-*|OpenBSD-*)
+		NetBSD-*|FreeBSD-*)
 		    ;;
 		Rhapsody-*|Darwin-*)
 		    ;;
@@ -1738,10 +1772,10 @@ dnl AC_CHECK_TOOL(AR, ar, :)
     fi
 
     if test "$SHARED_LIB_SUFFIX" = "" ; then
-	SHARED_LIB_SUFFIX='${VERSION}\$\{DBGX\}${SHLIB_SUFFIX}'
+	SHARED_LIB_SUFFIX='${PACKAGE_VERSION}\$\{DBGX\}${SHLIB_SUFFIX}'
     fi
     if test "$UNSHARED_LIB_SUFFIX" = "" ; then
-	UNSHARED_LIB_SUFFIX='${VERSION}\$\{DBGX\}.a'
+	UNSHARED_LIB_SUFFIX='${PACKAGE_VERSION}\$\{DBGX\}.a'
     fi
 
     AC_SUBST(DL_LIBS)
@@ -1750,14 +1784,14 @@ dnl AC_CHECK_TOOL(AR, ar, :)
     AC_SUBST(CFLAGS_WARNING)
     AC_SUBST(EXTRA_CFLAGS)
 
-    SHLIB_LDFLAGS='$(LDFLAGS_DEFAULT)'
     AC_SUBST(STLIB_LD)
     AC_SUBST(SHLIB_LD)
     AC_SUBST(SHLIB_CFLAGS)
-    AC_SUBST(SHLIB_LDFLAGS)
+    AC_SUBST(SHLIB_LD_FLAGS)
     AC_SUBST(SHLIB_LD_LIBS)
     AC_SUBST(LDFLAGS_DEBUG)
     AC_SUBST(LDFLAGS_OPTIMIZE)
+    AC_SUBST(LD_LIBRARY_PATH_VAR)
 ])
 
 #--------------------------------------------------------------------
@@ -1965,8 +1999,10 @@ closedir(d);
     AC_CHECK_HEADER(dlfcn.h, , [AC_DEFINE(NO_DLFCN_H)])
 
     # OS/390 lacks sys/param.h (and doesn't need it, by chance).
+    # tkUnixPort.h checks for HAVE_LIMITS_H, so do both HAVE and
+    # CHECK on limits.h
 
-    AC_HAVE_HEADERS(unistd.h sys/param.h)
+    AC_HAVE_HEADERS(limits.h unistd.h sys/param.h)
 
 ])
 
@@ -2066,7 +2102,7 @@ AC_DEFUN(TEA_PATH_UNIX_X, [
 	XLIBSW=-lX11
     fi
     if test x"${XLIBSW}" != x ; then
-	LIBS="${LIBS} ${XLIBSW}"
+	PKG_LIBS="${PKG_LIBS} ${XLIBSW}"
     fi
 ])
 
@@ -2425,9 +2461,9 @@ AC_DEFUN(TEA_TCL_64BIT_FLAGS, [
 	# See if we should use long anyway  Note that we substitute in the
 	# type that is our current guess for a 64-bit type inside this check
 	# program, so it should be modified only carefully...
-	AC_TRY_RUN([#include <unistd.h>
-	    int main() {exit(!(sizeof(]${tcl_type_64bit}[) > sizeof(long)));}
-	    ], tcl_cv_type_64bit=${tcl_type_64bit},:,:)])
+        AC_TRY_COMPILE(,[switch (0) { 
+            case 1: case (sizeof(]${tcl_type_64bit}[)==sizeof(long)): ; 
+        }],tcl_cv_type_64bit=${tcl_type_64bit})])
     if test "${tcl_cv_type_64bit}" = none ; then
 	AC_DEFINE(TCL_WIDE_INT_IS_LONG)
 	AC_MSG_RESULT([using long])
@@ -2506,12 +2542,21 @@ AC_DEFUN(TEA_TCL_64BIT_FLAGS, [
 #------------------------------------------------------------------------
 
 AC_DEFUN(TEA_INIT, [
+    TEA_VERSION="3.0"
+
     AC_MSG_CHECKING([for correct TEA configuration])
-    if test x"${PACKAGE}" = x ; then
+    if test x"${PACKAGE_NAME}" = x ; then
 	AC_MSG_ERROR([
-The PACKAGE variable must be defined by your TEA configure.in])
+The PACKAGE_NAME variable must be defined by your TEA configure.in])
     fi
-    AC_MSG_RESULT([ok])
+    if test x"$1" = x ; then
+	AC_MSG_ERROR([
+TEA version not specified.])
+    elif test "$1" != "${TEA_VERSION}" ; then
+	AC_MSG_RESULT([warning: TEA version "$1" != ${TEA_VERSION}])
+    else
+	AC_MSG_RESULT([ok])
+    fi
     case "`uname -s`" in
 	*win32*|*WIN32*|*CYGWIN_NT*|*CYGWIN_9*|*CYGWIN_ME*|*MINGW32_*)
 	    AC_CHECK_PROG(CYGPATH, cygpath, cygpath -w, echo)
@@ -2530,6 +2575,227 @@ The PACKAGE variable must be defined by your TEA configure.in])
 
     AC_SUBST(EXEEXT)
     AC_SUBST(CYGPATH)
+
+    # This package name must be replaced statically for AC_SUBST to work
+    AC_SUBST(PKG_LIB_FILE)
+    # Substitute STUB_LIB_FILE in case package creates a stub library too.
+    AC_SUBST(PKG_STUB_LIB_FILE)
+
+    # We AC_SUBST these here to ensure they are subst'ed,
+    # in case the user doesn't call TEA_ADD_...
+    AC_SUBST(PKG_STUB_SOURCES)
+    AC_SUBST(PKG_STUB_OBJECTS)
+    AC_SUBST(PKG_TCL_SOURCES)
+    AC_SUBST(PKG_HEADERS)
+    AC_SUBST(PKG_INCLUDES)
+    AC_SUBST(PKG_LIBS)
+    AC_SUBST(PKG_CFLAGS)
+])
+
+#------------------------------------------------------------------------
+# TEA_ADD_SOURCES --
+#
+#	Specify one or more source files.  Users should check for
+#	the right platform before adding to their list.
+#	It is not important to specify the directory, as long as it is
+#	in the generic, win or unix subdirectory of $(srcdir).
+#
+# Arguments:
+#	one or more file names
+#
+# Results:
+#
+#	Defines and substs the following vars:
+#		PKG_SOURCES
+#		PKG_OBJECTS
+#------------------------------------------------------------------------
+AC_DEFUN(TEA_ADD_SOURCES, [
+    vars="$@"
+    for i in $vars; do
+	case $i in
+	    [\$]*)
+		# allow $-var names
+		PKG_SOURCES="$PKG_SOURCES $i"
+		PKG_OBJECTS="$PKG_OBJECTS $i"
+		;;
+	    *)
+		# check for existence - allows for generic/win/unix VPATH
+		if test ! -f "${srcdir}/$i" -a ! -f "${srcdir}/generic/$i" \
+		    -a ! -f "${srcdir}/win/$i" -a ! -f "${srcdir}/unix/$i" \
+		    ; then
+		    AC_MSG_ERROR([could not find source file '$i'])
+		fi
+		PKG_SOURCES="$PKG_SOURCES $i"
+		# this assumes it is in a VPATH dir
+		i=`basename $i`
+		# handle user calling this before or after TEA_SETUP_COMPILER
+		if test x"${OBJEXT}" != x ; then
+		    j="`echo $i | sed -e 's/\.[[^.]]*$//'`.${OBJEXT}"
+		else
+		    j="`echo $i | sed -e 's/\.[[^.]]*$//'`.\${OBJEXT}"
+		fi
+		PKG_OBJECTS="$PKG_OBJECTS $j"
+		;;
+	esac
+    done
+    AC_SUBST(PKG_SOURCES)
+    AC_SUBST(PKG_OBJECTS)
+])
+
+#------------------------------------------------------------------------
+# TEA_ADD_STUB_SOURCES --
+#
+#	Specify one or more source files.  Users should check for
+#	the right platform before adding to their list.
+#	It is not important to specify the directory, as long as it is
+#	in the generic, win or unix subdirectory of $(srcdir).
+#
+# Arguments:
+#	one or more file names
+#
+# Results:
+#
+#	Defines and substs the following vars:
+#		PKG_STUB_SOURCES
+#		PKG_STUB_OBJECTS
+#------------------------------------------------------------------------
+AC_DEFUN(TEA_ADD_STUB_SOURCES, [
+    vars="$@"
+    for i in $vars; do
+	# check for existence - allows for generic/win/unix VPATH
+	if test ! -f "${srcdir}/$i" -a ! -f "${srcdir}/generic/$i" \
+	    -a ! -f "${srcdir}/win/$i" -a ! -f "${srcdir}/unix/$i" \
+	    ; then
+	    AC_MSG_ERROR([could not find stub source file '$i'])
+	fi
+	PKG_STUB_SOURCES="$PKG_STUB_SOURCES $i"
+	# this assumes it is in a VPATH dir
+	i=`basename $i`
+	# handle user calling this before or after TEA_SETUP_COMPILER
+	if test x"${OBJEXT}" != x ; then
+	    j="`echo $i | sed -e 's/\.[[^.]]*$//'`.${OBJEXT}"
+	else
+	    j="`echo $i | sed -e 's/\.[[^.]]*$//'`.\${OBJEXT}"
+	fi
+	PKG_STUB_OBJECTS="$PKG_STUB_OBJECTS $j"
+    done
+    AC_SUBST(PKG_STUB_SOURCES)
+    AC_SUBST(PKG_STUB_OBJECTS)
+])
+
+#------------------------------------------------------------------------
+# TEA_ADD_TCL_SOURCES --
+#
+#	Specify one or more Tcl source files.  These should be platform
+#	independent runtime files.
+#
+# Arguments:
+#	one or more file names
+#
+# Results:
+#
+#	Defines and substs the following vars:
+#		PKG_TCL_SOURCES
+#------------------------------------------------------------------------
+AC_DEFUN(TEA_ADD_TCL_SOURCES, [
+    vars="$@"
+    for i in $vars; do
+	# check for existence, be strict because it is installed
+	if test ! -f "${srcdir}/$i" ; then
+	    AC_MSG_ERROR([could not find tcl source file '${srcdir}/$i'])
+	fi
+	PKG_TCL_SOURCES="$PKG_TCL_SOURCES $i"
+    done
+    AC_SUBST(PKG_TCL_SOURCES)
+])
+
+#------------------------------------------------------------------------
+# TEA_ADD_HEADERS --
+#
+#	Specify one or more source headers.  Users should check for
+#	the right platform before adding to their list.
+#
+# Arguments:
+#	one or more file names
+#
+# Results:
+#
+#	Defines and substs the following vars:
+#		PKG_HEADERS
+#------------------------------------------------------------------------
+AC_DEFUN(TEA_ADD_HEADERS, [
+    vars="$@"
+    for i in $vars; do
+	# check for existence, be strict because it is installed
+	if test ! -f "${srcdir}/$i" ; then
+	    AC_MSG_ERROR([could not find header file '${srcdir}/$i'])
+	fi
+	PKG_HEADERS="$PKG_HEADERS $i"
+    done
+    AC_SUBST(PKG_HEADERS)
+])
+
+#------------------------------------------------------------------------
+# TEA_ADD_INCLUDES --
+#
+#	Specify one or more include dirs.  Users should check for
+#	the right platform before adding to their list.
+#
+# Arguments:
+#	one or more file names
+#
+# Results:
+#
+#	Defines and substs the following vars:
+#		PKG_INCLUDES
+#------------------------------------------------------------------------
+AC_DEFUN(TEA_ADD_INCLUDES, [
+    vars="$@"
+    for i in $vars; do
+	PKG_INCLUDES="$PKG_INCLUDES $i"
+    done
+    AC_SUBST(PKG_INCLUDES)
+])
+
+#------------------------------------------------------------------------
+# TEA_ADD_LIBS --
+#
+#	Specify one or more libraries.  Users should check for
+#	the right platform before adding to their list.
+#
+# Arguments:
+#	one or more file names
+#
+# Results:
+#
+#	Defines and substs the following vars:
+#		PKG_LIBS
+#------------------------------------------------------------------------
+AC_DEFUN(TEA_ADD_LIBS, [
+    vars="$@"
+    for i in $vars; do
+	PKG_LIBS="$PKG_LIBS $i"
+    done
+    AC_SUBST(PKG_LIBS)
+])
+
+#------------------------------------------------------------------------
+# TEA_ADD_CFLAGS --
+#
+#	Specify one or more CFLAGS.  Users should check for
+#	the right platform before adding to their list.
+#
+# Arguments:
+#	one or more file names
+#
+# Results:
+#
+#	Defines and substs the following vars:
+#		PKG_CFLAGS
+#------------------------------------------------------------------------
+AC_DEFUN(TEA_ADD_CFLAGS, [
+    PKG_CFLAGS="$PKG_CFLAGS $@"
+    AC_SUBST(PKG_CFLAGS)
 ])
 
 #------------------------------------------------------------------------
@@ -2568,7 +2834,7 @@ AC_DEFUN(TEA_PREFIX, [
 ])
 
 #------------------------------------------------------------------------
-# TEA_SETUP_COMPILER --
+# TEA_SETUP_COMPILER_CC --
 #
 #	Do compiler checks the way we want.  This is just a replacement
 #	for AC_PROG_CC in TEA configure.in files to make them cleaner.
@@ -2582,7 +2848,7 @@ AC_DEFUN(TEA_PREFIX, [
 #------------------------------------------------------------------------
 AC_DEFUN(TEA_SETUP_COMPILER_CC, [
     # Don't put any macros that use the compiler (e.g. AC_TRY_COMPILE)
-    # in this macro, they need to go into TEA_SETUP_COMPILER_FLAGS instead.
+    # in this macro, they need to go into TEA_SETUP_COMPILER instead.
 
     # If the user did not set CFLAGS, set it now to keep
     # the AC_PROG_CC macro from adding "-g -O2".
@@ -2655,7 +2921,10 @@ AC_DEFUN(TEA_SETUP_COMPILER, [
     if test "${TEA_PLATFORM}" = "unix" ; then
 	TEA_TCL_LINK_LIBS
 	TEA_MISSING_POSIX_HEADERS
-	TEA_BUGGY_STRTOD
+	# Let the user call this, because if it triggers, they will
+	# need a compat/strtod.c that is correct.  Users can also
+	# use Tcl_GetDouble(FromObj) instead.
+	#TEA_BUGGY_STRTOD
     fi
 ])
 
@@ -2684,13 +2953,13 @@ AC_DEFUN(TEA_SETUP_COMPILER, [
 
 AC_DEFUN(TEA_MAKE_LIB, [
     if test "${TEA_PLATFORM}" = "windows" -a "$GCC" != "yes"; then
-	MAKE_STATIC_LIB="\${STLIB_LD} -out:\[$]@ \$(\[$](PACKAGE)_OBJECTS)"
-	MAKE_SHARED_LIB="\${SHLIB_LD} \${SHLIB_LDFLAGS} \${SHLIB_LD_LIBS} \$(LDFLAGS) -out:\[$]@ \$(\[$](PACKAGE)_OBJECTS)"
-	MAKE_STUB_LIB="\${STLIB_LD} -out:\[$]@ \$(\[$](PACKAGE)stub_OBJECTS)"
+	MAKE_STATIC_LIB="\${STLIB_LD} -out:\[$]@ \$(PKG_OBJECTS)"
+	MAKE_SHARED_LIB="\${SHLIB_LD} \${SHLIB_LD_FLAGS} \${SHLIB_LD_LIBS} \${LDFLAGS_DEFAULT} -out:\[$]@ \$(PKG_OBJECTS)"
+	MAKE_STUB_LIB="\${STLIB_LD} -out:\[$]@ \$(PKG_STUB_OBJECTS)"
     else
-	MAKE_STATIC_LIB="\${STLIB_LD} \[$]@ \$(\[$](PACKAGE)_OBJECTS)"
-	MAKE_SHARED_LIB="\${SHLIB_LD} -o \[$]@ \$(\[$](PACKAGE)_OBJECTS) \${SHLIB_LDFLAGS} \${SHLIB_LD_LIBS}"
-	MAKE_STUB_LIB="\${STLIB_LD} \[$]@ \$(\[$](PACKAGE)stub_OBJECTS)"
+	MAKE_STATIC_LIB="\${STLIB_LD} \[$]@ \$(PKG_OBJECTS)"
+	MAKE_SHARED_LIB="\${SHLIB_LD} -o \[$]@ \$(PKG_OBJECTS) \${SHLIB_LD_FLAGS} \${SHLIB_LD_LIBS}"
+	MAKE_STUB_LIB="\${STLIB_LD} \[$]@ \$(PKG_STUB_OBJECTS)"
     fi
 
     if test "${SHARED_BUILD}" = "1" ; then
@@ -2705,6 +2974,7 @@ AC_DEFUN(TEA_MAKE_LIB, [
     # substituted.
     #--------------------------------------------------------------------
 
+    RANLIB_STUB="${RANLIB}"
     if test "${TEA_PLATFORM}" = "windows" ; then
 	if test "${SHARED_BUILD}" = "1" ; then
 	    # We force the unresolved linking of symbols that are really in
@@ -2713,26 +2983,26 @@ AC_DEFUN(TEA_MAKE_LIB, [
 	    if test x"${TK_BIN_DIR}" != x ; then
 		SHLIB_LD_LIBS="${SHLIB_LD_LIBS} \"`${CYGPATH} ${TK_BIN_DIR}/${TK_STUB_LIB_FILE}`\""
 	    fi
-	    eval eval "${PACKAGE}_LIB_FILE=${PACKAGE}${SHARED_LIB_SUFFIX}"
+	    eval eval "PKG_LIB_FILE=${PACKAGE_NAME}${SHARED_LIB_SUFFIX}"
 	    RANLIB=:
 	else
-	    eval eval "${PACKAGE}_LIB_FILE=${PACKAGE}${UNSHARED_LIB_SUFFIX}"
+	    eval eval "PKG_LIB_FILE=${PACKAGE_NAME}${UNSHARED_LIB_SUFFIX}"
 	fi
 	# Some packages build there own stubs libraries
-	eval eval "${PACKAGE}stub_LIB_FILE=${PACKAGE}stub${UNSHARED_LIB_SUFFIX}"
+	eval eval "PKG_STUB_LIB_FILE=${PACKAGE_NAME}stub${UNSHARED_LIB_SUFFIX}"
     else
 	if test "${SHARED_BUILD}" = "1" ; then
 	    SHLIB_LD_LIBS="${SHLIB_LD_LIBS} ${TCL_STUB_LIB_SPEC}"
 	    if test x"${TK_BIN_DIR}" != x ; then
 		SHLIB_LD_LIBS="${SHLIB_LD_LIBS} ${TK_STUB_LIB_SPEC}"
 	    fi
-	    eval eval "${PACKAGE}_LIB_FILE=lib${PACKAGE}${SHARED_LIB_SUFFIX}"
+	    eval eval "PKG_LIB_FILE=lib${PACKAGE_NAME}${SHARED_LIB_SUFFIX}"
 	    RANLIB=:
 	else
-	    eval eval "${PACKAGE}_LIB_FILE=lib${PACKAGE}${UNSHARED_LIB_SUFFIX}"
+	    eval eval "PKG_LIB_FILE=lib${PACKAGE_NAME}${UNSHARED_LIB_SUFFIX}"
 	fi
 	# Some packages build there own stubs libraries
-	eval eval "${PACKAGE}stub_LIB_FILE=lib${PACKAGE}stub${UNSHARED_LIB_SUFFIX}"
+	eval eval "PKG_STUB_LIB_FILE=lib${PACKAGE_NAME}stub${UNSHARED_LIB_SUFFIX}"
     fi
 
     # These are escaped so that only CFLAGS is picked up at configure time.
@@ -2746,6 +3016,7 @@ AC_DEFUN(TEA_MAKE_LIB, [
     AC_SUBST(MAKE_SHARED_LIB)
     AC_SUBST(MAKE_STATIC_LIB)
     AC_SUBST(MAKE_STUB_LIB)
+    AC_SUBST(RANLIB_STUB)
 ])
 
 #------------------------------------------------------------------------
@@ -2856,15 +3127,21 @@ AC_DEFUN(TEA_PRIVATE_TCL_HEADERS, [
 	TCL_TOOL_DIR_NATIVE=\"`${CYGPATH} ${TCL_SRC_DIR}/tools`\"
 	TCL_COMPAT_DIR_NATIVE=\"`${CYGPATH} ${TCL_SRC_DIR}/compat`\"
 	TCL_PLATFORM_DIR_NATIVE=${TCL_WIN_DIR_NATIVE}
+
+	TCL_INCLUDES="-I${TCL_GENERIC_DIR_NATIVE} -I${TCL_PLATFORM_DIR_NATIVE}"
     else
 	TCL_TOP_DIR_NATIVE='$(TCL_SRC_DIR)'
-	TCL_GENERIC_DIR_NATIVE='$(TCL_TOP_DIR_NATIVE)/generic'
-	TCL_UNIX_DIR_NATIVE='$(TCL_TOP_DIR_NATIVE)/unix'
-	TCL_WIN_DIR_NATIVE='$(TCL_TOP_DIR_NATIVE)/win'
-	TCL_BMAP_DIR_NATIVE='$(TCL_TOP_DIR_NATIVE)/bitmaps'
-	TCL_TOOL_DIR_NATIVE='$(TCL_TOP_DIR_NATIVE)/tools'
-	TCL_COMPAT_DIR_NATIVE='$(TCL_TOP_DIR_NATIVE)/compat'
+	TCL_GENERIC_DIR_NATIVE='${TCL_TOP_DIR_NATIVE}/generic'
+	TCL_UNIX_DIR_NATIVE='${TCL_TOP_DIR_NATIVE}/unix'
+	TCL_WIN_DIR_NATIVE='${TCL_TOP_DIR_NATIVE}/win'
+	TCL_BMAP_DIR_NATIVE='${TCL_TOP_DIR_NATIVE}/bitmaps'
+	TCL_TOOL_DIR_NATIVE='${TCL_TOP_DIR_NATIVE}/tools'
+	TCL_COMPAT_DIR_NATIVE='${TCL_TOP_DIR_NATIVE}/compat'
 	TCL_PLATFORM_DIR_NATIVE=${TCL_UNIX_DIR_NATIVE}
+
+	# substitute these in "relaxed" so that TCL_INCLUDES still works
+	# without requiring the other vars to be defined in the Makefile
+	eval "TCL_INCLUDES=\"-I${TCL_GENERIC_DIR_NATIVE} -I${TCL_PLATFORM_DIR_NATIVE}\""
     fi
 
     AC_SUBST(TCL_TOP_DIR_NATIVE)
@@ -2875,7 +3152,6 @@ AC_DEFUN(TEA_PRIVATE_TCL_HEADERS, [
     AC_SUBST(TCL_TOOL_DIR_NATIVE)
     AC_SUBST(TCL_PLATFORM_DIR_NATIVE)
 
-    TCL_INCLUDES="-I${TCL_GENERIC_DIR_NATIVE} -I${TCL_PLATFORM_DIR_NATIVE}"
     AC_SUBST(TCL_INCLUDES)
     AC_MSG_RESULT([Using srcdir found in tclConfig.sh: ${TCL_SRC_DIR}])
 ])
@@ -2983,13 +3259,15 @@ AC_DEFUN(TEA_PRIVATE_TK_HEADERS, [
 
 	TK_INCLUDES="-I${TK_GENERIC_DIR_NATIVE} -I${TK_PLATFORM_DIR_NATIVE} -I${TK_XLIB_DIR_NATIVE}"
     else
-	TK_TOP_DIR_NATIVE='$(TK_SRC_DIR)'
-	TK_GENERIC_DIR_NATIVE='$(TK_TOP_DIR_NATIVE)/generic'
-	TK_UNIX_DIR_NATIVE='$(TK_TOP_DIR_NATIVE)/unix'
-	TK_WIN_DIR_NATIVE='$(TK_TOP_DIR_NATIVE)/win'
+	TK_TOP_DIR_NATIVE='${TK_SRC_DIR}'
+	TK_GENERIC_DIR_NATIVE='${TK_TOP_DIR_NATIVE}/generic'
+	TK_UNIX_DIR_NATIVE='${TK_TOP_DIR_NATIVE}/unix'
+	TK_WIN_DIR_NATIVE='${TK_TOP_DIR_NATIVE}/win'
 	TK_PLATFORM_DIR_NATIVE=${TK_UNIX_DIR_NATIVE}
 
-	TK_INCLUDES="-I${TK_GENERIC_DIR_NATIVE} -I${TK_PLATFORM_DIR_NATIVE}"
+	# substitute these in "relaxed" so that TK_INCLUDES still works
+	# without requiring the other vars to be defined in the Makefile
+	eval "TK_INCLUDES=\"-I${TK_GENERIC_DIR_NATIVE} -I${TK_PLATFORM_DIR_NATIVE}\""
     fi
 
     AC_SUBST(TK_TOP_DIR_NATIVE)
