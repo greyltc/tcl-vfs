@@ -1,5 +1,13 @@
 
+package require Tcl 8.4
 package require vfs
+
+namespace eval ::vfs {
+    variable debug 0
+    if {[info exists env(VFS_DEBUG)]} {
+	set debug $env(VFS_DEBUG)
+    }
+}
 
 proc ::vfs::autoMountExtension {ext cmd {pkg ""}} {
     variable extMounts
@@ -11,8 +19,11 @@ proc ::vfs::autoMountUrl {type cmd {pkg ""}} {
     set urlMounts($type) [list $cmd $pkg]
 }
 
-proc ::vfs::log {str} {
-    puts stderr $str
+proc ::vfs::log {msg {lvl 0}} {
+    if {$lvl < ${::vfs::debug}} {
+	#tclLog "vfs($lvl): $msg"
+	puts stderr $msg
+    }
 }
 
 proc ::vfs::RegisterMount {mountpoint unmountcmd} {
@@ -37,7 +48,7 @@ proc ::vfs::haveMount {url} {
 }
 
 proc ::vfs::urlMount {url args} {
-    puts "$url $args"
+    ::vfs::log "$url $args"
     variable urlMounts
     if {[regexp {^([a-zA-Z]+)://(.*)} $url "" urltype rest]} {
 	if {[info exists urlMounts($urltype)]} {
@@ -128,7 +139,6 @@ proc vfs::matchCorrectTypes {types filelist {inDir ""}} {
 		}
 	    } else {
 		foreach r $filelist {
-		    #puts [file join $inDir $r]
 		    if {[::file isdirectory [file join $inDir $r]]} {
 			lappend newres $r
 		    }
@@ -228,7 +238,7 @@ proc vfs::attributesGet {root stem index} {
 proc vfs::attributesSet {root stem index val} {
     # Return standard Tcl result, or error.
     set attribute [indexToAttribute $index]
-    #puts "$attribute"
+    #::vfs::log "$attribute"
     switch -- $attribute {
 	"-owner" {
 	    return

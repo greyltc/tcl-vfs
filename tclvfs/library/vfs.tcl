@@ -1,5 +1,5 @@
 # Only useful for TclKit
-# (this file is include in tclvfs so this entire package can be
+# (this file is included in tclvfs so this entire package can be
 # use in tclkit if desired).
 #
 # Initialization script normally executed in the interpreter for each
@@ -13,22 +13,17 @@
 # of this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 # Insist on running with compatible version of Tcl.
-
 package require Tcl 8.4
-
 package provide vfslib 0.1
 
-# So I can debug on command line!
+# So I can debug on command line when starting up Tcl from a vfs
+# when I might not have the history procedures loaded yet!
 #proc history {args} {}
 
 lappend auto_path [file dirname [info script]]
 
+# This stuff is for TclKit
 namespace eval ::vfs {
-    variable debug	0
-    if {[info exists env(VFS_DEBUG)]} {
-	set debug $env(VFS_DEBUG)
-    }
-
     variable temp
     global env
 
@@ -63,11 +58,5 @@ namespace eval ::vfs {
 	set ec ${::errorCode}
 	puts stderr "$tag: [expr {${cnt'} - $cnt}] ops, $time us"
 	return -code $rc -errorcode $ec -errorinfo $ei $ret
-    }
-}
-
-proc vfs::log {msg {lvl 0}} {
-    if {$lvl < ${::vfs::debug}} {
-	tclLog "vfs($lvl): $msg"
     }
 }

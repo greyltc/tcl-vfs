@@ -28,7 +28,7 @@ proc vfs::zip::Unmount {fd local} {
 }
 
 proc vfs::zip::handler {zipfd cmd root relative actualpath args} {
-    #puts [list $zipfd $cmd $root $relative $actualpath $args]
+    #::vfs::log [list $zipfd $cmd $root $relative $actualpath $args]
     #update
     if {$cmd == "matchindirectory"} {
 	eval [list $cmd $zipfd $relative $actualpath] $args
@@ -41,26 +41,26 @@ proc vfs::zip::handler {zipfd cmd root relative actualpath args} {
 # virtual file system for zip files.
 
 proc vfs::zip::matchindirectory {zipfd path actualpath pattern type} {
-    #puts stderr [list matchindirectory $path $actualpath $pattern $type]
+    #::vfs::log [list matchindirectory $path $actualpath $pattern $type]
     set res [::zip::getdir $zipfd $path $pattern]
-    #puts stderr "got $res"
+    #::vfs::log "got $res"
     set newres [list]
     foreach p [::vfs::matchCorrectTypes $type $res $actualpath] {
 	lappend newres "$actualpath$p"
     }
-    #puts "got $newres"
+    #::vfs::log "got $newres"
     return $newres
 }
 
 proc vfs::zip::stat {zipfd name} {
-    #puts "stat $name"
+    #::vfs::log "stat $name"
     ::zip::stat $zipfd $name sb
-    #puts [array get sb]
+    #::vfs::log [array get sb]
     array get sb
 }
 
 proc vfs::zip::access {zipfd name mode} {
-    #puts "zip-access $name $mode"
+    #::vfs::log "zip-access $name $mode"
     if {$mode & 2} {
 	error "read-only"
     }
@@ -75,7 +75,7 @@ proc vfs::zip::access {zipfd name mode} {
 }
 
 proc vfs::zip::open {zipfd name mode permissions} {
-    #puts "open $name $mode $permissions"
+    #::vfs::log "open $name $mode $permissions"
     # return a list of two elements:
     # 1. first element is the Tcl channel name which has been opened
     # 2. second element (optional) is a command to evaluate when
@@ -112,22 +112,22 @@ proc vfs::zip::open {zipfd name mode permissions} {
 }
 
 proc vfs::zip::createdirectory {zipfd name} {
-    #puts stderr "createdirectory $name"
+    #::vfs::log "createdirectory $name"
     error "read-only"
 }
 
 proc vfs::zip::removedirectory {zipfd name} {
-    #puts stderr "removedirectory $name"
+    #::vfs::log "removedirectory $name"
     error "read-only"
 }
 
 proc vfs::zip::deletefile {zipfd name} {
-    #puts "deletefile $name"
+    #::vfs::log "deletefile $name"
     error "read-only"
 }
 
 proc vfs::zip::fileattributes {zipfd name args} {
-    #puts "fileattributes $args"
+    #::vfs::log "fileattributes $args"
     switch -- [llength $args] {
 	0 {
 	    # list strings
@@ -287,8 +287,8 @@ proc zip::Data {fd arr {varPtr ""} {verify 0}} {
 	if { [catch {
 	    set data [zip -mode decompress -nowrap 1 $data]
 	} err] } {
-	    puts "$sb(name): inflate error: $err"
-	    puts [hexdump $data]
+	    ::vfs::log "$sb(name): inflate error: $err"
+	    ::vfs::log [hexdump $data]
 	}
     }
     return
@@ -402,7 +402,7 @@ proc zip::FAKEDIR {arr path} {
 }
 
 proc zip::exists {fd path} {
-    #puts stderr "$fd $path"
+    #::vfs::log "$fd $path"
     if {$path == ""} {
 	return 1
     } else {
@@ -436,7 +436,7 @@ proc zip::stat {fd path arr} {
 }
 
 proc zip::getdir {fd path {pat *}} {
-#    puts stderr [list getdir $fd $path $pat]
+#    ::vfs::log [list getdir $fd $path $pat]
     upvar #0 zip::$fd.toc toc
 
     if { $path == "." || $path == "" } {
@@ -462,7 +462,7 @@ proc zip::getdir {fd path {pat *}} {
 	    }
 	    lappend ret [file tail $sb(name)]
 	} else {
-	    #puts "$sb(depth) vs $depth for $sb(name)"
+	    #::vfs::log "$sb(depth) vs $depth for $sb(name)"
 	}
 	unset sb
     }

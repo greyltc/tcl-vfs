@@ -13,7 +13,7 @@ proc vfs::tclproc::Mount {ns local} {
     if {![namespace exists ::$ns]} {
 	error "No such namespace"
     }
-    puts "tclproc $ns mounted at $local"
+    ::vfs::log "tclproc $ns mounted at $local"
     vfs::filesystem mount $local [list vfs::tclproc::handler $ns]
     vfs::RegisterMount $local [list vfs::tclproc::Unmount]
 }
@@ -35,14 +35,12 @@ proc vfs::tclproc::handler {ns cmd root relative actualpath args} {
 # virtual file system for remote tclproc sites.
 
 proc vfs::tclproc::stat {ns name} {
-    puts stderr "stat $name"
+    ::vfs::log "stat $name"
     if {[namespace exists ::${ns}::${name}]} {
-	puts "directory"
 	return [list type directory size 0 mode 0777 \
 	  ino -1 depth 0 name $name atime 0 ctime 0 mtime 0 dev -1 \
 	  uid -1 gid -1 nlink 1]
     } elseif {[llength [info procs ::${ns}::${name}]]} {
-	puts "file"
 	return [list type file]
     } else {
 	return -code error "could not read \"$name\": no such file or directory"
@@ -50,7 +48,7 @@ proc vfs::tclproc::stat {ns name} {
 }
 
 proc vfs::tclproc::access {ns name mode} {
-    puts stderr "access $name $mode"
+    ::vfs::log "access $name $mode"
     if {[namespace exists ::${ns}::${name}]} {
 	return 1
     } elseif {[llength [info procs ::${ns}::${name}]]} {
@@ -74,7 +72,7 @@ proc vfs::tclproc::exists {ns name} {
 }
 
 proc vfs::tclproc::open {ns name mode permissions} {
-    puts stderr "open $name $mode $permissions"
+    ::vfs::log "open $name $mode $permissions"
     # return a list of two elements:
     # 1. first element is the Tcl channel name which has been opened
     # 2. second element (optional) is a command to evaluate when
@@ -111,7 +109,7 @@ proc vfs::tclproc::_generate {p} {
 }
 
 proc vfs::tclproc::matchindirectory {ns path actualpath pattern type} {
-    puts stderr "matchindirectory $path $actualpath $pattern $type"
+    ::vfs::log "matchindirectory $path $actualpath $pattern $type"
     set res [list]
 
     if {[::vfs::matchDirectories $type]} {
@@ -128,28 +126,28 @@ proc vfs::tclproc::matchindirectory {ns path actualpath pattern type} {
 	regsub "^(::)?${ns}(::)?${path}(::)?" $r $actualpath rr
 	lappend realres $rr
     }
-    #puts $realres
+    #::vfs::log $realres
     
     return $realres
 }
 
 proc vfs::tclproc::createdirectory {ns name} {
-    puts stderr "createdirectory $name"
+    ::vfs::log "createdirectory $name"
     namespace eval ::${ns}::${name} {}
 }
 
 proc vfs::tclproc::removedirectory {ns name} {
-    puts stderr "removedirectory $name"
+    ::vfs::log "removedirectory $name"
     namespace delete ::${ns}::${name}
 }
 
 proc vfs::tclproc::deletefile {ns name} {
-    puts stderr "deletefile $name"
+    ::vfs::log "deletefile $name"
     rename ::${ns}::${name} {}
 }
 
 proc vfs::tclproc::fileattributes {ns name args} {
-    puts stderr "fileattributes $args"
+    ::vfs::log "fileattributes $args"
     switch -- [llength $args] {
 	0 {
 	    # list strings
@@ -184,6 +182,6 @@ proc vfs::tclproc::fileattributes {ns name args} {
 }
 
 proc vfs::tclproc::utime {what name actime mtime} {
-    puts stderr "utime $name"
+    ::vfs::log "utime $name"
     error ""
 }

@@ -129,7 +129,7 @@ proc vfs::mk4::handler {db cmd root relative actualpath args} {
 }
 
 proc vfs::mk4::utime {db path actime modtime} {
-    #puts [list utime $path]
+    #::vfs::log [list utime $path]
     ::mk4vfs::stat $db $path sb
     
     if { $sb(type) == "file" } {
@@ -141,21 +141,21 @@ proc vfs::mk4::utime {db path actime modtime} {
 # virtual file system for zip files.
 
 proc vfs::mk4::matchindirectory {db path actualpath pattern type} {
-    #puts stderr [list matchindirectory $path $actualpath $pattern $type]
+    #::vfs::log [list matchindirectory $path $actualpath $pattern $type]
     set res [::mk4vfs::getdir $db $path $pattern]
-    #puts stderr "got $res"
+    #::vfs::log "got $res"
     set newres [list]
     foreach p [::vfs::matchCorrectTypes $type $res $actualpath] {
 	lappend newres "$actualpath$p"
     }
-    #puts "got $newres"
+    #::vfs::log "got $newres"
     return $newres
 }
 
 proc vfs::mk4::stat {db name} {
-    #puts "stat $name"
+    #::vfs::log "stat $name"
     ::mk4vfs::stat $db $name sb
-    #puts [array get sb]
+    #::vfs::log [array get sb]
 
     # for new vfs:
     set sb(dev) 0
@@ -164,7 +164,7 @@ proc vfs::mk4::stat {db name} {
 }
 
 proc vfs::mk4::access {db name mode} {
-    #puts "mk4-access $name $mode"
+    #::vfs::log "mk4-access $name $mode"
     # This needs implementing better.  
     #tclLog "mk4vfs::driver $db access $name $mode"
     switch -- $mode {
@@ -198,7 +198,7 @@ proc vfs::mk4::access {db name mode} {
 }
 
 proc vfs::mk4::open {db file mode permissions} {
-    #puts "open $file $mode $permissions"
+    #::vfs::log "open $file $mode $permissions"
     # return a list of two elements:
     # 1. first element is the Tcl channel name which has been opened
     # 2. second element (optional) is a command to evaluate when
@@ -297,22 +297,22 @@ proc vfs::mk4::open {db file mode permissions} {
 }
 
 proc vfs::mk4::createdirectory {db name} {
-    #puts stderr "createdirectory $name"
+    #::vfs::log "createdirectory $name"
     mk4vfs::mkdir $db $name
 }
 
 proc vfs::mk4::removedirectory {db name} {
-    #puts stderr "removedirectory $name"
+    #::vfs::log "removedirectory $name"
     mk4vfs::delete $db $name
 }
 
 proc vfs::mk4::deletefile {db name} {
-    #puts "deletefile $name"
+    #::vfs::log "deletefile $name"
     mk4vfs::delete $db $name
 }
 
 proc vfs::mk4::fileattributes {db root relative args} {
-    #puts "fileattributes $args"
+    #::vfs::log "fileattributes $args"
     switch -- [llength $args] {
 	0 {
 	    # list strings
@@ -491,7 +491,7 @@ proc mk4vfs::stat {db path arr} {
     
     #foreach n [array names cache] {
     #if {[lsearch -exact $pre $n] == -1} {
-    #puts "added $path $n $cache($n)"
+    #::vfs::log "added $path $n $cache($n)"
     #}
     #}
 }
