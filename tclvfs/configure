@@ -5814,7 +5814,7 @@ echo "${ECHO_T}Using srcdir found in tclConfig.sh: ${TCL_SRC_DIR}" >&6
 
 if test "${TEA_PLATFORM}" = "windows" ; then
     cat >>confdefs.h <<\_ACEOF
-#define BUILD_sample 1
+#define BUILD_vfs 1
 _ACEOF
 
     CLEANFILES="pkgIndex.tcl *.lib *.dll *.exp *.ilk *.pdb vc*.pch"

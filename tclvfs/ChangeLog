@@ -1,3 +1,7 @@
+2005-01-25  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* configure, configure.in (BUILD_vfs): correct from sample default
+
 2005-01-20  Jean-Claude Wippler  <jcw@equi4.com>
 
 	* library/mk4vfs.tcl: added return in periodicCommit
