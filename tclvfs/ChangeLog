@@ -1,3 +1,12 @@
+2004-07-04  Andreas Kupries <andreas_kupries@users.sourceforge.net>
+	
+	* library/vfsUtils.tcl (crc, zip): Modified the Trf adapter
+	  commands. They are now adding in a "--" before the last argument
+	  they get, to ensure its interpretation as data instead of being
+	  misinterpreted as option should it begin with a dash. Without
+	  this adding a file beginning with a dash to a filesystem will
+	  fail.
+
 2004-06-29  Vince Darley <vincentdarley@sourceforge.net>
 
 	* library/zipvfs.tcl: fix to bug finding zip header (reported on

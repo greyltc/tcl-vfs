@@ -21,13 +21,13 @@ proc ::vfs::memchan {args} {
 # This can be overridden to use a different crc implementation
 proc ::vfs::crc {args} {
     ::package require Trf
-    uplevel 1 [list ::crc] $args
+    uplevel 1 [linsert [linsert $args end-1 "--"] 0 ::crc]
 }
 
 # This can be overridden to use a different zip implementation
 proc ::vfs::zip {args} {
     ::package require Trf
-    uplevel 1 [list ::zip] $args
+    uplevel 1 [linsert [linsert $args end-1 "--"] 0 ::zip]
 }
 
 proc ::vfs::autoMountExtension {ext cmd {pkg ""}} {
