@@ -17,6 +17,21 @@ if {[lsearch [namespace children] ::tcltest] == -1} {
 
 package require vfs
 
+proc filelistrelative {filelist} {
+    set dir [file normalize [file dirname [info script]]]
+    set len [string length $dir]
+    incr len
+    set res {}
+    foreach d $filelist {
+	if {[string first $dir $d] == 0} {
+	   lappend res [string range $d $len end]
+       } else {
+	   lappend res $d
+       }
+    }
+    set res
+}
+
 test vfs-1.1 {mount unmount} {
     catch {unset res}
     vfs::filesystem mount foo bar
@@ -35,16 +50,16 @@ vfs::filesystem mount foo bar
 test vfs-2.1 {mount unmount in sub interp} {
     catch {interp delete a}
     catch {unset res}
+    set res {}
     interp create a
     a eval {package require vfs}
     a eval {vfs::filesystem mount foo2 bar2}
-    lappend res [vfs::filesystem info]
+    eval lappend res [vfs::filesystem info]
     a eval {vfs::filesystem unmount foo2}
     interp delete a
-    lappend res [vfs::filesystem info]
-    set res
-} {{C:/Tcl-source/tclvfs/tests/foo2 C:/Tcl-source/tclvfs/tests/foo}\
-  C:/Tcl-source/tclvfs/tests/foo}
+    eval lappend res [vfs::filesystem info]
+    filelistrelative $res
+} {foo2 foo foo}
 
 test vfs-2.2 {mount, delete sub interp} {
     catch {interp delete a}
@@ -52,12 +67,12 @@ test vfs-2.2 {mount, delete sub interp} {
     interp create a
     a eval {package require vfs}
     a eval {vfs::filesystem mount foo2 bar2}
-    lappend res [vfs::filesystem info]
+    set res {}
+    eval lappend res [vfs::filesystem info]
     interp delete a
-    lappend res [vfs::filesystem info]
-    set res
-} {{C:/Tcl-source/tclvfs/tests/foo2 C:/Tcl-source/tclvfs/tests/foo}\
-  C:/Tcl-source/tclvfs/tests/foo}
+    eval lappend res [vfs::filesystem info]
+    filelistrelative $res
+} {foo2 foo foo}
 
 vfs::filesystem unmount foo
 
