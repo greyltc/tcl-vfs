@@ -56,6 +56,7 @@ proc vfs::zip::matchindirectory {zipfd path actualpath pattern type} {
     set res [::zip::getdir $zipfd $path $pattern]
     #::vfs::log "got $res"
     if {![string length $pattern]} {
+	if {![::zip::exists $zipfd $path]} { return {} }
 	set res [list $actualpath]
 	set actualpath ""
     }

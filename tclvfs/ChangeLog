@@ -1,6 +1,8 @@
 2003-09-01  Vince Darley <vincentdarley@sourceforge.net>
 
 	* library/mk4vfs.tcl: fix to Bug #796782.
+	* library/zipvfs.tcl:
+	* library/tarvfs.tcl: fix to similar bug in these filesystems.
 	
 2003-07-15  Vince Darley <vincentdarley@sourceforge.net>
 

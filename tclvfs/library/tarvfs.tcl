@@ -59,6 +59,7 @@ proc vfs::tar::matchindirectory {tarfd path actualpath pattern type} {
     # for the existence of a single file $path only
     set res [::tar::getdir $tarfd $path $pattern]
     if {![string length $pattern]} {
+	if {![::tar::exists $tarfd $path]} { return {} }
 	set res [list $actualpath]
 	set actualpath ""
     }
