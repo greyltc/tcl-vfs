@@ -32,8 +32,9 @@ proc vfs::zip::handler {zipfd cmd root relative actualpath args} {
 proc vfs::zip::matchindirectory {zipfd path actualpath pattern type} {
     puts stderr [list matchindirectory $path $actualpath $pattern $type]
     set res [::zip::getdir $zipfd $path $pattern]
+    #puts stderr "got $res"
     set newres [list]
-    foreach p [::vfs::matchCorrectTypes $type $res] {
+    foreach p [::vfs::matchCorrectTypes $type $res $actualpath] {
 	lappend newres "$actualpath$p"
     }
     #puts "got $newres"

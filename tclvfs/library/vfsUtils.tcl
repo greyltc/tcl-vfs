@@ -91,7 +91,7 @@ proc ::vfs::auto {filename args} {
 # we match properly when given 'directory'
 # specifications, since this is used for
 # recursive globbing by Tcl.
-proc vfs::matchCorrectTypes {types filelist} {
+proc vfs::matchCorrectTypes {types filelist {inDir ""}} {
     if {$types != 0} {
 	# Which types to return.  We must do special
 	# handling of directories and files.
@@ -104,16 +104,33 @@ proc vfs::matchCorrectTypes {types filelist} {
 	    return [list]
 	}
 	set newres [list]
-	if {$file} {
-	    foreach r $filelist {
-		if {[::file isfile $r]} {
-		    lappend newres $r
+	if {[string length $inDir]} {
+	    if {$file} {
+		foreach r $filelist {
+		    if {[::file isfile [file join $inDir $r]]} {
+			lappend newres $r
+		    }
+		}
+	    } else {
+		foreach r $filelist {
+		    #puts [file join $inDir $r]
+		    if {[::file isdirectory [file join $inDir $r]]} {
+			lappend newres $r
+		    }
 		}
 	    }
 	} else {
-	    foreach r $filelist {
-		if {[::file isdirectory $r]} {
-		    lappend newres $r
+	    if {$file} {
+		foreach r $filelist {
+		    if {[::file isfile $r]} {
+			lappend newres $r
+		    }
+		}
+	    } else {
+		foreach r $filelist {
+		    if {[::file isdirectory $r]} {
+			lappend newres $r
+		    }
 		}
 	    }
 	}
