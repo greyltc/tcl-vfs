@@ -37,10 +37,30 @@ proc vfs::urltype::_typeToMount {type} {
 
 proc vfs::urltype::handler {type cmd root relative actualpath args} {
     puts stderr [list urltype $type $cmd $root $relative $actualpath $args]
-    if {$cmd == "matchindirectory"} {
-	eval [list $cmd $type $root $relative $actualpath] $args
+    if {[string length $relative]} {
+	# Find the highest level path so we can mount it:
+	set pathSplit [file split [file join $root $relative]]
+	set newRoot [eval [list file join] [lrange $pathSplit 0 1]]
+	# Mount it.
+	puts stderr [list $newRoot $pathSplit]
+	::vfs::${type}::Mount $newRoot $newRoot
+	# Now we want to find out the right handler
+	set typeHandler [::vfs::filesystem info $newRoot]
+	# Now we have to rearrange the root/relative for this path
+	set wholepath [eval [list file join] $pathSplit]
+	set newRelative [string range $wholepath [string length $newRoot] end]
+	if {[string index $newRelative 0] == "/"} {
+	    set newRelative [string range $newRelative 1 end]
+	}
+	
+	puts stderr [list $typeHandler $newRoot $newRelative]
+	eval $typeHandler [list $cmd $newRoot $newRelative $actualpath] $args
     } else {
-	eval [list $cmd $type $root $relative] $args
+	if {$cmd == "matchindirectory"} {
+	    eval [list $cmd $type $root $relative $actualpath] $args
+	} else {
+	    eval [list $cmd $type $root $relative] $args
+	}
     }
 }
 
@@ -52,11 +72,9 @@ proc vfs::urltype::stat {type root name} {
 	return [list type directory size 0 mode 0777 \
 	  ino -1 depth 0 name $name atime 0 ctime 0 mtime 0 dev -1 \
 	  uid -1 gid -1 nlink 1]
-    } elseif {1} {
-	::vfs::${type}::Mount $name [file join $root $name]
-	return [list type file]
+	#return -code error "could not read \"$name\": no such file or directory"
     } else {
-	return -code error "could not read \"$name\": no such file or directory"
+	error "Shouldn't get here"
     }
 }
 
@@ -70,10 +88,8 @@ proc vfs::urltype::access {type root name mode} {
     ::vfs::log "access $name $mode"
     if {![string length $name]} {
 	return 1
-    } elseif {$mode & 2} {
-	error "read-only"
     } else {
-	::vfs::${type}::Mount $name [file join $root $name]
+	error "Shouldn't get here!"
     }
 }
 

@@ -1,3 +1,15 @@
+2001-10-29  Vince Darley <vincentdarley@sourceforge.net>
+        * win/makefile.vc: installation is better.
+	* library/vfsUrl.tcl: improved urltype mounting.  The following
+	will now work in all cases:
+	% vfs::urltype::Mount ftp
+	% set listing [glob -dir ftp://ftp.scriptics.com/pub *]
+	...
+	% vfs::urltype::Mount http
+	% set fd [open http://sourceforge.net/projects/tcl]
+	% set contents [read $fd] ; close $fd
+	...
+	
 2001-09-27  Vince Darley <vincentdarley@sourceforge.net>
 	* library/mk4vfs.tcl: Update from Jean-Claude Wippler
 	* library/vfsUtils.tcl:

@@ -216,7 +216,7 @@ extension.
 .PP
 The Tcl 'Tcl_FSMatchInDirectory' function takes a variety of type
 information in a Tcl_GlobTypeData structure.  We currently only expose 
-the 'type' fields from that structure.
+the 'type' field from that structure.
 .SH KEYWORDS
 vfs, filesystem, file
 
