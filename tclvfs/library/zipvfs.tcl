@@ -1,6 +1,5 @@
 
 package require vfs
-package require pink
 package provide zipvfs 1.0
 
 # Using the vfs, memchan and Trf extensions, we ought to be able
@@ -100,9 +99,7 @@ proc vfs::zip::open {zipfd name mode permissions} {
 	    
 	    ::zip::stat $zipfd $name sb
 
-	    package require Memchan
-
-	    set nfd [memchan]
+	    set nfd [vfs::memchan]
 	    fconfigure $nfd -translation binary
 
 	    seek $zipfd $sb(ino) start
@@ -293,7 +290,7 @@ proc zip::Data {fd arr {varPtr ""} {verify 0}} {
 
     if { $sb(method) != 0 } {
 	if { [catch {
-	    set data [zlib decompress $data]
+	    set data [vfs::zlib decompress $data]
 	} err] } {
 	    ::vfs::log "$sb(name): inflate error: $err"
 	    binary scan $data H* x
@@ -302,7 +299,7 @@ proc zip::Data {fd arr {varPtr ""} {verify 0}} {
     }
     return
     if { $verify } {
-	set ncrc [zlib crc32 $data]
+	set ncrc [vfs::zlib crc32 $data]
 	if { $ncrc != $sb(crc) } {
 	    tclLog [format {%s: crc mismatch: expected 0x%x, got 0x%x} \
 		    $sb(name) $sb(crc) $ncrc]

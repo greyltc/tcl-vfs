@@ -81,9 +81,7 @@ proc vfs::ns::open {ns name mode permissions} {
     switch -- $mode {
 	"" -
 	"r" {
-	    package require Memchan
-
-	    set nfd [memchan]
+	    set nfd [vfs::memchan]
 	    fconfigure $nfd -translation binary
 	    puts -nonewline $nfd [_generate ::${ns}::${name}]
 	    fconfigure $nfd -translation auto

@@ -115,9 +115,8 @@ proc vfs::ftp::open {fd name mode permissions} {
 	"" -
 	"r" {
 	    ftp::Get $fd $name -variable tmp
-	    package require Memchan
 
-	    set filed [memchan]
+	    set filed [vfs::memchan]
 	    fconfigure $filed -translation binary
 	    puts -nonewline $filed $tmp
 
@@ -130,8 +129,8 @@ proc vfs::ftp::open {fd name mode permissions} {
 	    if {[catch [list ::ftp::Append $fd -data "" $name] err] || !$err} {
 		error "Can't open $name for appending"
 	    }
-	    package require Memchan
-	    set filed [memchan]
+
+	    set filed [vfs::memchan]
 	    return [list $filed [list ::vfs::ftp::_closing $fd $name $filed Append]]
 	}
 	"w*" {
@@ -139,8 +138,8 @@ proc vfs::ftp::open {fd name mode permissions} {
 	    if {[catch [list ::ftp::Put $fd -data "" $name] err] || !$err} {
 		error "Can't open $name for writing"
 	    }
-	    package require Memchan
-	    set filed [memchan]
+
+	    set filed [vfs::memchan]
 	    return [list $filed [list ::vfs::ftp::_closing $fd $name $filed Put]]
 	}
 	default {

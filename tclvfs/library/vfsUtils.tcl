@@ -9,6 +9,24 @@ namespace eval ::vfs {
     }
 }
 
+# This can be overridden to use a different memchan implementation
+proc ::vfs::memchan {args} {
+    ::package require Memchan
+    uplevel 1 ::memchan $args
+}
+
+# This can be overridden to use a different zlib implementation
+proc ::vfs::zlib {args} {
+    ::package require Trf
+    uplevel 1 ::zlib $args
+}
+
+# This can be overridden to use a different zlib implementation
+proc ::vfs::zip {args} {
+    ::package require Trf
+    uplevel 1 ::zip $args
+}
+
 proc ::vfs::autoMountExtension {ext cmd {pkg ""}} {
     variable extMounts
     set extMounts($ext) [list $cmd $pkg]

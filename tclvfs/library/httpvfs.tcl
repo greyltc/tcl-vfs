@@ -101,9 +101,8 @@ proc vfs::http::open {dirurl name mode permissions} {
 	"" -
 	"r" {
 	    set state [::http::geturl [file join $dirurl $name]]
-	    package require Memchan
 
-	    set filed [memchan]
+	    set filed [vfs::memchan]
 	    fconfigure $filed -translation binary
 	    puts -nonewline $filed [::http::data $state]
 

@@ -162,22 +162,18 @@ proc vfs::mk4::open {db file mode permissions} {
       ::mk4vfs::stat $db $file sb
     
       if { $sb(csize) != $sb(size) } {
-        package require Trf
-        package require Memchan
 
-        set fd [memchan]
+        set fd [vfs::memchan]
         fconfigure $fd -translation binary
         set s [mk::get $sb(ino) contents]
-        puts -nonewline $fd [zip -mode decompress $s]
+        puts -nonewline $fd [vfs::zip -mode decompress $s]
 
         fconfigure $fd -translation auto
         seek $fd 0
         return [list $fd [list _memchan_handler close $fd]]
       } elseif { $::mk4vfs::direct } {
-        package require Trf
-        package require Memchan
 
-        set fd [memchan]
+        set fd [vfs::memchan]
         fconfigure $fd -translation binary
         puts -nonewline $fd [mk::get $sb(ino) contents]
 
@@ -209,15 +205,13 @@ proc vfs::mk4::open {db file mode permissions} {
       }
 
       if { $sb(csize) != $sb(size) } {
-        package require Trf
-        package require Memchan
 
         append mode z
-        set fd [memchan]
+        set fd [vfs::memchan]
 
         fconfigure $fd -translation binary
         set s [mk::get $sb(ino) contents]
-        puts -nonewline $fd [zip -mode decompress $s]
+        puts -nonewline $fd [vfs::zip -mode decompress $s]
         fconfigure $fd -translation auto
       } else {
         set fd [mk::channel $sb(ino) contents a]
@@ -238,10 +232,8 @@ proc vfs::mk4::open {db file mode permissions} {
       }
 
       if { [string match *z* $mode] || $mk4vfs::compress } {
-        package require Trf
-        package require Memchan
         append mode z
-        set fd [memchan]
+        set fd [vfs::memchan]
       } else {
         set fd [mk::channel $sb(ino) contents w]
       }

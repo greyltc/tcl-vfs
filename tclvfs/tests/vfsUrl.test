@@ -29,7 +29,8 @@ if {![file writable $vfsTestDir]} {
     if {[info exists env(TEMP)] && [file writable $env(TEMP)]} {
 	set vfsTestDir $env(TEMP)
 	tcltest::testConstraint vfsWritable 1
-	puts stdout "Using temporary directory for some files"
+	puts stdout "Using temporary directory for some files\
+	  (since [pwd] is not writable)"
     } else {
 	tcltest::testConstraint vfsWritable 0
     }
