@@ -45,4 +45,4 @@ proc loadvfs {file} {
 package ifneeded vfs 1.0 [list loadvfs $file]
 unset file
 
-package ifneeded mk4vfs 1.0 [list source [file join $dir mk4vfs.tcl]]
+package ifneeded mk4vfs 1.5 [list source [file join $dir mk4vfs.tcl]]
