@@ -94,12 +94,14 @@ proc ::vfs::attributes {mountpoint args} {
 	return -code error "filesystem not known or not configurable"
     }
     
-    while {1} {
-	foreach {attr val} $args {
-	    set args [lrange $args 2 end]
-	    break
-	}
+    while {[llength $args] > 1} {
+	set attr [string range [lindex $args 0] 1 end]
+	set val [lindex $args 1]
+	set args [lrange $args 2 end]
 	if {[info commands ::vfs::${ns}::$attr] != ""} {
+	    if {![llength [info args ::vfs::${ns}::$attr]]} {
+		return -code error "filesystem attribute \"$attr\" is read-only"
+	    }
 	    if {[catch {::vfs::${ns}::$attr $val} err]} {
 		return -code error "error setting filesystem attribute\
 		  \"$attr\": $err"
