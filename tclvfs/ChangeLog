@@ -1,20 +1,23 @@
 2004-05-21  Daniel Steffen <das@users.sourceforge.net>
 
-	* starkit.tcl: improved previous symbolic link patch by
+	* library/starkit.tcl: improved previous symbolic link patch by
 	using [vfs::filesystem fullynormalize], as suggessted by Vince.
+	
+	* library/pkgIndex.tcl.in: brought back into sync with pkgIndex.tcl
+	* library/pkgIndex.tcl: fixed spacing to be like pkgIndex.tcl.in
 
 2004-05-19  Jean-Claude Wippler  <jcw@equi4.com>
 
-	* starkit.tcl: added a patch from Bryan Schofield to properly
+	* library/starkit.tcl: added a patch from Bryan Schofield to properly
 	resolve all symbolic links so starkit::startup detection works.
-	* pkgIndex.tcl: bumped starkit version from 1.3 to 1.3.1
+	* library/pkgIndex.tcl: bumped starkit version from 1.3 to 1.3.1
 
 	* ChangeLog: cleaned up a few tab-vs-space indentations
 
 2004-04-18  Daniel Steffen <das@users.sourceforge.net>
 
 	* generic/vfs.c: continue to #include tclPort.h, otherwise
-        compilation breaks against tcl 8.4.x.
+	compilation breaks against tcl 8.4.x.
 
 2004-04-01  Vince Darley <vincentdarley@sourceforge.net>
 
