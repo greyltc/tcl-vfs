@@ -44,7 +44,7 @@ proc vfs::tk::stat {widg name} {
 	return -code error "could not read \"$name\": no such file or directory"
     }
     set len [llength [winfo children ${widg}.${name}]]
-    if {$len} {
+    if {$len || ([winfo class $widg.$name] == "Frame")} {
 	return [list type directory size $len mode 0777 \
 	  ino -1 depth 0 name $name atime 0 ctime 0 mtime 0 dev -1 \
 	  uid -1 gid -1 nlink 1]
@@ -152,7 +152,7 @@ proc vfs::tk::matchindirectory {widg path actualpath pattern type} {
     }
     
     set realres [list]
-    set l [string length $wpp]
+    set l [expr {1 + [string length $wp]}]
     foreach r $res {
 	lappend realres [file join ${actualpath} [string range $r $l end]]
     }
