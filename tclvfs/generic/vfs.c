@@ -657,14 +657,13 @@ VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
 		channelRet = (VfsChannelCleanupInfo*) 
 				ckalloc(sizeof(VfsChannelCleanupInfo));
 	        channelRet->channel = theChannel;
+		channelRet->interp = interp;
 		if (reslen == 2) {
 		    Tcl_ListObjIndex(interp, resultObj, 1, &element);
 		    channelRet->closeCallback = element;
 		    Tcl_IncrRefCount(channelRet->closeCallback);
-		    channelRet->interp = interp;
 		} else {
 		    channelRet->closeCallback = NULL;
-		    channelRet->interp = NULL;
 		}
 	    }
 	}
@@ -687,8 +686,9 @@ VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
 	 * anyone.  We use Tcl_DetachChannel to do this for us.
 	 */
 	chan = channelRet->channel;
-	/* We must use the correct interpreter, not our own 'vfs' interpreter */
-	Tcl_DetachChannel(channelRet->interp, chan);
+	/* We must use the correct interpreter */
+	Tcl_DetachChannel(interp, chan);
+	
 	if (channelRet->closeCallback != NULL) {
 	    Tcl_CreateCloseHandler(chan, &VfsCloseProc, (ClientData)channelRet);
 	    /* The channelRet structure will be freed in the callback */
