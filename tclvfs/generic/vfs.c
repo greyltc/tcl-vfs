@@ -339,7 +339,11 @@ Vfs_Init(interp)
     if (Tcl_IsSafe(interp)) {
         return TCL_ERROR;
     }
-    
+
+#ifndef PACKAGE_VERSION
+    /* keep in sync with actual version */
+#define PACKAGE_VERSION "1.3"
+#endif
     if (Tcl_PkgProvide(interp, "vfs", PACKAGE_VERSION) == TCL_ERROR) {
         return TCL_ERROR;
     }
