@@ -104,12 +104,16 @@
 namespace eval vfs::mk4 {}
 
 proc vfs::mk4::Mount {what local args} {
-    set db [eval [list ::mk4vfs::mount $what $local] $args]
+    set db [eval [list ::mk4vfs::_mount $what $local] $args]
 
     ::vfs::filesystem mount $what [list ::vfs::mk4::handler $db]
     # Register command to unmount
     ::vfs::RegisterMount $local [list ::vfs::mk4::Unmount $db]
     return $db
+}
+
+proc mk4vfs::mount {args} {
+    uplevel 1 [list ::vfs::mk4::mount] $args
 }
 
 proc vfs::mk4::Unmount {db local} {
@@ -356,7 +360,7 @@ proc mk4vfs::init {db} {
     }
 }
 
-proc mk4vfs::mount {path file args} {
+proc mk4vfs::_mount {path file args} {
     variable uid
     set db mk4vfs[incr uid]
 
