@@ -18,7 +18,7 @@ if {[lsearch [namespace children] ::tcltest] == -1} {
 package require vfs
 
 proc filelistrelative {filelist} {
-    set dir [file normalize [file dirname [info script]]]
+    set dir [file normalize [file dirname [file dirname [info script]]]]
     set len [string length $dir]
     incr len
     set res {}

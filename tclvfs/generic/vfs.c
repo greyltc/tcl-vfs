@@ -822,7 +822,7 @@ VfsPathInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
 	 * We need this test here both for an empty string being
 	 * passed in above, and so that if we are testing a unix
 	 * absolute path /foo/bar we will come around the loop
-	 * with splitPosition at 0 for the last test, and we
+	 * with splitPosition at 0 for the last iteration, and we
 	 * must return then.
 	 */
 	if (splitPosition == 0) {

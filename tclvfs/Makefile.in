@@ -228,12 +228,6 @@ install-binaries: binaries install-lib-binaries install-bin-binaries
 #========================================================================
 
 install-libraries: libraries
-	$(mkinstalldirs) $(includedir)
-	@echo "Installing header files in $(includedir)"
-	@for i in $(GENERIC_HDRS) ; do \
-	    echo "Installing $$i" ; \
-	    $(INSTALL_DATA) $$i $(includedir) ; \
-	done;
 
 #========================================================================
 # Install documentation.  Unix manpages should go in the $(mandir)
@@ -245,7 +239,7 @@ install-doc: doc
 	$(mkinstalldirs) $(mandir)/man3
 	$(mkinstalldirs) $(mandir)/mann
 	@echo "Installing documentation in $(mandir)"
-	@for i in $(srcdir)/*.n; \
+	@for i in $(srcdir)/doc/*.n; \
 	    do \
 	    echo "Installing $$i"; \
 	    rm -f $(mandir)/mann/$$i; \
