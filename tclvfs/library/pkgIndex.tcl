@@ -8,6 +8,13 @@
 # script is sourced, the variable $dir must contain the
 # full path name of this file's directory.
 
+package require Tcl 8.4
+if {[info tclversion] == 8.4} {
+    if {[regexp {8.4a(1|2|3)} [info patchlevel]]} {
+	error "Tcl 8.4a4 (Sept 4 2001) or newer is required"
+    }
+}
+
 lappend auto_path $dir
 if {[info exists tcl_platform(debug)]} {
     package ifneeded vfs 1.0 [list load [file join $dir vfs10d[info sharedlibextension]]]

@@ -11,15 +11,31 @@ including a small library of Tcl code).  The goal of this extension
 is to expose Tcl 8.4's new filesystem C API to the Tcl level.
 
 Since 8.4 is still in alpha, the APIs on which this extension depends may of
-course change (although this isn't too likely).  If that happens, it will of
-course require changes to this extension, until the point at which 8.4 goes
-final, when only backwards-compatible changes should occur.  Currently it
-requires a version of Tcl from September 5th 2001 or newer (if it compiles 
+course change.  If that happens, it will of course require changes to this
+extension, until the point at which 8.4 goes final, when only
+backwards-compatible changes should occur.  Currently it requires a version
+of Tcl 8.4a4 or newer from September 5th 2001 or newer (if it compiles
 without warning, you should be fine).
 
 Using this extension, the editor Alphatk can actually auto-mount, view and
 edit (but not save, since they're read-only) the contents of .zip files
-directly (see <http://www.santafe.edu/~vince/Alphatk.html>).
+directly (see <http://www.santafe.edu/~vince/Alphatk.html>), and you can
+do things like:
+
+    file copy ftp://ftp.foo.com/pub/readme.txt .
+
+With 'tkhtml', writing a web-browser in Tcl should be pretty trivial with
+this extension.    
+
+None of the vfs's included are 100% complete or optimal yet, so if only for
+that reason, code contributions are very welcome.  Many of them still
+contain various debugging code, etc.  This will be gradually removed and
+the code completely cleaned up and documented as the package evolves.
+
+-- Vince Darley, August 1st 2001
+
+Tests and installation
+----------------------
 
 The 'tests' directory contains a partially modified version of some of
 Tcl's core tests.  They are modified in that there is a new 'fsIsWritable'
@@ -28,14 +44,7 @@ some of that work).
 
 To install, you probably want to rename the directory 'library' to 'vfs1.0'
 and place it in your Tcl hierarchy, with the necessary shared library
-inside.
-
-None of the vfs's included are 100% complete or optimal yet, so if only for
-that reason, code contributions are very welcome.  Many of them still
-contain various debugging code, etc.  This will be gradually removed and
-the code completely cleaned up and documented as the package evolves.
-
--- Vince Darley, August 1st 2001
+inside (improvements to makefiles to streamline this much appreciated)
 
 Current implementation
 ----------------------
@@ -112,4 +121,7 @@ can be used when desired (for example, 'file copy from to -callback foo'
 would be one approach to handling this).
 
 Bugs in Tcl vfs's are hard to track down, since error messages can't
-necessarily propagate to the toplevel.  Could add a debugging command.
+necessarily propagate to the toplevel.  Could add a debugging command. 
+Alternatively the 'reporting' filesystem in Tcl's test suite can be
+used to aid debugging.
+
