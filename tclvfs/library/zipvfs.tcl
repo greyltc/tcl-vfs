@@ -328,7 +328,12 @@ proc zip::Data {fd arr {varPtr ""} {verify 0}} {
 proc zip::EndOfArchive {fd arr} {
     upvar 1 $arr cb
 
-    seek $fd -512 end
+    # [SF Tclvfs Bug 1003574]. Do not seek over beginning of file.
+    seek $fd 0 end
+    set n [tell $fd]
+    if {$n < 512} {set n -$n} else {set n -512}
+    seek $fd $n end
+
     set hdr [read $fd 512]
     set pos [string first "PK\05\06" $hdr]
     if {$pos == -1} {
