@@ -3379,6 +3379,8 @@ echo $ECHO_N "checking for 64-bit integer type... $ECHO_C" >&6
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
 
+	tcl_cv_type_64bit=none
+	# See if the compiler knows natively about __int64
 	cat >conftest.$ac_ext <<_ACEOF
 #line $LINENO "configure"
 /* confdefs.h.  */
@@ -3407,18 +3409,19 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  tcl_cv_type_64bit=__int64
+  tcl_type_64bit=__int64
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-tcl_cv_type_64bit=none
-           if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+tcl_type_64bit="long long"
+fi
+rm -f conftest.$ac_objext conftest.$ac_ext
+	# See if we should use long anyway  Note that we substitute in the
+	# type that is our current guess for a 64-bit type inside this check
+	# program, so it should be modified only carefully...
+	if test "$cross_compiling" = yes; then
+  :
 else
   cat >conftest.$ac_ext <<_ACEOF
 #line $LINENO "configure"
@@ -3428,7 +3431,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 #include <unistd.h>
-		int main() {exit(!(sizeof(long long) > sizeof(long)));}
+	    int main() {exit(!(sizeof(${tcl_type_64bit}) > sizeof(long)));}
 
 _ACEOF
 rm -f conftest$ac_exeext
@@ -3442,20 +3445,24 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  tcl_cv_type_64bit="long long"
+  tcl_cv_type_64bit=${tcl_type_64bit}
 else
   echo "$as_me: program exited with status $ac_status" >&5
 echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
+( exit $ac_status )
+:
 fi
 rm -f core core.* *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
 fi
 fi
-rm -f conftest.$ac_objext conftest.$ac_ext
-fi
 
     if test "${tcl_cv_type_64bit}" = none ; then
+	cat >>confdefs.h <<\_ACEOF
+#define TCL_WIDE_INT_IS_LONG 1
+_ACEOF
+
 	echo "$as_me:$LINENO: result: using long" >&5
 echo "${ECHO_T}using long" >&6
     elif test "${tcl_cv_type_64bit}" = "__int64" ; then
