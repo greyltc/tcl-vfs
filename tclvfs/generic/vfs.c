@@ -33,6 +33,10 @@
 #define TCL_STORAGE_CLASS DLLEXPORT
 #endif /* BUILD_vfs */
 
+#ifndef TCL_GLOB_TYPE_MOUNT
+#define TCL_GLOB_TYPE_MOUNT		(1<<7)
+#endif
+
 /*
  * Only the _Init function is exported.
  */
