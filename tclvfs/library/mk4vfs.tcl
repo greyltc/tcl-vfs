@@ -13,9 +13,10 @@
 # 20jan03 jcw	1.7	streamed zlib decompress mode, reduces memory usage
 # 01feb03 jcw	1.8	fix mounting a symlink, cleanup mount/unmount procs
 # 04feb03 jcw	1.8	whoops, restored vfs::mk4::Unmount logic
+# 17mar03 jcw	1.9	start with mode translucent or readwrite
 
-package provide mk4vfs 1.8
-package provide vfs::mk4 1.8
+package provide mk4vfs 1.9
+package provide vfs::mk4 1.9
 package require Mk4tcl
 package require vfs
 
@@ -340,16 +341,17 @@ namespace eval mk4vfs {
 	    
 	    init $db
 	    
-	    set v::mode($db) "readwrite"
-	    for {set idx 0} {$idx < [llength $args]} {incr idx} {
-		switch -- [lindex $args $idx] {
-		    -readonly   { set v::mode($db) "readonly" }
-		    -nocommit   { set v::mode($db) "translucent" }
+	    set mode 0
+	    foreach arg $args {
+		switch -- $arg {
+		    -readonly   { set mode 1 }
+		    -nocommit   { set mode 2 }
 		}
 	    }
-	    if {$v::mode($db) == "readwrite"} {
+	    if {$mode == 0} {
 		periodicCommit $db
 	    }
+	    set v::mode($db) [lindex {translucent readwrite readwrite} $mode]
 	}
 	return $db
     }
