@@ -45,6 +45,11 @@ proc vfs::tar::handler {tarfd cmd root relative actualpath args} {
     }
 }
 
+proc vfs::tar::attributes {tarfd} { return [list "state"] }
+proc vfs::tar::state {tarfd args} {
+    vfs::attributeCantConfigure "state" "readonly" $args
+}
+
 # If we implement the commands below, we will have a perfect
 # virtual file system for tar files.
 # Completely copied from zipvfs.tcl

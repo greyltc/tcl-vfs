@@ -67,8 +67,13 @@ proc vfs::states {} {
 proc ::vfs::attributes {mountpoint args} {
     set handler [::vfs::filesystem info $mountpoint]
     
-    set attrs [list "state"]
     set res {}
+    
+    if {[regsub -- "::handler" $handler ::attributes cmd]} {
+	set attrs [eval $cmd]
+    } else {
+	return -code error "No known attributes"
+    }
 
     if {![llength $args]} {
 	foreach attr $attrs {
@@ -106,6 +111,20 @@ proc ::vfs::attributes {mountpoint args} {
 	}
     }
     return $res
+}
+
+proc vfs::attributeCantConfigure {attr val largs} {
+    switch -- [llength $largs] {
+	0 {
+	    return $val
+	}
+	1 {
+	    return -code error "Can't set $attr"
+	}
+	default {
+	    return -code error "Wrong num args"
+	}
+    }
 }
 
 ::vfs::autoMountExtension "" ::vfs::mk4::Mount vfs

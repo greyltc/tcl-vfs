@@ -1,3 +1,12 @@
+2003-02-19  Vince Darley <vincentdarley@sourceforge.net>
+
+	* library/mk4vfs.tcl: added 'commit' attribute
+	* library/vfsUtils.tcl:
+	* library/tarvfs.tcl:
+	* library/zipvfs.tcl:
+	* library/ftpvfs.tcl: added support for 'state' attribute
+	of these filesystems.
+	
 2003-02-18  Vince Darley <vincentdarley@sourceforge.net>
 
 	* generic/vfs.c:

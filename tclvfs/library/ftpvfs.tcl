@@ -67,6 +67,11 @@ proc vfs::ftp::handler {fd path cmd root relative actualpath args} {
     }
 }
 
+proc vfs::ftp::attributes {fd} { return [list "state"] }
+proc vfs::ftp::state {fd args} {
+    vfs::attributeCantConfigure "state" "readwrite" $args
+}
+
 # If we implement the commands below, we will have a perfect
 # virtual file system for remote ftp sites.
 

@@ -56,6 +56,34 @@ namespace eval vfs::mk4 {
 	::mk4vfs::_umount $db
     }
 
+    proc attributes {db} { return [list "state" "commit"] }
+    
+    # Can use this to control commit/nocommit or whatever.
+    # I'm not sure yet of what functionality jcw needs.
+    proc commit {db args} {
+	switch -- [llength $args] {
+	    0 {
+		if {$::mk4vfs::v::mode($db) == "readonly"} {
+		    return 0
+		} else {
+		    # To Do: read the commit state
+		    return 1
+		}
+	    }
+	    1 {
+		set val [lindex $args 0]
+		if {$val != 0 && $val != 1} {
+		    return -code error \
+		      "invalid commit value $val, must be 0,1"
+		}
+		# To Do: set the commit state.
+	    }
+	    default {
+		return -code error "Wrong num args"
+	    }
+	}
+    }
+    
     proc state {db args} {
 	switch -- [llength $args] {
 	    0 {

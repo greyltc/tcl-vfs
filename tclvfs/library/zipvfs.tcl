@@ -40,6 +40,11 @@ proc vfs::zip::handler {zipfd cmd root relative actualpath args} {
     }
 }
 
+proc vfs::zip::attributes {zipfd} { return [list "state"] }
+proc vfs::zip::state {zipfd args} {
+    vfs::attributeCantConfigure "state" "readonly" $args
+}
+
 # If we implement the commands below, we will have a perfect
 # virtual file system for zip files.
 
