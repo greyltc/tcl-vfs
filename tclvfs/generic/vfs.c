@@ -1041,6 +1041,10 @@ VfsStat(pathPtr, bufPtr)
 			bufPtr->st_mode |= S_IFDIR;
 		    } else if (!strcmp(str,"file")) {
 			bufPtr->st_mode |= S_IFREG;
+#ifdef S_ISLNK
+		    } else if (!strcmp(str,"link")) {
+			bufPtr->st_mode |= S_IFLNK;
+#endif
 		    } else {
 			/* 
 			 * Do nothing.  This means we do not currently

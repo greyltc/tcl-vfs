@@ -292,8 +292,8 @@ $(vfs_LIB_FILE): $(vfs_OBJECTS)
 # 	$(COMPILE) -c `@CYGPATH@ $(srcdir)/src/win/VFS.c` -o $@
 #========================================================================
 
-vfs.$(OBJEXT): $(srcdir)/vfs.c
-	$(COMPILE) -c `@CYGPATH@ $(srcdir)/vfs.c` -o $@
+generic/vfs.$(OBJEXT): $(srcdir)/generic/vfs.c
+       $(COMPILE) -c `@CYGPATH@ $(srcdir)/generic/vfs.c` -o $@
 
 #========================================================================
 # End of user-definable section

@@ -7,10 +7,16 @@
 # variable $dir must contain the full path name of this file's
 # directory.
 
+# We don't really want to throw an error with older versions of
+# Tcl, they should just ignore us.
+if {[package provide Tcl] < 8.4} {
+    return
+}
+
 package require Tcl 8.4
 if {[info tclversion] == 8.4} {
-    if {[regexp {8.4a(1|2|3)} [info patchlevel]]} {
-	error "Tcl 8.4a4 (Sept 4 2001) or newer is required"
+    if {[regexp {8.4a(1|2|3|4)} [info patchlevel]]} {
+	error "Tcl 8.4a5 (March 20th 2002) or newer is required"
     }
 }
 
@@ -19,10 +25,20 @@ if {[lsearch -exact $auto_path $dir] == -1} {
 }
 
 if {[info exists tcl_platform(debug)]} {
-    package ifneeded vfs 1.0 [list load [file join $dir vfs10d[info sharedlibextension]]]
+    set file [file join $dir vfs10d[info sharedlibextension]]
 } else {
-    package ifneeded vfs 1.0 [list load [file join $dir vfs10[info sharedlibextension]]]
+    set file [file join $dir vfs10[info sharedlibextension]]
 }
+
+# Don't do anything if our shared lib doesn't exist.  This should
+# help stop a crash on pre-release MacOS X.
+if {![file exists $file]} {
+    unset file
+    return
+}
+
+package ifneeded vfs 1.0 [list load $file]
+unset file
 
 package ifneeded scripdoc 0.3 [list source [file join $dir scripdoc.tcl]]
 package ifneeded mk4vfs 1.0 [list source [file join $dir mk4vfs.tcl]]

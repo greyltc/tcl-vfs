@@ -40,7 +40,8 @@ Compile/build
 The standard 'configure ; make ; make install' should work, but if it
 doesn't, I'm afraid I can't help --- I am not an expert on these issues
 and find it amazing that to compile a single C file (generic/vfs.c) a
-dozen or so TEA 'helper' files are required.
+dozen or so TEA 'helper' files are required.  I believe 'gmake' may
+be required on some platforms.
 
 For windows, there is a VC++ makefile in the win directory ('nmake -f
 makefile.vc') should do the trick.
