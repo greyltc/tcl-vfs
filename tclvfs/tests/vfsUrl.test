@@ -55,7 +55,7 @@ test vfsUrl-1.3 {mounted volumes} {
     set res
 } {New volume 'ftp://' mounted}
 
-test vfsUrl-2.1 {auto-mount ftp and copy file} {
+test vfsUrl-2.1 {auto-mount ftp and copy file} {vfsWritable} {
     file delete -force README.tclversions
     file copy ftp://ftp.scriptics.com/pub/tcl/README.tclversions $vfsTestDir
     set to [file join $vfsTestDir README.tclversions]

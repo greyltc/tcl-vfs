@@ -1,3 +1,7 @@
+2002-04-25  Vince Darley <vincentdarley@sourceforge.net>
+	* tests/*: revamp of tests to be more robust, and to be
+	able to run from inside a mounted virtual filesystem.
+	
 2002-04-09  Jean-Claude Wippler <jcw@equi4.com>
 	* configure: generated and added to project
 
