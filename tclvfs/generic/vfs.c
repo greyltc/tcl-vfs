@@ -705,7 +705,7 @@ VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
 	    chan = Tcl_GetChannel(interp, Tcl_GetString(element), 0);
 	    
 	    if (chan == NULL) {
-	        returnVal == TCL_ERROR;
+	        returnVal = TCL_ERROR;
 	    } else {
 		if (reslen == 2) {
 		    Tcl_ListObjIndex(interp, resultObj, 1, &element);
