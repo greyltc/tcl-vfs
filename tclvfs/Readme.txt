@@ -10,10 +10,10 @@ This is an implementation of a 'vfs' extension (and a 'vfs' package,
 including a small library of Tcl code).  The goal of this extension
 is to expose Tcl 8.4's new filesystem C API to the Tcl level.
 
-Using this extension, the editor Alphatk can actually auto-mount, view and
-edit (but not save, since they're read-only) the contents of .zip files
-directly (see <http://www.santafe.edu/~vince/Alphatk.html>), and you can
-do things like:
+Using this extension, the editor Alphatk can actually auto-mount,
+view and edit (but not save, since they're read-only) the contents of
+.zip files directly (see <http://www.purl.org/net/alphatk/>), and you
+can do things like:
 
     file copy ftp://ftp.foo.com/pub/readme.txt .
 
@@ -25,7 +25,7 @@ that reason, code contributions are very welcome.  Many of them still
 contain various debugging code, etc.  This will be gradually removed and
 the code completely cleaned up and documented as the package evolves.
 
--- Vince Darley, April 2002
+-- Vince Darley, April 2002-February 2003
 
 Compile/build
 -------------

@@ -35,9 +35,9 @@ vfs_LIB_FILE	= @vfs_LIB_FILE@
 #========================================================================
 
 RUNTIME_SOURCES	= ftpvfs.tcl httpvfs.tcl mk4vfs.tcl starkit.tcl \
-		  tarvfs.tcl tclIndex tclprocvfs.tcl testvfs.tcl \
+		  tarvfs.tcl tclprocvfs.tcl testvfs.tcl \
 		  vfsUrl.tcl vfsUtils.tcl vfslib.tcl \
-		  webdavvfs.tcl zipvfs.tcl
+		  webdavvfs.tcl zipvfs.tcl tclIndex
 
 #========================================================================
 # This is a list of header files to be installed

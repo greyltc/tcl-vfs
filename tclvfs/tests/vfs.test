@@ -93,23 +93,39 @@ test vfs-3.1 {vfs helpers: in memory channels} {
     # probably many other tests will fail too.  In particular
     # any use of 'open', 'source', 'load', and usually also
     # 'file copy', 'file rename' in a vfs will fail.
+    # 
+    # What this means is that tclvfs can't find some other
+    # extension/code it requires -- you may need to install
+    # the Memchan or Rchan extension for example.
 } {}
 
 test vfs-3.2 {vfs helpers: crc} {
     # If this test fails, probably many other tests will fail too (at
     # least anything to do with 'zip' vfs).
+    # 
+    # What this means is that tclvfs can't find some other
+    # extension/code it requires -- you may need to install
+    # the Trf extension for example.
     ::vfs::crc abcd
 } {Kc*}
 
 test vfs-3.3 {vfs helpers: zip} {
     # If this test fails, probably many other tests will fail too (at
     # least anything to do with 'zip' vfs).
+    # 
+    # What this means is that tclvfs can't find some other
+    # extension/code it requires -- you may need to install
+    # the Try extension for example.
     ::vfs::zip -mode compress 1234567890
 } "\x78\x9c\x33\x34\x32\x36\x31\x35\x33\xb7\xb0\x34\x0\x0\xb\x2c\x2\xe"
 
 test vfs-3.4 {vfs helpers: zip} {
     # If this test fails, probably many other tests will fail too (at
     # least anything to do with 'zip' vfs).
+    # 
+    # What this means is that tclvfs can't find some other
+    # extension/code it requires -- you may need to install
+    # the Try extension for example.
     ::vfs::zip -mode decompress "\x78\x9c\x33\x34\x32\x36\x31\x35\x33\xb7\xb0\x34\x0\x0\xb\x2c\x2\xe"
 } {1234567890}
 

@@ -1,3 +1,11 @@
+2003-01-28  Vince Darley <vincentdarley@sourceforge.net>
+
+	* tests/*.test: cleanup
+	
+	Also updated version of the package to 1.2 (not 1.1 since there's
+	a Windows binary floating around with that number, and we want to
+	avoid confusion).  It's been fixed at 1.0 for far too long.
+	
 2003-02-01  Jean-Claude Wippler  <jcw@equi4.com>
 
 	* library/mk4vfs.tcl:  fixed bad mk4vfs::_umount change
