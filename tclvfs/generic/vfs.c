@@ -1255,7 +1255,7 @@ VfsMatchInDirectory(
     Tcl_Interp *cmdInterp,	/* Interpreter to receive error msgs. */
     Tcl_Obj *returnPtr,		/* Object to receive results. */
     Tcl_Obj *dirPtr,	        /* Contains path to directory to search. */
-    char *pattern,		/* Pattern to match against. */
+    CONST char *pattern,	/* Pattern to match against. */
     Tcl_GlobTypeData *types)	/* Object containing list of acceptable types.
 				 * May be NULL. */
 {

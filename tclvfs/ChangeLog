@@ -1,3 +1,6 @@
+2002-01-28 Vince Darley <vincentdarley@sourceforge.net>
+	* generic/vfs.c: const, MacOS fixes (also thanks Daniel Steffen).
+
 2001-12-07 Vince Darley <vincentdarley@sourceforge.net>
 	* various test, install fixes (unix) thanks to Larry Virden.
 	
