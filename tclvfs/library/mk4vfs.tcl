@@ -5,90 +5,6 @@
 # $Id$
 #
 
-# uses Pink for zip and md5 replacements, this avoids the dependency on Trf
-
-  package ifneeded Trf 1.3 {
-    package require pink
-    package provide Trf 1.3
-  
-    proc zip {flag value data} {
-      switch -glob -- "$flag $value" {
-	{-mode d*} { set mode decompress }
-	{-mode c*} { set mode compress }
-	default    { error "usage: zip -mode {compress|decompress} data" }
-      }
-      return [pink zlib $mode $data]
-    }
-  
-    proc crc {data} {
-      return [pink zlib crc32 $data]
-    }
-  
-    proc md5 {data} {
-      set cmd [pink md5]
-      $cmd update $data
-      set result [$cmd digest]
-      rename $cmd ""
-      return $result
-    }
-  }
-
-# this replacement is for memchan, used for simple (de)compression
-
-  package ifneeded Memchan 0.1 {
-    package require rechan
-    package provide Memchan 0.1
-  
-    proc _memchan_handler {cmd fd args} {
-      upvar #0 ::_memchan_buf($fd) _buf
-      upvar #0 ::_memchan_pos($fd) _pos
-      set arg1 [lindex $args 0]
-      
-      switch -- $cmd {
-	seek {
-	  switch [lindex $args 1] {
-	    1 - current { incr arg1 $_pos }
-	    2 - end { incr arg1 [string length $_buf]}
-	  }
-	  return [set _pos $arg1]
-	}
-	read {
-	  set r [string range $_buf $_pos [expr { $_pos + $arg1 - 1 }]]
-	  incr _pos [string length $r]
-	  return $r
-	}
-	write {
-	  set n [string length $arg1]
-	  if { $_pos >= [string length $_buf] } {
-	    append _buf $arg1
-	  } else { # the following doesn't work yet :(
-	    set last [expr { $_pos + $n - 1 }]
-	    set _buf [string replace $_buf $_pos $last $arg1]
-	    error "mk4vfs: sorry no inline write yet"
-	  }
-	  incr _pos $n
-	  return $n
-	}
-	close {
-	  unset _buf _pos
-	}
-	default {
-	  error "Bad call to memchan replacement handler: $cmd"
-	}
-      }
-    }
-    
-    proc memchan {} {
-      set fd [rechan _memchan_handler 6]
-      #fconfigure $fd -translation binary -encoding binary
-      
-      set ::_memchan_buf($fd) ""
-      set ::_memchan_pos($fd) 0
-      
-      return $fd
-    }
-  }
-    
 namespace eval vfs::mk4 {}
 
 proc vfs::mk4::Mount {what local args} {
@@ -465,7 +381,7 @@ proc mk4vfs::do_close {fd mode cur} {
         # this was a duplicate close!!! 12-10-2001
         #close $fd
         _memchan_handler close $fd
-        set cdata [zip -mode compress $data]
+        set cdata [vfs::zip -mode compress $data]
         set len [string length $data]
         set clen [string length $cdata]
         if { $clen < $len } {

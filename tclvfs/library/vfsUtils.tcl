@@ -15,10 +15,10 @@ proc ::vfs::memchan {args} {
     uplevel 1 ::memchan $args
 }
 
-# This can be overridden to use a different zlib implementation
-proc ::vfs::zlib {args} {
+# This can be overridden to use a different crc implementation
+proc ::vfs::crc {args} {
     ::package require Trf
-    uplevel 1 ::zlib $args
+    uplevel 1 ::crc $args
 }
 
 # This can be overridden to use a different zip implementation

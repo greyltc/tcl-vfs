@@ -299,7 +299,7 @@ proc zip::Data {fd arr {varPtr ""} {verify 0}} {
     }
     return
     if { $verify } {
-	set ncrc [vfs::zlib crc32 $data]
+	set ncrc [vfs::crc $data]
 	if { $ncrc != $sb(crc) } {
 	    tclLog [format {%s: crc mismatch: expected 0x%x, got 0x%x} \
 		    $sb(name) $sb(crc) $ncrc]

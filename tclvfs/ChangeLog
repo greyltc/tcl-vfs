@@ -1,8 +1,8 @@
 2002-04-25  Jean-Claude Wippler <jcw@equi4.com>
-	* library/zipvfs.tcl: removed dependencies on pink, switched
-	to "zlib" command (now available in critlib and in tclkit)
+	* library/*vfs.tcl: switching to vfs::{crc,memchan,zip}
 	* library/vfsUtils.tcl: fixed env to be global, added unset
-	so unmounting cleans up its list of mounted file systems
+	so unmounting cleans up its list of mounted file systems,
+	define Trf/memchan-based versions of vfs::{crc,memchan,zip}
 	* library/{scripdoc.tcl,vfs.tcl}: removed, tclkit specific
 	* library/pkgIndex.tcl: drop packages "scripdoc" and "vfslib"
 
