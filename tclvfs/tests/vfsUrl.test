@@ -21,6 +21,9 @@ if {![auto_load ::vfs::urltype::Mount]} {
       [file dirname [file normalize [info script]]]] library]
 }
 
+puts stdout "These tests require an internet connection, and might"
+puts stdout "take a long time to complete."
+
 test vfsUrl-1.1 {mount} {
     vfs::urltype::Mount ftp
 } {Mounted at "ftp://"}
@@ -68,8 +71,9 @@ test vfsUrl-2.2 {auto-mount bad ftp} {
     set res
 } {file doesn't exist}
 
-test vfsUrl-3.1 {mount} {
-} {}
+test vfsUrl-3.1 {mount http} {
+    vfs::urltype::Mount http
+} {Mounted at "http://"}
 
 # cleanup
 catch {
