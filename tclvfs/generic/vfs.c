@@ -677,7 +677,7 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 	NULL
     };
     enum options {
-	VFS_INFO, VFS_MOUNT, VFS_UNMOUNT,
+	VFS_INFO, VFS_MOUNT, VFS_UNMOUNT
     };
 
     if (objc < 2) {
@@ -914,7 +914,8 @@ VfsFilesystemPathType(Tcl_Obj *pathPtr) {
 
 static Tcl_Obj*
 VfsFilesystemSeparator(Tcl_Obj* pathObjPtr) {
-    return Tcl_NewStringObj("/",1);
+    char sep=VFS_SEPARATOR;
+    return Tcl_NewStringObj(&sep,1);
 }
 
 static int
@@ -1094,7 +1095,7 @@ VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
     Tcl_Interp *cmdInterp;              /* Interpreter for error reporting;
 					 * can be NULL. */
     Tcl_Obj *pathPtr;                   /* Name of file to open. */
-    char *modeString;                   /* A list of POSIX open modes or
+    CONST char *modeString;             /* A list of POSIX open modes or
 					 * a string such as "rw". */
     int permissions;                    /* If the open involves creating a
 					 * file, with what modes to create
@@ -1384,7 +1385,7 @@ VfsRemoveDirectory(
     return returnVal;
 }
 
-static char**
+static CONST char**
 VfsFileAttrStrings(pathPtr, objPtrRef)
     Tcl_Obj* pathPtr;
     Tcl_Obj** objPtrRef;
