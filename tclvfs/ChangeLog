@@ -1,3 +1,8 @@
+2003-09-26  Jean-Claude Wippler  <jcw@equi4.com>
+
+	* starkit.tcl: add file normalize around info nameofexe, fixes
+	startup detection when exec'd in some cases (thx E Boudaillier).
+
 2003-09-01  Vince Darley <vincentdarley@sourceforge.net>
 
 	* library/mk4vfs.tcl: fix to Bug #796782.

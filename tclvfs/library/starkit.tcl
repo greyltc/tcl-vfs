@@ -54,7 +54,7 @@ namespace eval starkit {
 	set script [file normalize [info script]]
 	set topdir [file dirname $script]
 
-	if {$topdir eq [info nameofexe]} { return starpack }
+	if {$topdir eq [file normalize [info nameofexe]]} { return starpack }
 
 	# pkgs live in the $topdir/lib/ directory
 	set lib [file join $topdir lib]
