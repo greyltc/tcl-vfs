@@ -5,7 +5,7 @@
 [moddesc   {Tcl-level Virtual Filesystems}]
 [titledesc {Filesystems provided by tclvfs}]
 [require Tcl 8.4]
-[require vfs [opt 1.2]]
+[require vfs [opt 1.2.1]]
 [require vfs::zip     [opt 1.0]]
 [require vfs::mk4     [opt 1.6]]
 [require vfs::tar     [opt 0.9]]
@@ -34,7 +34,7 @@ Currently supported are ftp, tar, http, zip, mk4, ns, and webdav.
 
 In addition there is the ability to mount any 'urltype' as a new
 directory, provided an appropriate vfs is supported.  This means that
-you can treat urls based on the schmes [emph ftp://], [emph http://]
+you can treat urls based on the schemes [emph ftp://], [emph http://]
 and [emph file://] as files.  To do this, simply evaluate the command
 
 [cmd {vfs::urltype::Mount ftp}]

@@ -5,7 +5,7 @@
 [moddesc   {Tcl-level Virtual Filesystems}]
 [titledesc {Filesystem management in Tcl}]
 [require Tcl 8.4]
-[require vfs [opt 1.2]]
+[require vfs [opt 1.2.1]]
 [description]
 
 The package [package vfs] provides commands to query, mount and
