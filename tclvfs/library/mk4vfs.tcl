@@ -56,8 +56,18 @@ namespace eval vfs::mk4 {
 	::mk4vfs::_umount $db
     }
 
-    proc state {} {
-	return "translucent"
+    proc state {db args} {
+	switch -- [llength $args] {
+	    0 {
+		return "translucent"
+	    }
+	    1 {
+		return -code error "Can't set state yet"
+	    }
+	    default {
+		return -code error "Wrong num args"
+	    }
+	}
     }
     
     proc handler {db cmd root relative actualpath args} {

@@ -61,68 +61,44 @@ proc ::vfs::unmount {mountpoint} {
 
 # vfs::attributes mountpoint ?-opt val? ?...-opt val?
 proc ::vfs::attributes {mountpoint args} {
-    if {![catch {::vfs::filesystem info $mountpoint} handler]} {
-	regexp {vfs::([^:]+)::handler} $handler -> ns
-    } else {
-	# Let's assume this is a ns directly (not sure if this
-	# code path is a good idea in the long term, but it is
-	# helpful for testing)
-	set ns $mountpoint
-	::package require vfs::${ns}
-    }
+    set handler [::vfs::filesystem info $mountpoint]
     
     set attrs [list "state"]
     set res {}
 
     if {![llength $args]} {
-	if {[info exists ns]} {
-	    foreach attr $attrs {
-		if {[info commands ::vfs::${ns}::$attr] != ""} {
-		    if {[catch {::vfs::${ns}::$attr} val]} {
-			return -code error "error reading filesystem attribute\
-			  \"$attr\": $val"
-		    } else {
-			lappend res -$attr $val
-		    }
-		}
+	foreach attr $attrs {
+	    regsub -- "::handler" $handler ::$attr cmd
+	    if {[catch $cmd val]} {
+		return -code error "error reading filesystem attribute\
+		  \"$attr\": $val"
+	    } else {
+		lappend res -$attr $val
 	    }
 	}
 	return $res
-    }
-    
-    if {![info exists ns]} {
-	return -code error "filesystem not known or not configurable"
     }
     
     while {[llength $args] > 1} {
 	set attr [string range [lindex $args 0] 1 end]
 	set val [lindex $args 1]
 	set args [lrange $args 2 end]
-	if {[info commands ::vfs::${ns}::$attr] != ""} {
-	    if {![llength [info args ::vfs::${ns}::$attr]]} {
-		return -code error "filesystem attribute \"$attr\" is read-only"
-	    }
-	    if {[catch {::vfs::${ns}::$attr $val} err]} {
-		return -code error "error setting filesystem attribute\
-		  \"$attr\": $err"
-	    } else {
-		set res $val
-	    }
+	regsub -- "::handler" $handler ::$attr cmd
+	if {[catch {eval $cmd [list $val]} err]} {
+	    return -code error "error setting filesystem attribute\
+	      \"$attr\": $err"
 	} else {
-	    return -code error "filesystem attribute \"$attr\" not known"
+	    set res $val
 	}
     }
     if {[llength $args]} {
-	set attr [lindex $args 0]
-	if {[info commands ::vfs::${ns}::$attr] != ""} {
-	    if {[catch {::vfs::${ns}::$attr} val]} {
-		return -code error "error reading filesystem attribute\
-		  \"$attr\": $val"
-	    } else {
-		set res $val
-	    }
+	set attr [string range [lindex $args 0] 1 end]
+	regsub -- "::handler" $handler ::$attr cmd
+	if {[catch $cmd val]} {
+	    return -code error "error reading filesystem attribute\
+	      \"$attr\": $val"
 	} else {
-	    return -code error "filesystem attribute \"$attr\" not known"
+	    set res $val
 	}
     }
     return $res
