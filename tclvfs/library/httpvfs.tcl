@@ -2,10 +2,7 @@
 package require vfs 1.0
 package require http
 
-# THIS DOES NOT WORK!
-
-# It's currently a copy of ftpvfs.tcl where there has basically been
-# a global replacement of 'ftp' by 'http'.
+# This works for basic operations, but has not been very debugged.
 
 namespace eval vfs::http {}
 
@@ -121,28 +118,8 @@ proc vfs::http::open {dirurl name mode permissions} {
 
 proc vfs::http::matchindirectory {dirurl path actualpath pattern type} {
     ::vfs::log "matchindirectory $path $pattern $type"
-    set httpList [http::List $dirurl $path]
-    ::vfs::log "httpList: $httpList"
     set res [list]
 
-    foreach p $httpList {
-	regsub -all "\[ \t\]+" $p " " p
-	set items [split $p " "]
-	set name [lindex $items end]
-	set perms [lindex $items 0]
-	if {[::vfs::matchDirectories $type]} {
-	    if {[string index $perms 0] == "d"} {
-		lappend res "$actualpath$name"
-	    }
-	}
-	if {[::vfs::matchFiles $type]} {
-	    if {[string index $perms 0] != "d"} {
-		lappend res "$actualpath$name"
-	    }
-	}
-	
-    }
- 
     return $res
 }
 
