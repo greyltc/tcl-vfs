@@ -88,7 +88,7 @@ proc vfs::ftp::stat {fd name} {
 proc vfs::ftp::access {fd name mode} {
     ::vfs::log "ftp-access $name $mode"
     if {$name == ""} { return 1 }
-    set info [vfs::ftp::_findFtpInfo $fd $name]
+    set info [_findFtpInfo $fd $name]
     if {[string length $info]} {
 	return 1
     } else {
@@ -162,14 +162,32 @@ proc vfs::ftp::_findFtpInfo {fd name} {
     ::vfs::log "findFtpInfo $fd $name"
     set ftpList [ftp::List $fd [file dirname $name]]
     foreach p $ftpList {
-	regsub -all "\[ \t\]+" $p " " p
-	set items [split $p " "]
-	set pname [lindex $items end]
+	foreach {pname perms} [_parseListLine $p] {}
 	if {$pname == [file tail $name]} {
-	    return $items
+	    return [list $perms]
 	}
     }
     return ""
+}
+
+# Currently returns a list of name and permissions
+proc vfs::ftp::_parseListLine {line} {
+    # Check for filenames with spaces
+    if {[regexp {([^ ]|[^0-9] )+$} $line name]} {
+	# Check for links
+	if {[set idx [string first " -> " $name]] != -1} {
+	    incr idx -1
+	    set name [string range $name 0 $idx]
+	}
+    }
+    regsub -all "\[ \t\]+" $line " " line
+    set items [split $line " "]
+    
+    if {![info exists name]} {set name [lindex $items end]}
+    
+    set perms [lindex $items 0]
+    
+    return [list $name $perms]
 }
 
 proc vfs::ftp::matchindirectory {fd path actualpath pattern type} {
@@ -179,10 +197,7 @@ proc vfs::ftp::matchindirectory {fd path actualpath pattern type} {
     set res [list]
 
     foreach p $ftpList {
-	regsub -all "\[ \t\]+" $p " " p
-	set items [split $p " "]
-	set name [lindex $items end]
-	set perms [lindex $items 0]
+	foreach {name perms} [_parseListLine $p] {}
 	if {[::vfs::matchDirectories $type]} {
 	    if {[string index $perms 0] == "d"} {
 		lappend res "$actualpath$name"
