@@ -310,7 +310,7 @@ namespace eval mk4vfs {
 	tclLog "umount $local? [mk::file open]"
     }
 
-    proc _umount {db} {
+    proc _umount {db args} {
 	after cancel [list mk4vfs::periodicCommit $db]
 	array unset v::mode $db
 	array unset v::timer $db

@@ -1,5 +1,9 @@
 2003-02-01  Jean-Claude Wippler  <jcw@equi4.com>
 
+	* library/mk4vfs.tcl:  fixed bad mk4vfs::_umount change
+
+2003-02-01  Jean-Claude Wippler  <jcw@equi4.com>
+
 	* library/pkgIndex.tcl.in: mk4vfs 1.8, starkit 1.1, vfslib 1.3.1
 	* library/pkgIndex.tcl: (shouldn't this be dropped from CVS now?)
 	* library/mk4vfs.tcl:  updated from tclkit project
