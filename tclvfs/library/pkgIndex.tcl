@@ -9,7 +9,12 @@
 # full path name of this file's directory.
 
 lappend auto_path $dir
-package ifneeded vfs 1.0 [list load [file join $dir vfs10[info sharedlibextension]]]
+if {[info exists tcl_platform(debug)]} {
+    package ifneeded vfs 1.0 [list load [file join $dir vfs10d[info sharedlibextension]]]
+} else {
+    package ifneeded vfs 1.0 [list load [file join $dir vfs10[info sharedlibextension]]]
+}
+
 package ifneeded scripdoc 0.3 [list source [file join $dir scripdoc.tcl]]
 package ifneeded mk4vfs 1.0 [list source [file join $dir mk4vfs.tcl]]
 package ifneeded vfslib 0.1 [list source [file join $dir vfs.tcl]]

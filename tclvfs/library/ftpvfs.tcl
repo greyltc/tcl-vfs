@@ -8,8 +8,11 @@ proc vfs::ftp::Mount {dirurl local} {
     if {[string range $dirurl 0 5] == "ftp://"} {
 	set dirurl [string range $dirurl 6 end]
     }
-    regexp {(([^:]*)(:([^@]*))?@)?([^/]*)/(.*/)?([^/]*)$} $dirurl \
-      junk junk user junk pass host path file
+    if {![regexp {(([^:]*)(:([^@]*))?@)?([^/]*)/(.*/)?([^/]*)$} $dirurl \
+      junk junk user junk pass host path file]} {
+	return -code error "Sorry I didn't understand\
+	  the url address \"$dirurl\""
+    }
     
     if {[string length $file]} {
 	return -code error "Can only mount directories, not\

@@ -124,21 +124,31 @@ the given file to that value.
 .TP
 \fIcommand\fR \fImatchindirectory\fR \fIr-r-a\fR \fIpattern\fR \fItypes\fR
 Return the list of files or directories in the given path (which is
-always the name of an existing directory), which match the \fIpattern\fR
-and are compatible with the \fItypes\fR given.  It is very important
-that the command correctly handle \fItypes\fR requests for directories
-only (and files only).
+always the name of an existing directory), which match the
+\fIpattern\fR and are compatible with the \fItypes\fR given.  It is
+very important that the command correctly handle \fItypes\fR requests
+for directories only (and files only), because to handle any kind of
+recursive globbing, Tcl will actually generate requests for
+directory-only matches from the filesystem.  See \fBvfs::matchDirectories\fR
+below for help.
 .TP
 \fIcommand\fR \fIopen\fR \fIr-r-a\fR \fImode\fR \fIpermissions\fR
-For this command, \fImode\fR is a list of POSIX open modes or a 
-string such as "rw".  If the open involves creating a file, then 
-\fIpermissions\fR dictates what modes to create it with.  If the
-open operation is successful, the command
-should return a list of one or two items.  The first item (which
-is obligatory) is the name of the channel which has been created.
-The second item, if given, is a Tcl-callback to be used when the
-channel is closed, so that the vfs can clean up as appropriate.
-If the open operation was not successful, an error should be thrown.
+For this command, \fImode\fR is a list of POSIX open modes or a string
+such as "rw".  If the open involves creating a file, then
+\fIpermissions\fR dictates what modes to create it with.  If the open
+operation was not successful, an error should be thrown.  If the open
+operation is successful, the command should return a list of either one
+or two items.  The first item (which is obligatory) is the name of the
+channel which has been created.  The second item, if given, is a
+Tcl-callback to be used when the channel is closed, so that the vfs can
+clean up as appropriate.  This callback will be evaluated by Tcl just
+before the channel is closed.  The channel will still exist, and all
+available data will have been flushed into it.  The callback can, for
+example, seek to the beginning of the channel, read its contents and
+store that contents elsewhere (e.g. compressed or on a remote ftp
+site, etc).  The return code or any errors returned by the callback
+are ignored (if the callback wishes to signal an error, it must do so 
+asychronously, with bgerror, for example).
 .TP
 \fIcommand\fR \fIremovedirectory\fR \fIr-r-a\fR
 Delete the given directory.

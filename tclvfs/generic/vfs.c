@@ -101,6 +101,7 @@ static Tcl_FSFilesystemPathTypeProc VfsFilesystemPathType;
 static Tcl_FSFilesystemSeparatorProc VfsFilesystemSeparator;
 static Tcl_FSFreeInternalRepProc VfsFreeInternalRep;
 static Tcl_FSDupInternalRepProc VfsDupInternalRep;
+static Tcl_FSListVolumesProc VfsListVolumes;
 
 static Tcl_Filesystem vfsFilesystem = {
     "tclvfs",
@@ -122,9 +123,9 @@ static Tcl_Filesystem vfsFilesystem = {
     &VfsOpenFileChannel,
     &VfsMatchInDirectory,
     &VfsUtime,
-    /* readlink and listvolumes are not important  */
+    /* link is not important  */
     NULL,
-    NULL,
+    &VfsListVolumes,
     &VfsFileAttrStrings,
     &VfsFileAttrsGet,
     &VfsFileAttrsSet,
@@ -1069,6 +1070,27 @@ VfsUtime(pathPtr, tval)
     Tcl_DecrRefCount(mountCmd);
 
     return returnVal;
+}
+
+Tcl_Obj*
+VfsListVolumes(void)
+{
+    Tcl_Obj *resultPtr;
+    Tcl_SavedResult savedResult;
+    Tcl_Interp* interp;
+    
+    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
+    Tcl_SaveResult(interp, &savedResult);
+
+    /* List all vfs volumes */
+    if (Tcl_GlobalEval(interp, "::vfs::listVolumes") == TCL_OK) {
+	resultPtr = Tcl_DuplicateObj(Tcl_GetObjResult(interp));
+	Tcl_IncrRefCount(resultPtr);
+    } else {
+	resultPtr = NULL;
+    }
+    Tcl_RestoreResult(interp, &savedResult);
+    return resultPtr;
 }
 
 
