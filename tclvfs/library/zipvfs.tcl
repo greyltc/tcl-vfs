@@ -455,11 +455,11 @@ proc zip::getdir {fd path {pat *}} {
     upvar #0 zip::$fd.toc toc
 
     if { $path == "." || $path == "" } {
-	set path $pat
+	set path [string tolower $pat]
     } else {
 	set path [string tolower $path]
 	if {$pat != ""} {
-	    append path /$pat
+	    append path /[string tolower $pat]
 	}
     }
     set depth [llength [file split $path]]

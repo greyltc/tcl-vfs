@@ -1,3 +1,8 @@
+2003-04-29  Vince Darley <vincentdarley@sourceforge.net>
+
+	* library/zipvfs.tcl: patterns in 'glob' should be case-insensitive
+	since everything else is.
+	
 2003-04-04  Andreas Kupries  <andreask@activestate.com>
 
 	* configure.in:
