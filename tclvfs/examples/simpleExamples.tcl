@@ -30,7 +30,8 @@ puts "(file volumes is '[file volumes]')"
 puts "Mounting ftp://ftp.ucsd.edu/pub/alpha/ ..."
 vfs::ftp::Mount ftp://ftp.ucsd.edu/pub/alpha/ localmount
 cd localmount ; cd tcl
-puts "(pwd is now '[pwd]')"
+puts "(pwd is now '[pwd]' which is effectively a transparent link\
+  to a remote ftp site)"
 puts "sourcing remote file 'vfsTest.tcl', using 'source vfsTest.tcl'"
 # This will actually source the contents of a file on the
 # remote ftp site (which is now the 'pwd').

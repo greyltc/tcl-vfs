@@ -13,8 +13,8 @@ is to expose Tcl 8.4's new filesystem C API to the Tcl level.
 Since 8.4 is still in alpha, the APIs on which this extension depends may of
 course change.  If that happens, it will of course require changes to this
 extension, until the point at which 8.4 goes final, when only
-backwards-compatible changes should occur.  Currently it requires the final
-version of Tcl 8.4a4 or newer (from March 8th 2002) --- if it compiles
+backwards-compatible changes should occur.  Currently it requires a
+version of Tcl 8.4a5 or newer (from March 30th 2002) --- if it compiles
 without warning, you should be fine.
 
 Using this extension, the editor Alphatk can actually auto-mount, view and
@@ -32,7 +32,7 @@ that reason, code contributions are very welcome.  Many of them still
 contain various debugging code, etc.  This will be gradually removed and
 the code completely cleaned up and documented as the package evolves.
 
--- Vince Darley, August 1st 2001
+-- Vince Darley, April 2002
 
 Compile/build
 -------------
@@ -52,11 +52,6 @@ Tests and installation
 The tests/vfs*.test files should all pass (provided you have an active
 internet connection).
 
-The 'tests' directory also contains a partially modified version of some of
-Tcl's core tests.  They are modified in that there is a new 'fsIsWritable'
-test constraint, which needs adding to several hundred tests (I've done some
-of that work).
-
 To install, you probably want to rename the directory 'library' to 'vfs1.0'
 and place it in your Tcl hierarchy, with the necessary shared library inside
 (improvements to makefiles to streamline this much appreciated).  On Windows
@@ -66,7 +61,8 @@ Current implementation
 ----------------------
 
 Some of the provided vfs's require the Memchan extension for any operation 
-which involves opening files.
+which involves opening files.  The zip vfs also require 'Trf' (for its
+'zip' command).
 
 The vfs's currently available are:
 
