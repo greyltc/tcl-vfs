@@ -854,12 +854,14 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 /* Handle an error thrown by a tcl vfs implementation */
 static void
 VfsInternalError(Tcl_Interp* interp) {
-    Tcl_MutexLock(&internalErrorMutex);
-    if (internalErrorScript != NULL) {
-        Tcl_EvalObjEx(interp, internalErrorScript, 
-		      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
+    if (interp != NULL) {
+	Tcl_MutexLock(&internalErrorMutex);
+	if (internalErrorScript != NULL) {
+	    Tcl_EvalObjEx(interp, internalErrorScript, 
+			  TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
+	}
+	Tcl_MutexUnlock(&internalErrorMutex);
     }
-    Tcl_MutexUnlock(&internalErrorMutex);
 }
 
 /* Return fully normalized path owned by the caller */
