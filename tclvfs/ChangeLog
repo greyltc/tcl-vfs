@@ -1,12 +1,18 @@
+2004-11-22  Andreas Kupries( <andreask@activestate.com>
+
+	* Makefile.in (PKG_TCL_SOURCES): Added 'tkvfs.tcl' to the list of
+	  installed files. It is listed in the package index, but was not
+	  installed.
+
 2004-09-28  Vince Darley <vincentdarley@sourceforge.net>
 
 	* win/makefile.vc: some cleanup of makefile to allow compilation
-	with more than just VC++ 5.x.
+	  with more than just VC++ 5.x.
 
 2004-09-13  Vince Darley <vincentdarley@sourceforge.net>
 
 	* generic/vfs.c: fix to crash if TclVfsAttr(Set|Get) are called
-	with a NULL interp for error reporting. [Bug 1022202]
+	  with a NULL interp for error reporting. [Bug 1022202]
 
 2004-08-05  Andreas Kupries  <andreask@activestate.com>
 

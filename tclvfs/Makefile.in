@@ -40,7 +40,8 @@ PKG_TCL_SOURCES = @PKG_TCL_SOURCES@ \
 		  ftpvfs.tcl httpvfs.tcl mk4vfs.tcl starkit.tcl \
 		  tarvfs.tcl tclprocvfs.tcl testvfs.tcl \
 		  vfsUrl.tcl vfsUtils.tcl vfslib.tcl \
-		  webdavvfs.tcl zipvfs.tcl tclIndex
+		  webdavvfs.tcl zipvfs.tcl tclIndex \
+		  tkvfs.tcl
 
 #========================================================================
 # This is a list of public header files to be installed, if any.
