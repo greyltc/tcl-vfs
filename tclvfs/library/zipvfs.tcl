@@ -73,7 +73,7 @@ proc vfs::zip::stat {zipfd name} {
 proc vfs::zip::access {zipfd name mode} {
     #::vfs::log "zip-access $name $mode"
     if {$mode & 2} {
-	return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	vfs::filesystem posixerror $::vfs::posix(EROFS)
     }
     # Readable, Exists and Executable are treated as 'exists'
     # Could we get more information from the archive?
@@ -96,7 +96,7 @@ proc vfs::zip::open {zipfd name mode permissions} {
 	"" -
 	"r" {
 	    if {![::zip::exists $zipfd $name]} {
-		return -code error $::vfs::posix(ENOENT)
+		vfs::filesystem posixerror $::vfs::posix(ENOENT)
 	    }
 	    
 	    ::zip::stat $zipfd $name sb
@@ -114,24 +114,24 @@ proc vfs::zip::open {zipfd name mode permissions} {
 	    return [list $nfd]
 	}
 	default {
-	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	    vfs::filesystem posixerror $::vfs::posix(EROFS)
 	}
     }
 }
 
 proc vfs::zip::createdirectory {zipfd name} {
     #::vfs::log "createdirectory $name"
-    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+    vfs::filesystem posixerror $::vfs::posix(EROFS)
 }
 
 proc vfs::zip::removedirectory {zipfd name} {
     #::vfs::log "removedirectory $name"
-    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+    vfs::filesystem posixerror $::vfs::posix(EROFS)
 }
 
 proc vfs::zip::deletefile {zipfd name} {
     #::vfs::log "deletefile $name"
-    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+    vfs::filesystem posixerror $::vfs::posix(EROFS)
 }
 
 proc vfs::zip::fileattributes {zipfd name args} {
@@ -150,13 +150,13 @@ proc vfs::zip::fileattributes {zipfd name args} {
 	    # set value
 	    set index [lindex $args 0]
 	    set val [lindex $args 1]
-	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	    vfs::filesystem posixerror $::vfs::posix(EROFS)
 	}
     }
 }
 
 proc vfs::zip::utime {fd path actime mtime} {
-    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+    vfs::filesystem posixerror $::vfs::posix(EROFS)
 }
 
 # Below copied from TclKit distribution

@@ -120,7 +120,7 @@ namespace eval vfs::mk4 {
     proc access {db name mode} {
 	if {$mode & 2} {
 	    if {$::mk4vfs::v::mode($db) == "readonly"} {
-		return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+		vfs::filesystem posixerror $::vfs::posix(EROFS)
 	    }
 	}
 	# We can probably do this more efficiently, can't we?
@@ -165,7 +165,7 @@ namespace eval vfs::mk4 {
 	    }
 	    a {
 		if {$::mk4vfs::v::mode($db) == "readonly"} {
-		    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+		    vfs::filesystem posixerror $::vfs::posix(EROFS)
 		}
 		if { [catch {::mk4vfs::stat $db $file sb }] } {
 		    # Create file
@@ -204,7 +204,7 @@ namespace eval vfs::mk4 {
 	    }
 	    w*  {
 		if {$::mk4vfs::v::mode($db) == "readonly"} {
-		    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+		    vfs::filesystem posixerror $::vfs::posix(EROFS)
 		}
 		if { [catch {::mk4vfs::stat $db $file sb }] } {
 		    # Create file
@@ -260,7 +260,7 @@ namespace eval vfs::mk4 {
 	    2 {
 		# set value
 		if {$::mk4vfs::mode($db) == "readonly"} {
-		    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+		    vfs::filesystem posixerror $::vfs::posix(EROFS)
 		}
 		set index [lindex $args 0]
 		set val [lindex $args 1]
@@ -496,7 +496,7 @@ namespace eval mk4vfs {
 
     proc mkdir {db path} {
 	if {$v::mode($db) == "readonly"} {
-	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	    vfs::filesystem posixerror $::vfs::posix(EROFS)
 	}
 	set sp [::file split $path]
 	set parent 0
@@ -542,7 +542,7 @@ namespace eval mk4vfs {
 
     proc mtime {db path time} {
 	if {$v::mode($db) == "readonly"} {
-	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	    vfs::filesystem posixerror $::vfs::posix(EROFS)
 	}
 	stat $db $path sb
 	if { $sb(type) == "file" } {
@@ -554,7 +554,7 @@ namespace eval mk4vfs {
     proc delete {db path {recursive 0}} {
 	#puts stderr "mk4delete db $db path $path recursive $recursive"
 	if {$v::mode($db) == "readonly"} {
-	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	    vfs::filesystem posixerror $::vfs::posix(EROFS)
 	}
 	stat $db $path sb
 	if {$sb(type) == "file" } {

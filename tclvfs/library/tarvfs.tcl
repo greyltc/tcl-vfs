@@ -73,7 +73,7 @@ proc vfs::tar::stat {tarfd name} {
 
 proc vfs::tar::access {tarfd name mode} {
     if {$mode & 2} {
-	return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	vfs::filesystem posixerror $::vfs::posix(EROFS)
     }
     # Readable, Exists and Executable are treated as 'exists'
     # Could we get more information from the archive?
@@ -95,7 +95,7 @@ proc vfs::tar::open {tarfd name mode permissions} {
 	"" -
 	"r" {
 	    if {![::tar::exists $tarfd $name]} {
-		return -code error $::vfs::posix(ENOENT)
+		vfs::filesystem posixerror $::vfs::posix(ENOENT)
 	    }
 	    
 	    ::tar::stat $tarfd $name sb
@@ -114,24 +114,24 @@ proc vfs::tar::open {tarfd name mode permissions} {
 	    return [list $nfd]
 	}
 	default {
-	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	    vfs::filesystem posixerror $::vfs::posix(EROFS)
 	}
     }
 }
 
 proc vfs::tar::createdirectory {tarfd name} {
-    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+    vfs::filesystem posixerror $::vfs::posix(EROFS)
     #error "tar-archives are read-only (not implemented)"
 }
 
 proc vfs::tar::removedirectory {tarfd name} {
     #::vfs::log "removedirectory $name"
-    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+    vfs::filesystem posixerror $::vfs::posix(EROFS)
     #error "tar-archives are read-only (not implemented)"
 }
 
 proc vfs::tar::deletefile {tarfd name} {
-    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+    vfs::filesystem posixerror $::vfs::posix(EROFS)
     #error "tar-archives are read-only (not implemented)"
 }
 
@@ -152,14 +152,14 @@ proc vfs::tar::fileattributes {tarfd name args} {
 	    # set value
 	    set index [lindex $args 0]
 	    set val [lindex $args 1]
-	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	    vfs::filesystem posixerror $::vfs::posix(EROFS)
 	}
     }
 }
 
 # set the 'mtime' of a file.
 proc vfs::tar::utime {fd path actime mtime} {
-    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+    vfs::filesystem posixerror $::vfs::posix(EROFS)
 }
 
 #

@@ -13,7 +13,7 @@
  *	one interpreter will be used to add/remove mounts and volumes,
  *	it does cope with multiple interpreters in multiple threads.
  *	
- * Copyright (c) 2001 Vince Darley.
+ * Copyright (c) 2001-2003 Vince Darley.
  * 
  * See the file "license.terms" for information on usage and redistribution
  * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
@@ -31,7 +31,7 @@
 #ifdef BUILD_vfs
 #undef TCL_STORAGE_CLASS
 #define TCL_STORAGE_CLASS DLLEXPORT
-#endif /* BUILD_Vfs */
+#endif /* BUILD_vfs */
 
 /*
  * Only the _Init function is exported.
@@ -707,7 +707,7 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		return TCL_ERROR;
 	    }
 	    Tcl_SetErrno(posixError);
-	    return TCL_OK;
+	    return -1;
 	}
 	case VFS_NORMALIZE: {
 	    Tcl_Obj *path;
@@ -1271,16 +1271,13 @@ VfsOpenFileChannel(cmdInterp, pathPtr, mode, permissions)
     } else {
 	/* Leave an error message if the cmdInterp is non NULL */
 	if (cmdInterp != NULL) {
-	    int posixError = -1;
-	    Tcl_Obj* error = Tcl_GetObjResult(interp);
-	    if (Tcl_GetIntFromObj(NULL, error, &posixError) == TCL_OK) {
-		Tcl_SetErrno(posixError);
+	    if (returnVal == -1) {
 		Tcl_ResetResult(cmdInterp);
 		Tcl_AppendResult(cmdInterp, "couldn't open \"", 
 				 Tcl_GetString(pathPtr), "\": ",
 				 Tcl_PosixError(interp), (char *) NULL);
-				 
 	    } else {
+		Tcl_Obj* error = Tcl_GetObjResult(interp);
 		/* 
 		 * Copy over the error message to cmdInterp,
 		 * duplicating it in case of threading issues.
@@ -1319,7 +1316,8 @@ VfsOpenFileChannel(cmdInterp, pathPtr, mode, permissions)
 	    channelRet->interp = interp;
 	    channelRet->closeCallback = closeCallback;
 	    /* The channelRet structure will be freed in the callback */
-	    Tcl_CreateCloseHandler(chan, &VfsCloseProc, (ClientData)channelRet);
+	    Tcl_CreateCloseHandler(chan, &VfsCloseProc, 
+				   (ClientData)channelRet);
 	}
     }
     return chan;
@@ -1399,7 +1397,8 @@ VfsMatchInDirectory(
     if (pattern == NULL) {
 	Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewObj());
     } else {
-	Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewStringObj(pattern,-1));
+	Tcl_ListObjAppendElement(interp, mountCmd, 
+				 Tcl_NewStringObj(pattern,-1));
     }
     Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewIntObj(type));
     Tcl_SaveResult(interp, &savedResult);
@@ -1427,7 +1426,7 @@ VfsMatchInDirectory(
 
 static int
 VfsDeleteFile(
-    Tcl_Obj *pathPtr)		/* Pathname of file to be removed (UTF-8). */
+    Tcl_Obj *pathPtr)		/* Pathname of file to be removed */
 {
     Tcl_Obj *mountCmd = NULL;
     Tcl_SavedResult savedResult;
@@ -1450,7 +1449,7 @@ VfsDeleteFile(
 
 static int
 VfsCreateDirectory(
-    Tcl_Obj *pathPtr)		/* Pathname of directory to create (UTF-8). */
+    Tcl_Obj *pathPtr)		/* Pathname of directory to create */
 {
     Tcl_Obj *mountCmd = NULL;
     Tcl_SavedResult savedResult;
@@ -1833,7 +1832,8 @@ VfsBuildCommandForPath(Tcl_Interp **iRef, CONST char* cmd, Tcl_Obj *pathPtr) {
     } else {
 	Tcl_ListObjAppendElement(NULL, mountCmd, 
 		Tcl_NewStringObj(normedString,splitPosition));
-	if ((normedString[splitPosition] != VFS_SEPARATOR) || (VFS_SEPARATOR ==':')) {
+	if ((normedString[splitPosition] != VFS_SEPARATOR) 
+	    || (VFS_SEPARATOR ==':')) {
 	    /* This will occur if we mount 'ftp://' */
 	    splitPosition--;
 	}
