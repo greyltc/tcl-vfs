@@ -2,6 +2,9 @@
 	* library/tarvfs.tcl: new 'tar' filesystem courtesy of Stefan
 	Vogel -- many thanks!  The tar vfs is currently read-only and
 	doesn't support .tgz.
+	* library/tclIndex:
+	* library/pkgIndex.tcl:
+	* library/vfsUtils.tcl: updated for new tar vfs.
 	
 2003-01-06  Vince Darley <vincentdarley@sourceforge.net>
 	* library/ftpvfs.tcl: allow 'file mtime' to set the modified
