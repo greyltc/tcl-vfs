@@ -128,6 +128,9 @@ namespace eval vfs::mk4 {
 	set newres [list]
 	if {![string length $pattern]} {
 	    # check single file
+	    if {[catch {access $db $path 0}]} {
+		return {}
+	    }
 	    set res [list $actualpath]
 	    set actualpath ""
 	} else {

@@ -1,3 +1,7 @@
+2003-09-01  Vince Darley <vincentdarley@sourceforge.net>
+
+	* library/mk4vfs.tcl: fix to Bug #796782.
+	
 2003-07-15  Vince Darley <vincentdarley@sourceforge.net>
 
 	* tests/vfsZip.test:
