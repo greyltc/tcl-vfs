@@ -46,9 +46,15 @@ namespace eval vfs::mk4 {
 	}
 	set db [eval [list ::mk4vfs::_mount $mkfile] $args]
 	::vfs::filesystem mount $local [list ::vfs::mk4::handler $db]
-	::vfs::RegisterMount $local [list ::mk4vfs::_umount $db]
+	::vfs::RegisterMount $local [list ::vfs::mk4::Unmount $db]
 	return $db
     }
+
+    proc Unmount {db local} {
+	vfs::filesystem unmount $local
+	::mk4vfs::_umount $db
+    }
+
 
     proc handler {db cmd root relative actualpath args} {
 	#puts stderr "handler: $db - $cmd - $root - $relative - $actualpath - $args"

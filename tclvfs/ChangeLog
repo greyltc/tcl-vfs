@@ -1,3 +1,7 @@
+2003-02-04  Andreas Kupries  <andreask@activestate.com>
+
+	* library/mk4vfs.tcl: Fixed bad vfs::mk4::Mount change.
+
 2003-02-04  Vince Darley <vincentdarley@sourceforge.net>
 
 	* generic/vfs.c: fixed version of VfsFullyNormalizePath,
