@@ -54,12 +54,17 @@ static Tcl_Obj *vfsVolumes = NULL;
  * To fully specify a file, the string representation is also required.
  */
 
+typedef struct vfsInterpCmd {
+    Tcl_Obj *mountCmd;
+    Tcl_Interp *interp;
+} vfsInterpCmd;
+
 typedef struct VfsNativeRep {
     int splitPosition;    /* The index into the string representation
                            * of the file which indicates where the 
                            * vfs filesystem is mounted.
                            */
-    Tcl_Obj* fsCmd;       /* The Tcl command string which should be
+    vfsInterpCmd* fsCmd;  /* The Tcl command string which should be
                            * used to perform all filesystem actions
                            * on this file. */
 } VfsNativeRep;
@@ -164,13 +169,24 @@ static Tcl_Filesystem vfsFilesystem = {
     NULL
 };
 
+typedef struct vfsMount {
+    CONST char* mountPoint;
+    int mountLen;
+    vfsInterpCmd interpCmd;
+    struct vfsMount* nextMount;
+} vfsMount;
+
 /* And some helper procedures */
 
 static VfsNativeRep*     VfsGetNativePath(Tcl_Obj* pathObjPtr);
 static Tcl_CloseProc     VfsCloseProc;
 static void              VfsExitProc(ClientData clientData);
-static Tcl_Obj*          VfsCommand(Tcl_Interp* interp, CONST char* cmd, 
+static Tcl_Obj*          VfsCommand(Tcl_Interp **iRef, CONST char* cmd, 
 				    Tcl_Obj * pathPtr);
+static int addMount(Tcl_Obj* mountPoint, Tcl_Interp *interp, Tcl_Obj* mountCmd);
+static int removeMount(Tcl_Obj* mountPoint, Tcl_Interp* interp);
+static vfsInterpCmd* findMount(CONST char* mountPoint);
+static Tcl_Obj* listMounts(void);
 
 /* 
  * Hard-code platform dependencies.  We do not need to worry 
@@ -183,13 +199,101 @@ static Tcl_Obj*          VfsCommand(Tcl_Interp* interp, CONST char* cmd,
     #define VFS_SEPARATOR '/'
 #endif
 
-/* 
- * This must be declared like this so it is placed in 
- * writable memory, because Tcl wants to trample
- * over it when it tries to parse things.  In the future
- * we won't rely upon Tcl to do this for us.
- */
-static char mountVar[] = "vfs::mount";
+static vfsMount* listOfMounts = NULL;
+
+int addMount(Tcl_Obj* mountPoint, Tcl_Interp* interp, Tcl_Obj* mountCmd) {
+    char *strRep;
+    int len;
+    vfsMount *newMount = (vfsMount*) ckalloc(sizeof(vfsMount));
+    
+    if (newMount == NULL) {
+        return TCL_ERROR;
+    }
+    strRep = Tcl_GetStringFromObj(mountPoint, &len);
+    newMount->mountPoint = (char*) ckalloc(1+len);
+    newMount->mountLen = len;
+    
+    if (newMount->mountPoint == NULL) {
+        ckfree((char*)newMount);
+	return TCL_ERROR;
+    }
+    
+    strcpy((char*)newMount->mountPoint, strRep);
+    newMount->interpCmd.mountCmd = mountCmd;
+    newMount->interpCmd.interp = interp;
+    Tcl_IncrRefCount(mountCmd);
+    
+    newMount->nextMount = listOfMounts;
+    listOfMounts = newMount;
+    return TCL_OK;
+}
+
+int removeMount(Tcl_Obj* mountPoint, Tcl_Interp *interp) {
+    char *strRep;
+    int len;
+    vfsMount *mountIter;
+    /* Set to NULL just to avoid warnings */
+    vfsMount *lastMount = NULL;
+    
+    strRep = Tcl_GetStringFromObj(mountPoint, &len);
+    
+    mountIter = listOfMounts;
+    
+    while (mountIter != NULL) {
+        if (mountIter->mountLen == len && 
+	  !strcmp(mountIter->mountPoint, strRep) &&
+	  (interp == mountIter->interpCmd.interp)) {
+	    /* We've found the mount. */
+	    if (mountIter == listOfMounts) {
+		listOfMounts = mountIter->nextMount;
+	    } else {
+		lastMount->nextMount = mountIter->nextMount;
+	    }
+	    /* Free the allocated memory */
+	    ckfree((char*)mountIter->mountPoint);
+	    Tcl_DecrRefCount(mountIter->interpCmd.mountCmd);
+	    ckfree((char*)mountIter);
+	    return TCL_OK;
+        }
+	lastMount = mountIter;
+	mountIter = mountIter->nextMount;
+    }
+    return TCL_ERROR;
+}
+
+vfsInterpCmd* findMount(CONST char* mountPoint) {
+    vfsMount *mountIter = listOfMounts;
+    int len;
+    
+    if (mountPoint == NULL) {
+        return NULL;
+    }
+    
+    len = strlen(mountPoint);
+
+    while (mountIter != NULL) {
+	if (mountIter->mountLen == len && 
+	  !strcmp(mountIter->mountPoint, mountPoint)) {
+	    return &mountIter->interpCmd;
+	}
+	mountIter = mountIter->nextMount;
+    }
+    return NULL;
+}
+
+Tcl_Obj* listMounts(void) {
+    vfsMount *mountIter = listOfMounts;
+    Tcl_Obj *res = Tcl_NewObj();
+
+    /* Build list of mounts */
+    while (mountIter != NULL) {
+	Tcl_Obj* mount = Tcl_NewStringObj(mountIter->mountPoint, 
+					  mountIter->mountLen);
+	Tcl_ListObjAppendElement(NULL, res, mount);
+	mountIter = mountIter->nextMount;
+    }
+    return res;
+}
 
 
 /*
@@ -231,7 +335,7 @@ Vfs_Init(interp)
     Tcl_CreateObjCommand(interp, "vfs::filesystem", VfsFilesystemObjCmd, 
 	    (ClientData) 0, (Tcl_CmdDeleteProc *) NULL);
     /* Register our filesystem */
-    Tcl_FSRegister((ClientData)interp, &vfsFilesystem);
+    Tcl_FSRegister((ClientData)NULL, &vfsFilesystem);
     Tcl_CreateExitHandler(VfsExitProc, (ClientData)NULL);
 
     return TCL_OK;
@@ -285,14 +389,8 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 	case VFS_MOUNT: {
 	    Tcl_Obj * path;
 	    int i;
-	    Tcl_Interp* vfsInterp;
 	    if (objc < 4 || objc > 5) {
 		Tcl_WrongNumArgs(interp, 1, objv, "mount ?-volume? path cmd");
-		return TCL_ERROR;
-	    }
-	    vfsInterp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-	    if (vfsInterp == NULL) {
-		Tcl_SetResult(interp, "vfs not registered", TCL_STATIC);
 		return TCL_ERROR;
 	    }
 	    if (objc == 5) {
@@ -309,57 +407,38 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		i = 2;
 	    }
 	    path = Tcl_FSGetNormalizedPath(interp, objv[i]);
-	    if (Tcl_SetVar2Ex(vfsInterp, mountVar, 
-			      Tcl_GetString(path), objv[i+1], 
-			      TCL_LEAVE_ERR_MSG | TCL_GLOBAL_ONLY) == NULL) {
+	    if (addMount(path, interp, objv[i+1]) == TCL_ERROR) {
 		return TCL_ERROR;
 	    }
 	    Tcl_FSMountsChanged(&vfsFilesystem);
+	    return TCL_OK;
 	    break;
 	}
 	case VFS_INFO: {
-	    Tcl_Obj * path;
-	    Tcl_Interp* vfsInterp;
-	    Tcl_Obj * val;
 	    if (objc > 3) {
 		Tcl_WrongNumArgs(interp, 2, objv, "path");
 		return TCL_ERROR;
 	    }
-	    vfsInterp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-	    if (vfsInterp == NULL) {
-		Tcl_SetResult(interp, "vfs not registered", TCL_STATIC);
-		return TCL_ERROR;
-	    }
 	    if (objc == 2) {
-		/* 
-		 * List all vfs paths.  Put the command in a char
-		 * array so we know it is in writable memory.
-		 */
-		char listCmd[] = "array names ::vfs::mount";
-		Tcl_GlobalEval(interp, listCmd);
+		Tcl_SetObjResult(interp, listMounts());
 	    } else {
+		Tcl_Obj * path;
+		vfsInterpCmd *val;
+		
 		path = Tcl_FSGetNormalizedPath(interp, objv[2]);
-		val = Tcl_GetVar2Ex(vfsInterp, mountVar, Tcl_GetString(path),
-				    TCL_LEAVE_ERR_MSG | TCL_GLOBAL_ONLY);
-				  
+		val = findMount(Tcl_GetString(path));
 		if (val == NULL) {
 		    return TCL_ERROR;
 		}
-		Tcl_SetObjResult(interp, val);
+		Tcl_SetObjResult(interp, val->mountCmd);
 	    }
 	    break;
 	}
 	case VFS_UNMOUNT: {
 	    Tcl_Obj * path;
-	    Tcl_Interp* vfsInterp;
 	    int res, i;
 	    if (objc < 3 || objc > 4) {
 		Tcl_WrongNumArgs(interp, 2, objv, "?-volume? path");
-		return TCL_ERROR;
-	    }
-	    vfsInterp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-	    if (vfsInterp == NULL) {
-		Tcl_SetResult(interp, "vfs not registered", TCL_STATIC);
 		return TCL_ERROR;
 	    }
 	    if (objc == 4) {
@@ -375,8 +454,8 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		i = 2;
 	    }
 	    path = Tcl_FSGetNormalizedPath(interp, objv[i]);
-	    res = Tcl_UnsetVar2(vfsInterp, mountVar, Tcl_GetString(path), 
-				TCL_LEAVE_ERR_MSG | TCL_GLOBAL_ONLY);
+	    res = removeMount(path, interp);
+
 	    if (res == TCL_OK) {
 		if (i == 3) {
 		    Vfs_RemoveVolume(objv[i]);
@@ -396,9 +475,8 @@ VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
     /* Just set this to avoid a warning */
     char remember = '\0';
     char *normed;
-    Tcl_Interp* interp;
     VfsNativeRep *nativeRep;
-    Tcl_Obj* mountCmd = NULL;
+    vfsInterpCmd *interpCmd = NULL;
     
     if (TclInExit()) {
 	/* 
@@ -410,13 +488,7 @@ VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
 	return -1;
     }
 
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    if (interp == NULL) {
-	/* This is bad, but not much we can do about it */
-	return -1;
-    }
-
-    normedObj = Tcl_FSGetNormalizedPath(interp, pathPtr);
+    normedObj = Tcl_FSGetNormalizedPath(NULL, pathPtr);
     if (normedObj == NULL) {
         return -1;
     }
@@ -429,11 +501,10 @@ VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
      * we have to use a unique normalised path for the
      * checks here.
      */
-    while (mountCmd == NULL) {
-	mountCmd = Tcl_GetVar2Ex(interp, mountVar, normed,
-				 TCL_GLOBAL_ONLY);
-				 
-	if (mountCmd != NULL) break;
+    while (interpCmd == NULL) {
+	interpCmd = findMount(normed);
+	if (interpCmd != NULL) break;
+
 	if (splitPosition != len) {
 	    normed[splitPosition] = VFS_SEPARATOR;
 	}
@@ -449,10 +520,9 @@ VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
 	if ((splitPosition > 0) && (splitPosition != len)) {
 	    remember = normed[splitPosition + 1];
 	    normed[splitPosition+1] = '\0';
-	    mountCmd = Tcl_GetVar2Ex(interp, mountVar, normed,
-				     TCL_GLOBAL_ONLY);
+	    interpCmd = findMount(normed);
 				     
-	    if (mountCmd != NULL) {
+	    if (interpCmd != NULL) {
 		splitPosition++;
 		break;
 	    }
@@ -473,7 +543,7 @@ VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
      * Now either splitPosition is zero, or we found a mount point.
      * Test for both possibilities, just to be sure.
      */
-    if ((splitPosition == 0) || (mountCmd == NULL)) {
+    if ((splitPosition == 0) || (interpCmd == NULL)) {
 	return -1;
     }
     if (splitPosition != len) {
@@ -481,8 +551,8 @@ VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
     }
     nativeRep = (VfsNativeRep*) ckalloc(sizeof(VfsNativeRep));
     nativeRep->splitPosition = splitPosition;
-    nativeRep->fsCmd = mountCmd;
-    Tcl_IncrRefCount(nativeRep->fsCmd);
+    nativeRep->fsCmd = interpCmd;
+    Tcl_IncrRefCount(interpCmd->mountCmd);
     *clientDataPtr = (ClientData)nativeRep;
     return TCL_OK;
 }
@@ -501,7 +571,7 @@ VfsFreeInternalRep(ClientData clientData) {
     VfsNativeRep *nativeRep = (VfsNativeRep*)clientData;
     if (nativeRep != NULL) {
 	/* Free the command to use on this mount point */
-	Tcl_DecrRefCount(nativeRep->fsCmd);
+	Tcl_DecrRefCount(nativeRep->fsCmd->mountCmd);
 	/* Free the native memory allocation */
 	ckfree((char*)nativeRep);
     }
@@ -514,7 +584,7 @@ VfsDupInternalRep(ClientData clientData) {
     VfsNativeRep *nativeRep = (VfsNativeRep*) ckalloc(sizeof(VfsNativeRep));
     nativeRep->splitPosition = original->splitPosition;
     nativeRep->fsCmd = original->fsCmd;
-    Tcl_IncrRefCount(nativeRep->fsCmd);
+    Tcl_IncrRefCount(nativeRep->fsCmd->mountCmd);
     
     return (ClientData)nativeRep;
 }
@@ -525,7 +595,7 @@ VfsFilesystemPathType(Tcl_Obj *pathPtr) {
     if (nativeRep == NULL) {
 	return NULL;
     } else {
-	return nativeRep->fsCmd;
+	return nativeRep->fsCmd->mountCmd;
     }
 }
 
@@ -544,8 +614,7 @@ VfsStat(pathPtr, bufPtr)
     int returnVal;
     Tcl_Interp* interp;
     
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    mountCmd = VfsCommand(interp, "stat", pathPtr);
+    mountCmd = VfsCommand(&interp, "stat", pathPtr);
     if (mountCmd == NULL) {
 	return -1;
     }
@@ -686,8 +755,7 @@ VfsAccess(pathPtr, mode)
     int returnVal;
     Tcl_Interp* interp;
     
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    mountCmd = VfsCommand(interp, "access", pathPtr);
+    mountCmd = VfsCommand(&interp, "access", pathPtr);
     if (mountCmd == NULL) {
 	return -1;
     }
@@ -726,8 +794,7 @@ VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
     int returnVal;
     Tcl_Interp* interp;
     
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    mountCmd = VfsCommand(interp, "open", pathPtr);
+    mountCmd = VfsCommand(&interp, "open", pathPtr);
     if (mountCmd == NULL) {
 	return NULL;
     }
@@ -885,8 +952,7 @@ VfsMatchInDirectory(
     int type = 0;
     Tcl_Obj *vfsResultPtr = NULL;
     
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    mountCmd = VfsCommand(interp, "matchindirectory", dirPtr);
+    mountCmd = VfsCommand(&interp, "matchindirectory", dirPtr);
     if (mountCmd == NULL) {
 	return -1;
     }
@@ -929,8 +995,7 @@ VfsDeleteFile(
     int returnVal;
     Tcl_Interp* interp;
     
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    mountCmd = VfsCommand(interp, "deletefile", pathPtr);
+    mountCmd = VfsCommand(&interp, "deletefile", pathPtr);
     if (mountCmd == NULL) {
 	return -1;
     }
@@ -953,8 +1018,7 @@ VfsCreateDirectory(
     int returnVal;
     Tcl_Interp* interp;
     
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    mountCmd = VfsCommand(interp, "createdirectory", pathPtr);
+    mountCmd = VfsCommand(&interp, "createdirectory", pathPtr);
     if (mountCmd == NULL) {
 	return -1;
     }
@@ -983,8 +1047,7 @@ VfsRemoveDirectory(
     int returnVal;
     Tcl_Interp* interp;
     
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    mountCmd = VfsCommand(interp, "removedirectory", pathPtr);
+    mountCmd = VfsCommand(&interp, "removedirectory", pathPtr);
     if (mountCmd == NULL) {
 	return -1;
     }
@@ -1018,8 +1081,7 @@ VfsFileAttrStrings(pathPtr, objPtrRef)
     int returnVal;
     Tcl_Interp* interp;
     
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    mountCmd = VfsCommand(interp, "fileattributes", pathPtr);
+    mountCmd = VfsCommand(&interp, "fileattributes", pathPtr);
     if (mountCmd == NULL) {
 	*objPtrRef = NULL;
 	return NULL;
@@ -1051,8 +1113,7 @@ VfsFileAttrsGet(cmdInterp, index, pathPtr, objPtrRef)
     int returnVal;
     Tcl_Interp* interp;
     
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    mountCmd = VfsCommand(interp, "fileattributes", pathPtr);
+    mountCmd = VfsCommand(&interp, "fileattributes", pathPtr);
     if (mountCmd == NULL) {
 	return -1;
     }
@@ -1097,8 +1158,7 @@ VfsFileAttrsSet(cmdInterp, index, pathPtr, objPtr)
     Tcl_Interp* interp;
     Tcl_Obj *errorPtr = NULL;
     
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    mountCmd = VfsCommand(interp, "fileattributes", pathPtr);
+    mountCmd = VfsCommand(&interp, "fileattributes", pathPtr);
     if (mountCmd == NULL) {
 	return -1;
     }
@@ -1137,8 +1197,7 @@ VfsUtime(pathPtr, tval)
     int returnVal;
     Tcl_Interp* interp;
     
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    mountCmd = VfsCommand(interp, "utime", pathPtr);
+    mountCmd = VfsCommand(&interp, "utime", pathPtr);
     if (mountCmd == NULL) {
 	return -1;
     }
@@ -1228,13 +1287,15 @@ Vfs_RemoveVolume(volume)
  */
 
 static Tcl_Obj* 
-VfsCommand(Tcl_Interp* interp, CONST char* cmd, Tcl_Obj * pathPtr) {
+VfsCommand(Tcl_Interp **iRef, CONST char* cmd, Tcl_Obj *pathPtr) {
     Tcl_Obj *normed;
     Tcl_Obj *mountCmd;
     int len;
     int splitPosition;
     int dummyLen;
     VfsNativeRep *nativeRep;
+    Tcl_Interp *interp;
+    
     char *normedString;
 
     nativeRep = VfsGetNativePath(pathPtr);
@@ -1242,33 +1303,43 @@ VfsCommand(Tcl_Interp* interp, CONST char* cmd, Tcl_Obj * pathPtr) {
 	return NULL;
     }
     
+    interp = nativeRep->fsCmd->interp;
+    
+    if (Tcl_InterpDeleted(interp)) {
+        return NULL;
+    }
+    
     splitPosition = nativeRep->splitPosition;
-    normed = Tcl_FSGetNormalizedPath(interp, pathPtr);
+    normed = Tcl_FSGetNormalizedPath(NULL, pathPtr);
     normedString = Tcl_GetStringFromObj(normed, &len);
     
-    mountCmd = Tcl_DuplicateObj(nativeRep->fsCmd);
+    mountCmd = Tcl_DuplicateObj(nativeRep->fsCmd->mountCmd);
     Tcl_IncrRefCount(mountCmd);
-    if (Tcl_ListObjLength(interp, mountCmd, &dummyLen) == TCL_ERROR) {
+    if (Tcl_ListObjLength(NULL, mountCmd, &dummyLen) == TCL_ERROR) {
 	Tcl_DecrRefCount(mountCmd);
 	return NULL;
     }
-    Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewStringObj(cmd,-1));
+    Tcl_ListObjAppendElement(NULL, mountCmd, Tcl_NewStringObj(cmd,-1));
     if (splitPosition == len) {
-	Tcl_ListObjAppendElement(interp, mountCmd, normed);
-	Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewStringObj("",0));
+	Tcl_ListObjAppendElement(NULL, mountCmd, normed);
+	Tcl_ListObjAppendElement(NULL, mountCmd, Tcl_NewStringObj("",0));
     } else {
-	Tcl_ListObjAppendElement(interp, mountCmd, 
+	Tcl_ListObjAppendElement(NULL, mountCmd, 
 		Tcl_NewStringObj(normedString,splitPosition));
 	if (normedString[splitPosition] != VFS_SEPARATOR) {
 	    /* This will occur if we mount 'ftp://' */
 	    splitPosition--;
 	}
-	Tcl_ListObjAppendElement(interp, mountCmd, 
+	Tcl_ListObjAppendElement(NULL, mountCmd, 
 		Tcl_NewStringObj(normedString+splitPosition+1,
 				 len-splitPosition-1));
     }
-    Tcl_ListObjAppendElement(interp, mountCmd, pathPtr);
+    Tcl_ListObjAppendElement(NULL, mountCmd, pathPtr);
 
+    if (iRef != NULL) {
+        *iRef = interp;
+    }
+    
     return mountCmd;
 }
 
