@@ -19,12 +19,12 @@ package require vfs
 
 test vfs-1.1 {mount unmount} {
     vfs::filesystem mount foo bar
-    set res [list [catch {vfs::filesystem unmount foo bar blah} err]]
+    set res [list [catch {vfs::filesystem unmount foo bar} err]]
     lappend res $err
     vfs::filesystem unmount foo
     unset err
     set res
-} {1 {wrong # args: should be "vfs::filesystem unmount ?-volume? path"}}
+} {1 {wrong # args: should be "vfs::filesystem unmount path"}}
 
 # cleanup
 ::tcltest::cleanupTests

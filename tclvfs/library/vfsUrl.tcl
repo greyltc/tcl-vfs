@@ -24,7 +24,7 @@ proc vfs::urltype::Mount {type} {
 
 proc vfs::urltype::Unmount {type} {
     set mountPoint [_typeToMount $type]
-    ::vfs::filesystem unmount -volume $mountPoint
+    ::vfs::filesystem unmount $mountPoint
 }
 
 proc vfs::urltype::_typeToMount {type} {

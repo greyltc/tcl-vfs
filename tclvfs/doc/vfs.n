@@ -62,13 +62,14 @@ declaring to the vfs package that any subdirectories of a given
 \fIpath\fR in the filesystem should be handled by the given \fIcommand\fR
 which should be a Tcl command or procedure.  If the \fI?-volume?\fR
 flag is given, the given mount point is also registered with Tcl as
-a new volume (like a new drive).
+a new volume (like a new drive).  This is useful (and required for
+reasonable operation) for mounts like \fIftp://\fR.  For paths mounted
+inside the native filesystem, it should of course not be given.
 .TP
-\fBvfs::filesystem\fR \fIunmount\fR \fI?-volume?\fR \fIpath\fR 
+\fBvfs::filesystem\fR \fIunmount\fR \fIpath\fR 
 This unmounts the virtual filesystem which was mounted at \fIpath\fR
 hence removing it from Tcl's filesystem, or throws an error if no
-filesystem was mounted there.  The \fI?-volume?\fR flag should be
-given if it was also given when the path was mounted.
+filesystem was mounted there.
 .TP
 \fBvfs::filesystem\fR \fIinfo\fR \fI?path?\fR
 If no arguments are given, this returns a list of all filesystems
