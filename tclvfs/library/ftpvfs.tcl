@@ -289,6 +289,9 @@ proc vfs::ftp::fileattributes {fd path args} {
 }
 
 proc vfs::ftp::utime {fd path actime mtime} {
-    error "Can't set utime"
+    # Will throw an error if ftp package is old and only
+    # handles 2 arguments.  But that is ok -- Tcl will give the
+    # user an appropriate error message.
+    ftp::ModTime $fd $path $mtime
 }
 
