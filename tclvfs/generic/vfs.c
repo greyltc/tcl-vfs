@@ -13,16 +13,15 @@
  *	one interpreter will be used to add/remove mounts and volumes,
  *	it does cope with multiple interpreters in multiple threads.
  *	
- * Copyright (c) 2001-2003 Vince Darley.
+ * Copyright (c) 2001-2004 Vince Darley.
  * 
  * See the file "license.terms" for information on usage and redistribution
  * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
 #include <tcl.h>
-/* Required to access the 'stat' structure fields */
+/* Required to access the 'stat' structure fields, and TclInExit() */
 #include "tclInt.h"
-#include "tclPort.h"
 
 /*
  * Windows needs to know which symbols to export.  Unix does not.
