@@ -15,11 +15,7 @@ if {[lsearch [namespace children] ::tcltest] == -1} {
     namespace import ::tcltest::*
 }
 
-package require vfs
-if {![auto_load ::vfs::ftp::Mount]} {
-    lappend auto_path [file join [file dirname \
-      [file dirname [file normalize [info script]]]] library]
-}
+package require vfs::ftp
 
 puts stdout "These tests require an internet connection, and might"
 puts stdout "take a long time to complete."

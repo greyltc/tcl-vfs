@@ -15,4 +15,5 @@ if {[lsearch [namespace children] ::tcltest] == -1} {
     namespace import ::tcltest::*
 }
 
+package require vfs::zip
 

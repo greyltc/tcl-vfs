@@ -28,7 +28,7 @@ proc makeAndMountZipArchive {} {
     puts stdout "Done zipping"
     cd [file dirname [info script]]
     
-    package require vfs
+    package require vfs::zip
     set mount [vfs::zip::Mount tests.zip tests.zip]
     cd tests.zip
     return [list vfs::zip::Unmount $mount tests.zip]
@@ -42,7 +42,7 @@ proc makeAndMountMk4Archive {} {
     puts stdout "Done making mk4 archive"
     cd [file dirname [info script]]
     
-    package require vfs
+    package require vfs::mk4
     set mount [vfs::mk4::Mount tests.bin tests.bin]
     cd tests.bin
     return [list vfs::mk4::Unmount $mount tests.bin]

@@ -156,6 +156,9 @@ DLLOBJS = \
 
 all: setup $(PROJECT).dll
 
+test:
+	tclsh84 $(ROOT)/tests/all.tcl $(TESTFLAGS)
+
 setup:
 	-@md $(WINDIR)
 

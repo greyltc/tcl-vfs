@@ -18,7 +18,11 @@ namespace eval ::vfs {}
 variable vfs::dll
 
 if {$::tcl_platform(platform) eq "unix"} {
-    set dll libvfs1.0
+    if {[info exists ::tcl_platform(debug)]} {
+	set dll libvfs1.0g
+    } else {
+	set dll libvfs1.0
+    }
 } elseif {[info exists ::tcl_platform(debug)]} {
     set dll vfs10d
 } else {
