@@ -1,3 +1,9 @@
+2003-03-11  Andreas Kupries  <andreask@activestate.com>
+
+	* doc/vfs.man:             Added doctools documentation derived
+	* doc/vfs-fsapi.man:       from the original nroff-based
+	* doc/vfs-filesystems.man: manpages. Approved by Vincent.
+
 2003-03-11  Vince Darley <vincentdarley@sourceforge.net>
 
 	* library/pkgIndex.tcl:
