@@ -1,5 +1,8 @@
+2002-04-08  Daniel Steffen  <das@users.sourceforge.net>
+	* mac/pkgIndex_mac.tcl: synced to generic/pkgIndex.tcl
+
 2002-04-01  Vince Darley <vincentdarley@sourceforge.net>
-        * Makefile.in: compilation fix from jcw.
+	* Makefile.in: compilation fix from jcw.
 	
 2002-03-16  Vince Darley <vincentdarley@sourceforge.net>
 	* generic/vfs.c: updated for latest cvs head of Tcl 8.4a5.
