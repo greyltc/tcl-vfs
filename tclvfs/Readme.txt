@@ -72,9 +72,16 @@ vfs     |  example mount command
 zip     |  vfs::zip::Mount my.zip local
 ftp     |  vfs::ftp::Mount ftp://user:pass@ftp.foo.com/dir/name/ local
 mk4     |  vfs::mk4::Mount myMk4database local
-test    |  vfs::test::Mount ...
-ns      |  vfs::ns::Mount ::tcl local
 urltype |  vfs::urltype::Mount ftp
+test    |  vfs::test::Mount ...
+--------+-----------------------------------------------------------------
+
+These are also available, but not so heavily debugged:
+
+--------+-----------------------------------------------------------------
+ns      |  vfs::ns::Mount ::tcl local
+webdav  |  vfs::webdav::Mount http://user:pass@foo.com/blah local
+http    |  vfs::http::Mount http://foo.com/blah local
 --------+-----------------------------------------------------------------
 
 For file-systems which make use of a local file (e.g. mounting zip or mk4
