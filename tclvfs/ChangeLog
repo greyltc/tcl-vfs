@@ -1,3 +1,7 @@
+2003-02-24  Jean-Claude Wippler  <jcw@equi4.com>
+
+	* starkit.tcl: more contexts, panic ok if "." already gone
+
 2003-02-23  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* configure: regen
