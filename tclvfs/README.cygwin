@@ -4,8 +4,7 @@ with it.  No-one seems to take any interest in fixing the millions
 of problems with TEA.
 
 There is a good old VC++ makefile in the 'win' directory, which seems to
-work (I actually have to run it twice, but at least I get a .dll, which is 
-more than TEA provides).
+work.
 
 ----------------------
 
