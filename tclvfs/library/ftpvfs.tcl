@@ -199,23 +199,42 @@ proc vfs::ftp::_parseListLine {line} {
 
 proc vfs::ftp::matchindirectory {fd path actualpath pattern type} {
     ::vfs::log "matchindirectory $path $pattern $type"
-    set ftpList [ftp::List $fd $path]
-    ::vfs::log "ftpList: $ftpList"
     set res [list]
-
-    foreach p $ftpList {
-	foreach {name perms} [_parseListLine $p] {}
-	if {[::vfs::matchDirectories $type]} {
+    if {![string length $pattern]} {
+	# matching a single file
+	set ftpInfo [_findFtpInfo $fd $path]
+	if {$ftpInfo != ""} {
+	    # Now check if types match
+	    set perms [lindex $ftpInfo 0]
 	    if {[string index $perms 0] == "d"} {
-		lappend res "$actualpath$name"
+		if {[::vfs::matchDirectories $type]} {
+		    lappend res $actualpath
+		}
+	    } else {
+		if {[::vfs::matchFiles $type]} {
+		    lappend res $actualpath
+		}
 	    }
 	}
-	if {[::vfs::matchFiles $type]} {
-	    if {[string index $perms 0] != "d"} {
-		lappend res "$actualpath$name"
+    } else {
+	# matching all files in the given directory
+	set ftpList [ftp::List $fd $path]
+	::vfs::log "ftpList: $ftpList"
+
+	foreach p $ftpList {
+	    foreach {name perms} [_parseListLine $p] {}
+	    if {[::vfs::matchDirectories $type]} {
+		if {[string index $perms 0] == "d"} {
+		    lappend res "$actualpath$name"
+		}
 	    }
+	    if {[::vfs::matchFiles $type]} {
+		if {[string index $perms 0] != "d"} {
+		    lappend res "$actualpath$name"
+		}
+	    }
+	    
 	}
-	
     }
  
     return $res

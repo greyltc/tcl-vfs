@@ -146,9 +146,14 @@ proc vfs::mk4::utime {db path actime modtime} {
 
 proc vfs::mk4::matchindirectory {db path actualpath pattern type} {
     #::vfs::log [list matchindirectory $path $actualpath $pattern $type]
-    set res [::mk4vfs::getdir $db $path $pattern]
-    #::vfs::log "got $res"
     set newres [list]
+    if {![string length $pattern]} {
+	# check single file
+	set res [list $path]
+    } else {
+	set res [::mk4vfs::getdir $db $path $pattern]
+    }
+    #::vfs::log "got $res"
     foreach p [::vfs::matchCorrectTypes $type $res $actualpath] {
 	lappend newres "$actualpath$p"
     }

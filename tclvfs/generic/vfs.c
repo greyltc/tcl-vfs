@@ -6,6 +6,9 @@
  *	virtual file system support, and therefore allows 
  *	vfs's to be implemented in Tcl.
  *	
+ *	Some of this file could be used as a basis for a hard-coded
+ *	vfs implemented in C (e.g. a zipvfs).
+ *	
  *	The code is thread-safe.  Although under normal use only
  *	one interpreter will be used to add/remove mounts and volumes,
  *	it does cope with multiple interpreters in multiple threads.
@@ -921,7 +924,7 @@ VfsFilesystemSeparator(Tcl_Obj* pathObjPtr) {
 static int
 VfsStat(pathPtr, bufPtr)
     Tcl_Obj *pathPtr;		/* Path of file to stat (in current CP). */
-    struct stat *bufPtr;	/* Filled with results of stat call. */
+    Tcl_StatBuf *bufPtr;	/* Filled with results of stat call. */
 {
     Tcl_Obj *mountCmd = NULL;
     Tcl_SavedResult savedResult;
@@ -1001,8 +1004,8 @@ VfsStat(pathPtr, bufPtr)
 		    }
 		    bufPtr->st_gid = (short)v;
 		} else if (!strcmp(fieldName,"size")) {
-		    long v;
-		    if (Tcl_GetLongFromObj(interp, val, &v) != TCL_OK) {
+		    Tcl_WideInt v;
+		    if (Tcl_GetWideIntFromObj(interp, val, &v) != TCL_OK) {
 			returnVal = TCL_ERROR;
 			break;
 		    }
