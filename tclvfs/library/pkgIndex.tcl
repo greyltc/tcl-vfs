@@ -20,11 +20,15 @@ if {[info tclversion] == 8.4} {
     }
 }
 
-if {[info exists tcl_platform(debug)]} {
-    set file [file join $dir vfs10d[info sharedlibextension]]
+if {$tcl_platform(platform) eq "unix"} {
+    set file libvfs1.0
+} elseif {[info exists tcl_platform(debug)]} {
+    set file vfs10d
 } else {
-    set file [file join $dir vfs10[info sharedlibextension]]
+    set file vfs10
 }
+
+set file [file join $dir $file[info sharedlibextension]]
 
 # Don't do anything if our shared lib doesn't exist.  This should
 # help stop a crash on pre-release MacOS X.
@@ -46,3 +50,5 @@ package ifneeded vfs 1.0 [list loadvfs $file]
 unset file
 
 package ifneeded mk4vfs 1.5 [list source [file join $dir mk4vfs.tcl]]
+package ifneeded starkit 1.0 [list source [file join $dir starkit.tcl]]
+package ifneeded vfslib 1.3 [list source [file join $dir vfslib.tcl]]
