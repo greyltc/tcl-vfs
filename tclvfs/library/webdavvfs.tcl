@@ -41,7 +41,7 @@ proc vfs::webdav::Mount {dirurl local} {
     
     set dirurl "http://$host/$path"
     
-    set extraHeadersList [list Authorization {Basic [base64::encode ${user}:${pass}]}]
+    set extraHeadersList [list Authorization [list Basic [base64::encode ${user}:${pass}]]]
 
     set token [::http::geturl $dirurl -headers $extraHeadersList -validate 1]
     http::cleanup $token
@@ -63,6 +63,7 @@ proc vfs::webdav::Unmount {dirurl local} {
 }
 
 proc vfs::webdav::handler {dirurl extraHeadersList path cmd root relative actualpath args} {
+    ::vfs::log "handler $dirurl $path $cmd"
     if {$cmd == "matchindirectory"} {
 	eval [list $cmd $dirurl $extraHeadersList $relative $actualpath] $args
     } else {
@@ -89,11 +90,12 @@ proc vfs::webdav::stat {dirurl extraHeadersList name} {
     # request with depth 0, I believe.  I don't think Tcl's http
     # package supports that.
     set token [::http::geturl $dirurl$name -method PROPFIND \
-      -headers [concat $extraHeadersList [list depth 0]]
+      -headers [concat $extraHeadersList [list Depth 0]] -protocol 1.1]
     upvar #0 $token state
 
-    if {![regexp " OK$" $state(http)]} {
+    if {![regexp " (OK|Multi\\-Status)$" $state(http)]} {
 	::vfs::log "No good: $state(http)"
+	#parray state
 	::http::cleanup $token
 	error "Not found"
     }
@@ -168,42 +170,57 @@ proc vfs::webdav::open {dirurl extraHeadersList name mode permissions} {
 }
 
 proc vfs::webdav::matchindirectory {dirurl extraHeadersList path actualpath pattern type} {
-    ::vfs::log "matchindirectory $dirurl $path $pattern $type"
+    ::vfs::log "matchindirectory $dirurl $path $actualpath $pattern $type"
     set res [list]
 
     if {[string length $pattern]} {
 	# need to match all files in a given remote http site.
 	set token [::http::geturl $dirurl$path -method PROPFIND \
-	  -headers [concat $extraHeadersList [list depth 1]]]
+	  -headers [concat $extraHeadersList [list Depth 1]]]
 	upvar #0 $token state
 	#parray state
 
 	set body [::http::data $token]
 	::http::cleanup $token
-	::vfs::log $body
+	#::vfs::log $body
 	while {1} {
-	    if {![regexp "(<D:response.*</D:response>)(.*)" $body -> item body]} {
-		# No more files
-		break
-	    }
+	    set start [string first "<D:response" $body]
+	    set end [string first "</D:response" $body]
+	    if {$start == -1 || $end == -1} { break }
+	    set item [string range $body $start $end]
+	    set body [string range $body [expr {$end + 12}] end]
 	    if {![regexp "<D:href>(.*)</D:href>" $item -> name]} {
 		continue
 	    }
 	    # Get tail of name (don't use 'file tail' since it isn't a file).
-	    regexp {[^/]+$} $name name
-	    
+	    puts "checking: $name"
+	    regexp {[^/]+/?$} $name name
+	    if {$name == ""} { continue }
 	    if {[string match $pattern $name]} {
-		eval lappend res [_matchtypes $item $actualpath $type]
+		puts "check: $name"
+		if {$type == 0} {
+		    lappend res $actualpath$name
+		} else {
+		    eval lappend res [_matchtypes $item $actualpath$name $type]
+		}
 	    }
+	    #puts "got: $res"
 	}
     } else {
 	# single file
 	set token [::http::geturl $dirurl$path -method PROPFIND \
-	  -headers [concat $extraHeadersList [list depth 0]]]
+	  -headers [concat $extraHeadersList [list Depth 0]]]
 	
+	upvar #0 $token state
+	if {![regexp " (OK|Multi\\-Status)$" $state(http)]} {
+	    ::vfs::log "No good: $state(http)"
+	    #parray state
+	    ::http::cleanup $token
+	    return ""
+	}
 	set body [::http::data $token]
 	::http::cleanup $token
-	::vfs::log $body
+	#::vfs::log $body
 	
 	eval lappend res [_matchtypes $body $actualpath $type]
     }
@@ -213,6 +230,7 @@ proc vfs::webdav::matchindirectory {dirurl extraHeadersList path actualpath patt
 
 # Helper function
 proc vfs::webdav::_matchtypes {item actualpath type} {
+    #::vfs::log [list $item $actualpath $type]
     if {[regexp {<D:resourcetype><D:collection/>} $item]} {
 	if {![::vfs::matchDirectories $type]} {
 	    return ""
