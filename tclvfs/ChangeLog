@@ -1,3 +1,19 @@
+2001-11-08  Vince Darley <vincentdarley@sourceforge.net>
+	* generic/vfs.c: made code thread-safe.
+
+2001-11-07  Vince Darley <vincentdarley@sourceforge.net>
+	* generic/vfs.c: all mount information is now stored in a
+	purpose built data structure ('vfs::mount' variable is gone),
+	and the code handles multiple interpreters in a very robust
+	fashion.  Fixes crashing problem in pkg_mkIndex and
+	general inconsistencies with multiple interps.  Also, the 
+	'-volume' flag is no longer required for unmounting.  Lastly
+	added a lot more documentation in the code.
+	* library/vfsUrl.tcl: remove '-volume' flag.
+	* tests/vfs*.test: various new tests added
+	* doc/vfs.n: documentation much improved, especially with
+	respect to multiple interpreters.
+
 2001-11-01  Vince Darley <vincentdarley@sourceforge.net>
 	* generic/vfs.c: 'vfs::mount' no longer a string-literal
 	* tests/vfs*.test: various new tests added

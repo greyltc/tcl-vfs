@@ -49,43 +49,61 @@ are actually providing vfs replacements for C commands like
 at this low level, we ensure that all commands at higher levels
 function irrespective of what is going on inside the FS layer.
 .PP
+Tcl's filesystem hooks operate on a per-process basis.  This means every
+Tcl interpreter in the same process/application sees the same
+filesystem, including any virtual filesystems.
+.PP
 The \fBpackage require vfs\fP command should be used to access this
 library.  It automatically registers the vfs hooks into Tcl's
 filesystem, and these will not be removed until Tcl exits (if desired,
 control over this could be exposed to Tcl in the future).  However, the
 vfs package will at that stage not have any new filesystems mounted, so
-it will have little effect.
+it will have little effect.  Note that \fBpackage require vfs\fP
+has two effects.  First of all, when it is issued in \fBany\fR Tcl 
+interpreter it will ensure the vfs hooks have been
+registered with Tcl's core just once (and if any of those interpreters
+are later deleted, the vfs hooks will still remain registered - they 
+remain until Tcl exits).  The second 
+effect is to provide the command \fBvfs::filesystem\fR which allows
+the interpreter to intercept filesystem commands and handle them with
+Tcl code in that interpreter.
 .TP
 \fBvfs::filesystem\fR \fImount\fR \fI?-volume?\fR \fIpath\fR \fIcommand\fR
 To use a virtual filesystem, it must be 'mounted'.  Mounting involves
 declaring to the vfs package that any subdirectories of a given
 \fIpath\fR in the filesystem should be handled by the given \fIcommand\fR
-which should be a Tcl command or procedure.  If the \fI?-volume?\fR
+which should be a Tcl command or procedure in the interpreter in which
+the \fBvfs::filesystem\fR is executed.  If the \fI?-volume?\fR
 flag is given, the given mount point is also registered with Tcl as
-a new volume (like a new drive).  This is useful (and required for
-reasonable operation) for mounts like \fIftp://\fR.  For paths mounted
-inside the native filesystem, it should of course not be given.
+a new volume (like a new drive which will appear in \fIfile volumes\fR).  
+This is useful (and required for reasonable operation) for mounts like 
+\fIftp://\fR.  For paths mounted
+inside the native filesystem, it should of course not be given.  The
+new filesystem mounts will be observed immediately in all interpreters
+in the current process.  If
+the interpreter is later deleted, all mounts which are intercepted by 
+it will be automatically removed (and will therefore affect the view
+of the filesystem seen by all interpreters).
 .TP
 \fBvfs::filesystem\fR \fIunmount\fR \fIpath\fR 
 This unmounts the virtual filesystem which was mounted at \fIpath\fR
-hence removing it from Tcl's filesystem, or throws an error if no
+(hence removing it from Tcl's filesystem), or throws an error if no
 filesystem was mounted there.
 .TP
 \fBvfs::filesystem\fR \fIinfo\fR \fI?path?\fR
 If no arguments are given, this returns a list of all filesystems
-mounted.  If a path argument is given, then the \fIcommand\fR to be
+mounted (in all interpreters).  If a path argument is given, then 
+the \fIcommand\fR to be
 used for that path is returned, or an error is thrown if no vfs is
-mounted for that path.
-.PP
-Currently mount information is stored by the extension in the
-vfs::mount array variable, but this should be considered private
-information which will change in the future.
+mounted for that path.  There is currently no facility for examining
+in which interpreter each command will be evaluated.
 .PP
 .SH IMPLEMENTING A TCL ONLY VFS
 .PP
 The vfs package will intercept every filesystem operation which falls
 within a given mount point, and pass the operation on to the mount
-point's \fIcommand\fR. In general this occurs by the C equivalent of an
+point's \fIcommand\fR in the interpreter which registered it. In 
+general this occurs by the C equivalent of an
 evaluation like this: \fIeval $command [list $subcmd $root $relative
 $actualpath] $args\fR.
 .PP
