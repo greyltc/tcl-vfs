@@ -1,5 +1,12 @@
 2003-02-18  Vince Darley <vincentdarley@sourceforge.net>
 
+	* generic/vfs.c:
+        * library/*.tcl: clean up of posix error handling.
+
+        * doc/vfs.n: added some more documentation.
+	
+2003-02-18  Vince Darley <vincentdarley@sourceforge.net>
+
 	* generic/vfs.c: added 'vfs::filesystem posixerror' command
 	to allow direct reporting of posix error codes to Tcl.
 	* library/vfsUtils.tcl: added support for state switching

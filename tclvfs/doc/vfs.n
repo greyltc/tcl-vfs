@@ -1,5 +1,5 @@
 '\"
-'\" Copyright (c) 2001, Vince Darley
+'\" Copyright (c) 2001-2003, Vince Darley
 '\" 
 '\" 
 .so man.macros
@@ -67,6 +67,11 @@ remain until Tcl exits).  The second
 effect is to provide the command \fBvfs::filesystem\fR which allows
 the interpreter to intercept filesystem commands and handle them with
 Tcl code in that interpreter.
+.PP
+There are two unsupported subcommands of \fBvfs::filesystem\fR,
+\fBfullynormalize path\fR and \fBposixerror int\fR, which are used to
+normalize a path (including any final symlink) and to register a posix 
+error code with a Tcl error, respectively.
 .TP
 \fBvfs::filesystem\fR \fImount\fR \fI?-volume?\fR \fIpath\fR \fIcommand\fR
 To use a virtual filesystem, it must be 'mounted'.  Mounting involves
