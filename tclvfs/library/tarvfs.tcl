@@ -310,6 +310,10 @@ proc tar::TOC {fd arr toc} {
 	set incr [expr int(ceil($size/double($BLOCK_SIZE)))*$BLOCK_SIZE+$BLOCK_SIZE]
 	
 	set startPosition [expr $pos+$BLOCK_SIZE]
+	# make it relative to this working-directory, remove the
+	# leading "relative"-paths
+	regexp -- {^(?:\.\.?/)*/?(.*)} $name -> name
+	
 	if {$name != ""} {
 	    incr sb(nitems)
 	    set sb($name,start) [expr $pos+$BLOCK_SIZE]
