@@ -1,3 +1,11 @@
+2003-02-20  Andreas Kupries  <andreask@activestate.com>
+
+	* library/mk4vfs.tcl: Switching to canceling the stored after id
+	  of the periodic commit in _unmount instead of canceling by
+	  script. The scripts in '_umount' and 'periodicCommit' were
+	  different, causing the cancel to fail, and thus an eternal
+	  commit, failing after the close; hanging the system.
+
 2003-02-20  Vince Darley <vincentdarley@sourceforge.net>
 
 	* generic/vfs.c: added new debugging feature 'vfs::filesystem

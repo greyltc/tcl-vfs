@@ -361,7 +361,7 @@ namespace eval mk4vfs {
     }
 
     proc _umount {db args} {
-	after cancel [list mk4vfs::periodicCommit $db]
+	after cancel $v::timer($db)
 	array unset v::mode $db
 	array unset v::timer $db
 	array unset v::cache $db,*
