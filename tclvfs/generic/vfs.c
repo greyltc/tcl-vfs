@@ -184,11 +184,12 @@ static Tcl_Obj*          VfsCommand(Tcl_Interp* interp, CONST char* cmd,
 #endif
 
 /* 
- * This cannot be 'const' because Tcl wants to trample
+ * This must be declared like this so it is placed in 
+ * writable memory, because Tcl wants to trample
  * over it when it tries to parse things.  In the future
  * we won't rely upon Tcl to do this for us.
  */
-static char* mountVar = "vfs::mount";
+static char mountVar[] = "vfs::mount";
 
 
 /*
