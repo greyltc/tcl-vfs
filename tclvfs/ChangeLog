@@ -2,6 +2,8 @@
 
 	* library/vfsUtils.tcl: added beginnings of interface for
 	filesystem configuration.
+	* library/mk4vfs.tcl: 
+	* library/tclIndex:  regen.
 	
 2003-02-01  Jean-Claude Wippler  <jcw@equi4.com>
 

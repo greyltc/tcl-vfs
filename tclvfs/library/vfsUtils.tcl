@@ -59,6 +59,73 @@ proc ::vfs::unmount {mountpoint} {
     unset _unmountCmd($norm)
 }
 
+# vfs::attributes mountpoint ?-opt val? ?...-opt val?
+proc ::vfs::attributes {mountpoint args} {
+    if {![catch {::vfs::filesystem info $mountpoint} handler]} {
+	regexp {vfs::([^:]+)::handler} $handler -> ns
+    } else {
+	# Let's assume this is a ns directly (not sure if this
+	# code path is a good idea in the long term, but it is
+	# helpful for testing)
+	set ns $mountpoint
+	package require vfs::${ns}
+    }
+    
+    set attrs [list "state"]
+    set res {}
+
+    if {![llength $args]} {
+	if {[info exists ns]} {
+	    foreach attr $attrs {
+		if {[info commands ::vfs::${ns}::$attr] != ""} {
+		    if {[catch {::vfs::${ns}::$attr} val]} {
+			return -code error "error reading filesystem attribute\
+			  \"$attr\": $val"
+		    } else {
+			lappend res -$attr $val
+		    }
+		}
+	    }
+	}
+	return $res
+    }
+    
+    if {![info exists ns]} {
+	return -code error "filesystem not known or not configurable"
+    }
+    
+    while {1} {
+	foreach {attr val} $args {
+	    set args [lrange $args 2 end]
+	    break
+	}
+	if {[info commands ::vfs::${ns}::$attr] != ""} {
+	    if {[catch {::vfs::${ns}::$attr $val} err]} {
+		return -code error "error setting filesystem attribute\
+		  \"$attr\": $err"
+	    } else {
+		set res $val
+	    }
+	} else {
+	    return -code error "filesystem attribute \"$attr\" not known"
+	}
+    }
+    if {[llength $args]} {
+	set attr [lindex $args 0]
+	if {[info commands ::vfs::${ns}::$attr] != ""} {
+	    if {[catch {::vfs::${ns}::$attr} val]} {
+		return -code error "error reading filesystem attribute\
+		  \"$attr\": $val"
+	    } else {
+		set res $val
+	    }
+	} else {
+	    return -code error "filesystem attribute \"$attr\" not known"
+	}
+    }
+    return $res
+}
+
 ::vfs::autoMountExtension "" ::vfs::mk4::Mount vfs
 ::vfs::autoMountExtension .bin ::vfs::mk4::Mount vfs
 ::vfs::autoMountExtension .kit ::vfs::mk4::Mount vfs
