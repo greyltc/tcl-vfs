@@ -14,7 +14,7 @@ Since 8.4 is still in alpha, the APIs on which this extension depends may of
 course change.  If that happens, it will of course require changes to this
 extension, until the point at which 8.4 goes final, when only
 backwards-compatible changes should occur.  Currently it requires a version
-of Tcl 8.4a4 or newer from September 5th 2001 or newer (if it compiles
+of Tcl 8.4a4 or newer from September 7th 2001 or newer (if it compiles
 without warning, you should be fine).
 
 Using this extension, the editor Alphatk can actually auto-mount, view and
@@ -24,8 +24,8 @@ do things like:
 
     file copy ftp://ftp.foo.com/pub/readme.txt .
 
-With 'tkhtml', writing a web-browser in Tcl should be pretty trivial with
-this extension.    
+With 'tkhtml' and this extension, writing a web-browser in Tcl should be 
+pretty trivial.
 
 None of the vfs's included are 100% complete or optimal yet, so if only for
 that reason, code contributions are very welcome.  Many of them still

@@ -241,11 +241,11 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
     int index;
 
     static char *optionStrings[] = {
-	"info", "mount", "unmount", 
+	"info", "mount", "unmount", "volumeschanged", 
 	NULL
     };
     enum options {
-	VFS_INFO, VFS_MOUNT, VFS_UNMOUNT
+	VFS_INFO, VFS_MOUNT, VFS_UNMOUNT, VFS_VOLUMESCHANGED,
     };
 
     if (objc < 2) {
@@ -276,6 +276,7 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 			      TCL_LEAVE_ERR_MSG | TCL_GLOBAL_ONLY) == NULL) {
 		return TCL_ERROR;
 	    }
+	    Tcl_FSMountsChanged(&vfsFilesystem);
 	    break;
 	}
 	case VFS_INFO: {
@@ -322,7 +323,17 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 	    path = Tcl_FSGetNormalizedPath(interp, objv[2]);
 	    res = Tcl_UnsetVar2(vfsInterp, "vfs::mount", Tcl_GetString(path), 
 				TCL_LEAVE_ERR_MSG | TCL_GLOBAL_ONLY);
+	    if (res == TCL_OK) {
+		Tcl_FSMountsChanged(&vfsFilesystem);
+	    }
 	    return res;
+	}
+	case VFS_VOLUMESCHANGED: {
+	    if (objc > 2) {
+		Tcl_WrongNumArgs(interp, 2, objv, NULL);
+		return TCL_ERROR;
+	    }
+	    Tcl_FSMountsChanged(&vfsFilesystem);
 	}
     }
     return TCL_OK;
