@@ -57,7 +57,7 @@ proc vfs::zip::matchindirectory {zipfd path actualpath pattern type} {
 
     set newres [list]
     foreach p [::vfs::matchCorrectTypes $type $res $actualpath] {
-	lappend newres "$actualpath$p"
+	lappend newres [file join $actualpath $p]
     }
     #::vfs::log "got $newres"
     return $newres

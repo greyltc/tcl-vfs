@@ -235,12 +235,12 @@ proc vfs::ftp::matchindirectory {fd path actualpath pattern type} {
 	    } 
 	    if {[::vfs::matchDirectories $type]} {
 		if {[string index $perms 0] == "d"} {
-		    lappend res "$actualpath$name"
+		    lappend res [file join $actualpath $name]
 		}
 	    }
 	    if {[::vfs::matchFiles $type]} {
 		if {[string index $perms 0] != "d"} {
-		    lappend res "$actualpath$name"
+		    lappend res [file join $actualpath $name]
 		}
 	    }
 	    

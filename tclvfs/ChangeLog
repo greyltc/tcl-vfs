@@ -1,3 +1,12 @@
+2003-02-08  Vince Darley <vincentdarley@sourceforge.net>
+
+	* library/*.tcl: made all 'matchindirectory' implementations
+	robust to whether they are passed a directory with a trailing
+	file-separator or not.  (Tcl doesn't document whether there
+	will be one, and optimisations to Tcl's filesystem require
+	this flexibility.  Also the use of 'file join' will actually
+	make the entire filesystem *more* efficient soon).
+	
 2003-02-06  Andreas Kupries  <andreask@activestate.com>
 
 	* tclconfig/tcl.m4: Added SC_TCL_EARLY_FLAGS and

@@ -85,7 +85,7 @@ namespace eval vfs::mk4 {
 	    set res [::mk4vfs::getdir $db $path $pattern]
 	}
 	foreach p [::vfs::matchCorrectTypes $type $res $actualpath] {
-	    lappend newres "$actualpath$p"
+	    lappend newres [file join $actualpath $p]
 	}
 	return $newres
     }

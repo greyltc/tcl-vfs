@@ -203,9 +203,10 @@ proc vfs::webdav::matchindirectory {dirurl extraHeadersList path actualpath patt
 	    if {[string match $pattern $name]} {
 		puts "check: $name"
 		if {$type == 0} {
-		    lappend res $actualpath$name
+		    lappend res [file join $actualpath $name]
 		} else {
-		    eval lappend res [_matchtypes $item $actualpath$name $type]
+		    eval lappend res [_matchtypes $item \
+		      [file join $actualpath $name] $type]
 		}
 	    }
 	    #puts "got: $res"

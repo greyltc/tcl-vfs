@@ -60,7 +60,7 @@ proc vfs::tar::matchindirectory {tarfd path actualpath pattern type} {
 
     set newres [list]
     foreach p [::vfs::matchCorrectTypes $type $res $actualpath] {
-	lappend newres "$actualpath$p"
+	lappend newres [file join $actualpath $p]
     }
     return $newres
 }
