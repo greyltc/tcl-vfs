@@ -68,7 +68,7 @@ proc ::vfs::attributes {mountpoint args} {
 	# code path is a good idea in the long term, but it is
 	# helpful for testing)
 	set ns $mountpoint
-	package require vfs::${ns}
+	::package require vfs::${ns}
     }
     
     set attrs [list "state"]
