@@ -66,6 +66,9 @@ namespace eval starkit {
 	# detect when sourced from the plugin (tentative)
 	if {[info exists ::embed_args]} { return plugin }
 
+	# detect when run as an NT service
+	if {[info exists ::tcl_service]} { return service }
+
 	return sourced
     }
 

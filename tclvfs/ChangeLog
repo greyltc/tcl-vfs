@@ -2,6 +2,7 @@
 
 	* library/vfslib.tcl: fixed bug in new vfs::zstream code,
 	preventing forward seeking from working properly
+	* library/starkit.tcl: recognize if launched as NT service
 
 2003-02-08  Vince Darley <vincentdarley@sourceforge.net>
 
