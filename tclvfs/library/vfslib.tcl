@@ -103,7 +103,9 @@ namespace eval ::vfs {
 		    while {$pos < $a1} {
 		      set n [expr {$a1 - $pos}]
 		      if {$n > 4096} { set n 4096 }
-		      read $fd $n
+		      # 2003-02-09: read did not work (?), spell it out instead
+		      #read $fd $n
+		      zstream_handler $zcmd $ifd $clen $ilen $imode read $fd $n
 		    }
 		    return $pos
 		}
