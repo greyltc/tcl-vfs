@@ -282,6 +282,16 @@ proc zip::Data {fd arr {varPtr ""} {verify 0}} {
     if { $varPtr == "" } {
 	seek $fd $sb(csize) current
     } else {
+	# Added by Chuck Ferril 10-26-03 to fix reading of OpenOffice
+	#  .sxw files. Any files in the zip that had a method of 8
+	#  (deflate) failed here because size and csize were zero.
+	#  I'm not sure why the above computes the size and csize
+	#  wrong, but stat appears works properly. I originally
+	#  checked for csize of zero, but adding this change didn't
+	#  appear to break the none deflated file access and seemed
+	#  more natural.
+ 	zip::stat $fd $sb(name) sb
+
 	set data [read $fd $sb(csize)]
     }
 
