@@ -12,6 +12,7 @@
 # 16oct02 jcw	1.6	fixed periodic commit once a change is made
 # 20jan03 jcw	1.7	streamed zlib decompress mode, reduces memory usage
 # 01feb03 jcw	1.8	fix mounting a symlink, cleanup mount/unmount procs
+# 04feb03 jcw	1.8	whoops, restored vfs::mk4::Unmount logic
 
 package provide mk4vfs 1.8
 package provide vfs::mk4 1.8
