@@ -341,7 +341,7 @@ Vfs_Init(interp)
 	}
 	vfsFilesystem.version = TCL_FILESYSTEM_VERSION_1;
 #ifdef VFS_COMPILE_WITH_84
-	vfsFilesystem.listMountsProc = &VfsListVolumes;
+	vfsFilesystem.listVolumesProc = &VfsListVolumes;
 #else
 	vfsFilesystem.listMountsProc = (Tcl_FSListMountsProc*)&VfsListVolumes;
 #endif
@@ -351,7 +351,7 @@ Vfs_Init(interp)
 	}
 	vfsFilesystem.version = TCL_FILESYSTEM_VERSION_2;
 #ifdef VFS_COMPILE_WITH_84
-	vfsFilesystem.listMountsProc = 
+	vfsFilesystem.listVolumesProc = 
           (Tcl_FSListVolumesProc*)&VfsListMountsInDir;
 #else
 	vfsFilesystem.listMountsProc = &VfsListMountsInDir;

@@ -17,14 +17,14 @@ variable vfs::dll
 
 if {$::tcl_platform(platform) eq "unix"} {
     if {[info exists ::tcl_platform(debug)]} {
-	set dll libvfs1.2g
+	set dll libvfs1.3g
     } else {
-	set dll libvfs1.2
+	set dll libvfs1.3
     }
 } elseif {[info exists ::tcl_platform(debug)]} {
-    set dll vfs12g
+    set dll vfs13g
 } else {
-    set dll vfs12
+    set dll vfs13
 }
 set dll [file join $dir $dll[info sharedlibextension]]
 
@@ -38,7 +38,7 @@ proc loadvfs {dll} {
     load $dll
 }
 
-package ifneeded vfs 1.2.1 [list loadvfs $dll]
+package ifneeded vfs 1.3.0 [list loadvfs $dll]
 package ifneeded starkit 1.2 [list source [file join $dir starkit.tcl]]
 package ifneeded vfslib 1.3.1 [list source [file join $dir vfslib.tcl]]
 
