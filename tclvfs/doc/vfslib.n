@@ -13,11 +13,11 @@
 .sp
 \fBpackage require Tcl 8.4\fR
 .sp
-\fBpackage require vfs ?1.0?\fR
+\fBpackage require vfs ?1.2?\fR
 .sp
 \fBpackage require vfs::zip ?1.0?\fR
 .sp
-\fBpackage require vfs::mk4 ?1.0?\fR
+\fBpackage require vfs::mk4 ?1.6?\fR
 .sp
 \fBpackage require vfs::tar ?0.9?\fR
 .sp

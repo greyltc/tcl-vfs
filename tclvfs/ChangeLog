@@ -1,3 +1,9 @@
+2003-02-04  Vince Darley <vincentdarley@sourceforge.net>
+
+	* doc/vfs.n: 
+	* doc/vfslib.n: update docs to reflect last six months
+	of changes.
+	
 2003-02-04  Andreas Kupries  <andreask@activestate.com>
 
 	* library/mk4vfs.tcl: Fixed bad vfs::mk4::Mount change.

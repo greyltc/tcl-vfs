@@ -3,7 +3,7 @@
 '\" 
 '\" 
 .so man.macros
-.TH vfs n 1.0 Vfs "Tcl-only Virtual File Systems"
+.TH vfs n 1.2 Vfs "Tcl-only Virtual File Systems"
 .BS
 '\" Note:  do not modify the .sh NAME line immediately below!
 .SH NAME
@@ -13,7 +13,7 @@
 .sp
 \fBpackage require Tcl 8.4\fR
 .sp
-\fBpackage require vfs ?1.0?\fR
+\fBpackage require vfs ?1.2?\fR
 .sp
 \fBvfs::filesystem\fR \fIinfo\fR
 .sp
@@ -97,6 +97,10 @@ the \fIcommand\fR to be
 used for that path is returned, or an error is thrown if no vfs is
 mounted for that path.  There is currently no facility for examining
 in which interpreter each command will be evaluated.
+.TP
+\fBvfs::filesystem\fR \fIfullynormalize\fR \fIpath\fR
+Performs a full expansion of \fIpath\fR, (as per 'file normalize'), but
+including following any links in the last element of path.
 .PP
 .SH IMPLEMENTING A TCL ONLY VFS
 .PP
@@ -169,8 +173,8 @@ directory-only matches from the filesystem.  See \fBvfs::matchDirectories\fR
 below for help.
 .TP
 \fIcommand\fR \fIopen\fR \fIr-r-a\fR \fImode\fR \fIpermissions\fR
-For this command, \fImode\fR is a list of POSIX open modes or a string
-such as "rw".  If the open involves creating a file, then
+For this command, \fImode\fR is any of "r", "w", "a", "w+", "a+".
+If the open involves creating a file, then
 \fIpermissions\fR dictates what modes to create it with.  If the open
 operation was not successful, an error should be thrown.  If the open
 operation is successful, the command should return a list of either one
@@ -184,7 +188,7 @@ example, seek to the beginning of the channel, read its contents and
 store that contents elsewhere (e.g. compressed or on a remote ftp
 site, etc).  The return code or any errors returned by the callback
 are ignored (if the callback wishes to signal an error, it must do so 
-asychronously, with bgerror, for example).
+asycnhronously, with bgerror, for example).
 .TP
 \fIcommand\fR \fIremovedirectory\fR \fIr-r-a\fR
 Delete the given directory.
