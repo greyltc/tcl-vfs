@@ -13,9 +13,9 @@ is to expose Tcl 8.4's new filesystem C API to the Tcl level.
 Since 8.4 is still in alpha, the APIs on which this extension depends may of
 course change.  If that happens, it will of course require changes to this
 extension, until the point at which 8.4 goes final, when only
-backwards-compatible changes should occur.  Currently it requires a version
-of Tcl 8.4a4 or newer from September 7th 2001 or newer (if it compiles
-without warning, you should be fine).
+backwards-compatible changes should occur.  Currently it requires the final
+version of Tcl 8.4a4 or newer (from March 8th 2002) --- if it compiles
+without warning, you should be fine.
 
 Using this extension, the editor Alphatk can actually auto-mount, view and
 edit (but not save, since they're read-only) the contents of .zip files

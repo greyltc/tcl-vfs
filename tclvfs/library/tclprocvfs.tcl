@@ -16,6 +16,7 @@ proc vfs::ns::Mount {ns local} {
     ::vfs::log "ns $ns mounted at $local"
     vfs::filesystem mount $local [list vfs::ns::handler $ns]
     vfs::RegisterMount $local [list vfs::ns::Unmount]
+    return $local
 }
 
 proc vfs::ns::Unmount {local} {

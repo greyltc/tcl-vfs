@@ -20,8 +20,6 @@ package provide vfslib 0.1
 # when I might not have the history procedures loaded yet!
 #proc history {args} {}
 
-lappend auto_path [file dirname [info script]]
-
 # This stuff is for TclKit
 namespace eval ::vfs {
     variable temp

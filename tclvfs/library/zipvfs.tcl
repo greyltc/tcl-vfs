@@ -30,7 +30,6 @@ proc vfs::zip::Unmount {fd local} {
 
 proc vfs::zip::handler {zipfd cmd root relative actualpath args} {
     #::vfs::log [list $zipfd $cmd $root $relative $actualpath $args]
-    #update
     if {$cmd == "matchindirectory"} {
 	eval [list $cmd $zipfd $relative $actualpath] $args
     } else {
@@ -48,6 +47,11 @@ proc vfs::zip::matchindirectory {zipfd path actualpath pattern type} {
     # for the existence of a single file $path only
     set res [::zip::getdir $zipfd $path $pattern]
     #::vfs::log "got $res"
+    if {![string length $pattern]} {
+	set res [list $actualpath]
+	set actualpath ""
+    }
+
     set newres [list]
     foreach p [::vfs::matchCorrectTypes $type $res $actualpath] {
 	lappend newres "$actualpath$p"
@@ -441,7 +445,7 @@ proc zip::stat {fd path arr} {
 
 # Treats empty pattern as asking for a particular file only
 proc zip::getdir {fd path {pat *}} {
-#    ::vfs::log [list getdir $fd $path $pat]
+    #::vfs::log [list getdir $fd $path $pat]
     upvar #0 zip::$fd.toc toc
 
     if { $path == "." || $path == "" } {
@@ -454,26 +458,33 @@ proc zip::getdir {fd path {pat *}} {
     }
     set depth [llength [file split $path]]
 
-    set ret {}
-    foreach key [array names toc $path] {
-	if {[string index $key end] == "/"} {
-	    # Directories are listed twice: both with and without
-	    # the trailing '/', so we ignore the one with
-	    continue
-	}
-	array set sb $toc($key)
-
-	if { $sb(depth) == $depth } {
-	    if {[info exists toc(${key}/)]} {
-		array set sb $toc(${key}/)
+    #puts stderr "getdir $fd $path $depth $pat [array names toc $path]"
+    if {$depth} {
+	set ret {}
+	foreach key [array names toc $path] {
+	    if {[string index $key end] == "/"} {
+		# Directories are listed twice: both with and without
+		# the trailing '/', so we ignore the one with
+		continue
 	    }
-	    lappend ret [file tail $sb(name)]
-	} else {
-	    #::vfs::log "$sb(depth) vs $depth for $sb(name)"
+	    array set sb $toc($key)
+
+	    if { $sb(depth) == $depth } {
+		if {[info exists toc(${key}/)]} {
+		    array set sb $toc(${key}/)
+		}
+		lappend ret [file tail $sb(name)]
+	    } else {
+		#::vfs::log "$sb(depth) vs $depth for $sb(name)"
+	    }
+	    unset sb
 	}
-	unset sb
+	return $ret
+    } else {
+	# just the 'root' of the zip archive.  This obviously exists and
+	# is a directory.
+	return [list {}]
     }
-    return $ret
 }
 
 proc zip::_close {fd} {

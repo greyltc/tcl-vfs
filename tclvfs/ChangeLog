@@ -1,3 +1,9 @@
+2002-03-09  Vince Darley <vincentdarley@sourceforge.net>
+	* library/mk4vfs.tcl: updated version from Jean-Claude Wippler.
+
+2002-03-01  Vince Darley <vincentdarley@sourceforge.net>
+	* library/*.tcl: completed and tested most changes from 02-19.
+
 2002-02-19  Vince Darley <vincentdarley@sourceforge.net>
 	* library/*.tcl: updated the vfs implementations to deal
 	with the 2002-02-01 change below.  More work needed.
