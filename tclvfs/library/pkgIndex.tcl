@@ -12,42 +12,31 @@
 if {[package provide Tcl] < 8.4} {
     return
 }
-
 package require Tcl 8.4
-if {[info tclversion] == 8.4} {
-    if {[regexp {8.4a(1|2|3|4)} [info patchlevel]]} {
-	error "Tcl 8.4a5 (March 20th 2002) or newer is required"
-    }
-}
+
+namespace eval ::vfs {}
+variable vfs::dll
 
 if {$tcl_platform(platform) eq "unix"} {
-    set file libvfs1.0
+    set dll libvfs1.0
 } elseif {[info exists tcl_platform(debug)]} {
-    set file vfs10d
+    set dll vfs10d
 } else {
-    set file vfs10
+    set dll vfs10
 }
+set dll [file join $dir $dll[info sharedlibextension]]
 
-set file [file join $dir $file[info sharedlibextension]]
-
-# Don't do anything if our shared lib doesn't exist.  This should
-# help stop a crash on pre-release MacOS X.
-if {![file exists $file]} {
-    unset file
-    return
-}
-
-proc loadvfs {file} {
+proc loadvfs {dll} {
     global auto_path
-    set dir [file dirname $file]
+    if {![file exists $dll]} { return }
+    set dir [file dirname $dll]
     if {[lsearch -exact $auto_path $dir] == -1} {
 	lappend auto_path $dir
     }
-    load $file
+    load $dll
 }
 
-package ifneeded vfs 1.0 [list loadvfs $file]
-unset file
+package ifneeded vfs 1.0 [list loadvfs $dll]
 
 package ifneeded mk4vfs 1.5 [list source [file join $dir mk4vfs.tcl]]
 package ifneeded starkit 1.0 [list source [file join $dir starkit.tcl]]
