@@ -30,10 +30,11 @@ The \fB::vfs\fR package provides commands to query, mount and unmount
 virtual filesystems, and provides as Tcl libraries some facilities for
 helping the writing of new virtual filesystems in Tcl.  Once a virtual
 filesystem is in place, the standard Tcl \fBfile\fP, \fBglob\fP,
-\fBcd\fP, \fBpwd\fP, \fBopen\fP commands, including all their C APIs,
-can be used within the filesystem (and indeed, properly written
-extensions such as Tk which may open or read files will also
-transparently access the virtual filesystem).
+\fBcd\fP, \fBpwd\fP, \fBopen\fP commands, including all their C APIs in
+the Tcl library (e.g. \fBTcl_FSOpenFileChannel\fR,
+\fBTcl_FSMatchInDirectory\fR,...), can be used within the filesystem
+(and indeed, properly written extensions such as Tk which may open or
+read files will also transparently access the virtual filesystem).
 .PP
 The \fBpackage require vfs\fP command should be used to access this
 library.  It automatically registers the vfs hooks into Tcl's
@@ -58,6 +59,11 @@ If no arguments are given, this returns a list of all filesystems
 mounted.  If a path argument is given, then the \fIcommand\fR to be
 used for that path is returned, or an error is thrown if no vfs is
 mounted for that path.
+.PP
+Currently mount information is stored by the extension in the
+vfs::mount array variable, but this should be considered private
+information which will change in the future.
+.PP
 .SH IMPLEMENTING A TCL ONLY VFS
 .PP
 The vfs package will intercept every filesystem operation which falls
@@ -68,10 +74,10 @@ $actualpath] $args\fR.
 .PP
 Here \fIsubcmd\fR may be any of the following: \fIaccess\fR,
 \fIcreatedirectory\fR, \fIdeletefile\fR, \fIfileattributes\fR,
-\fImatchindirectory\fR, \fIopen\fR, \fIremovedirectory\fR, \fIstat\fR, 
+\fImatchindirectory\fR, \fIopen\fR, \fIremovedirectory\fR, \fIstat\fR,
 \fIutime\fR. If \fIcommand\fR takes appropriate action for each of
 these cases, a complete, perfect virtual filesystem will be achieved,
-indistinguishable to Tcl from the native filesystem.
+indistinguishable to Tcl from the native filesystem. 
 .PP
 The remaining arguments specify a file path on which to operate (all
 commands operate on one of these), and any additional arguments which
@@ -172,6 +178,20 @@ Returns that subset of the \fIfilelist\fR (which are either absolute
 paths or names of files in \fIinDir\fR) which are compatible with the
 \fItypes\fR given.
 
+.SH LIMITATIONS
+.PP
+There are very few limitations to the vfs code.  One subtlety that you
+may encounter is if you mount a case-sensitive virtual filesystem into
+a case-insensitive system (e.g. the standard Windows or MacOS fs) and
+your code relies on case-insensitivity, then it will not run properly
+in the virtual filesystem.  Of course if your code relies on
+case-insensitivity, it wouldn't run under Tcl on Unix either, so the
+best solution is to fix your code!
+.PP
+We may add \fIlink\fR and \fIlstat\fR commands in the future to allow
+virtual filesystems to support reading and writing links - this is
+supported by the C API, but has simply not been exposed to Tcl in this
+extension.
 .SH KEYWORDS
 vfs, filesystem, file
 
