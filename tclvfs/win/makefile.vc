@@ -18,9 +18,11 @@ NODEBUG=1
 !IF "$(NODEBUG)" == "1"
 DEBUGDEFINES =
 DBGX     = 
+DBGXMS     = 
 !ELSE
 DEBUGDEFINES = -DTCL_MEM_DEBUG -DUSE_TCLALLOC=0 -DPURIFY
-DBGX     = d
+DBGX     = g
+DBGXMS     = d
 !ENDIF
 
 PROJECT = vfs$(DLL_VERSION)$(DBGX)
@@ -104,11 +106,11 @@ conlflags = $(lflags) -subsystem:console -entry:mainCRTStartup
 guilflags = $(lflags) -subsystem:windows -entry:WinMainCRTStartup
 
 !IF "$(MACHINE)" == "PPC"
-libc = libc$(DBGX).lib
-libcdll = crtdll$(DBGX).lib
+libc = libc$(DBGXMS).lib
+libcdll = crtdll$(DBGXMS).lib
 !ELSE
-libc = libc$(DBGX).lib oldnames.lib
-libcdll = msvcrt$(DBGX).lib oldnames.lib
+libc = libc$(DBGXMS).lib oldnames.lib
+libcdll = msvcrt$(DBGXMS).lib oldnames.lib
 !ENDIF
 
 baselibs   = kernel32.lib $(optlibs) advapi32.lib user32.lib

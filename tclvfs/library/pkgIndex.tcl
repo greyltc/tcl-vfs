@@ -22,7 +22,7 @@ if {$::tcl_platform(platform) eq "unix"} {
 	set dll libvfs1.2
     }
 } elseif {[info exists ::tcl_platform(debug)]} {
-    set dll vfs12d
+    set dll vfs12g
 } else {
     set dll vfs12
 }

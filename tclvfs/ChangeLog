@@ -1,3 +1,9 @@
+2003-03-11  Vince Darley <vincentdarley@sourceforge.net>
+
+	* library/pkgIndex.tcl:
+	* win/makefile.vc: updated for Tcl's incompatible change 
+	from 'd' to 'g' for debug builds.
+
 2003-02-24  Jean-Claude Wippler  <jcw@equi4.com>
 
 	* pkgIndex.tcl, pkgIndex.tcl.in: starkit rev bumped to 1.2
