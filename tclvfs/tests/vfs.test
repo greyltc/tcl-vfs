@@ -17,8 +17,17 @@ if {[lsearch [namespace children] ::tcltest] == -1} {
 
 package require vfs
 
-proc filelistrelative {filelist} {
-    set dir [file normalize [file dirname [file dirname [info script]]]]
+proc filelistrelative {filelist {remove ""}} {
+    if {[llength $remove]} {
+	set newlist {}
+	foreach f $filelist {
+	    if {[lsearch -exact $remove $f] == -1} {
+		lappend newlist $f
+	    }
+	}
+	set filelist $newlist
+    }
+    set dir [file normalize [file dirname [info script]]]
     set len [string length $dir]
     incr len
     set res {}
@@ -45,12 +54,12 @@ test vfs-1.1 {mount unmount} {
 
 # Test 2.x sub-interps
 
-vfs::filesystem mount foo bar
-
 test vfs-2.1 {mount unmount in sub interp} {
     catch {interp delete a}
     catch {unset res}
     set res {}
+    set remove [vfs::filesystem info]
+    vfs::filesystem mount foo bar
     interp create a
     a eval {package require vfs}
     a eval {vfs::filesystem mount foo2 bar2}
@@ -58,12 +67,15 @@ test vfs-2.1 {mount unmount in sub interp} {
     a eval {vfs::filesystem unmount foo2}
     interp delete a
     eval lappend res [vfs::filesystem info]
-    filelistrelative $res
+    vfs::filesystem unmount foo
+    filelistrelative $res $remove
 } {foo2 foo foo}
 
 test vfs-2.2 {mount, delete sub interp} {
     catch {interp delete a}
     catch {unset res}
+    set remove [vfs::filesystem info]
+    vfs::filesystem mount foo bar
     interp create a
     a eval {package require vfs}
     a eval {vfs::filesystem mount foo2 bar2}
@@ -71,10 +83,9 @@ test vfs-2.2 {mount, delete sub interp} {
     eval lappend res [vfs::filesystem info]
     interp delete a
     eval lappend res [vfs::filesystem info]
-    filelistrelative $res
+    vfs::filesystem unmount foo
+    filelistrelative $res $remove
 } {foo2 foo foo}
-
-vfs::filesystem unmount foo
 
 # cleanup
 ::tcltest::cleanupTests
