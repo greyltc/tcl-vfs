@@ -37,12 +37,10 @@ the code completely cleaned up and documented as the package evolves.
 Compile/build
 -------------
 
-There are the usual make/configure files present, as copied from
-'sampleextension' and suitably modified.  Apparently you may also need
-other things like 'tcl.m4', 'config.guess'.  Please copy them from
-wherever.  There is actually only one file to compile (generic/vfs.c) so if
-you find the need for TEA's dozens of 'helper' files a bit excessive, I
-agree!
+The standard 'configure ; make ; make install' should work, but if it
+doesn't, I'm afraid I can't help --- I am not an expert on these issues
+and find it amazing that to compile a single C file (generic/vfs.c) a
+dozen or so TEA 'helper' files are required.
 
 For windows, there is a VC++ makefile in the win directory ('nmake -f
 makefile.vc') should do the trick.

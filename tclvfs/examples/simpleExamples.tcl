@@ -32,6 +32,8 @@ vfs::ftp::Mount ftp://ftp.ucsd.edu/pub/alpha/ localmount
 cd localmount ; cd tcl
 puts "(pwd is now '[pwd]')"
 puts "sourcing remote file 'vfsTest.tcl', using 'source vfsTest.tcl'"
+# This will actually source the contents of a file on the
+# remote ftp site (which is now the 'pwd').
 source vfsTest.tcl
 
 puts "Done"
