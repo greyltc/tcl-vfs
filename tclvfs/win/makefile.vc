@@ -74,7 +74,7 @@ cdebug = -Z7 -Od -WX
 !ENDIF
 
 # declarations common to all compiler options
-cflags = -c -W3 -nologo -Fp$(TMPDIR)\ -YX -DBUILD_Vfs
+cflags = -c -W3 -nologo -Fp$(TMPDIR)\ -YX -DBUILD_vfs
 
 ######################################################################
 # Link flags
