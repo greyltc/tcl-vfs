@@ -1,3 +1,6 @@
+2002-04-09  Jean-Claude Wippler <jcw@equi4.com>
+	* configure: generated and added to project
+
 2002-04-08  Daniel Steffen  <das@users.sourceforge.net>
 	* mac/pkgIndex_mac.tcl: synced to generic/pkgIndex.tcl
 
