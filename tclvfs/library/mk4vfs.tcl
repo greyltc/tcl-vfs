@@ -1,5 +1,5 @@
 # mk4vfs.tcl -- Mk4tcl Virtual File System driver
-# Copyright (C) 1997-2002 Sensus Consulting Ltd. All Rights Reserved.
+# Copyright (C) 1997-2003 Sensus Consulting Ltd. All Rights Reserved.
 # Matt Newman <matt@sensus.org> and Jean-Claude Wippler <jcw@equi4.com>
 #
 # $Id$
@@ -10,9 +10,11 @@
 # 28apr02 jcw	1.4	reorged memchan and pkg dependencies
 # 22jun02 jcw	1.5	fixed recursive dir deletion
 # 16oct02 jcw	1.6	fixed periodic commit once a change is made
+# 20jan03 jcw	1.7	streamed zlib decompress mode, reduces memory usage
+# 01feb03 jcw	1.8	fix mounting a symlink, cleanup mount/unmount procs
 
-package provide mk4vfs 1.6
-package provide vfs::mk4 1.6
+package provide mk4vfs 1.8
+package provide vfs::mk4 1.8
 package require Mk4tcl
 package require vfs
 
@@ -34,20 +36,22 @@ if {![info exists auto_index(lassign)] && [info commands lassign] == ""} {
 
 namespace eval vfs::mk4 {
     proc Mount {mkfile local args} {
-	set db [eval [list ::mk4vfs::_mount $local $mkfile] $args]
+	if {$mkfile != ""} {
+	  # dereference a symlink, otherwise mounting on it fails (why?)
+	  catch {
+	    set mkfile [file join [file dirname $mkfile] \
+	    			  [file readlink $mkfile]]
+	  }
+	  set mkfile [file normalize $mkfile]
+	}
+	set db [eval [list ::mk4vfs::_mount $mkfile] $args]
 	::vfs::filesystem mount $local [list ::vfs::mk4::handler $db]
-	::vfs::RegisterMount $local [list ::vfs::mk4::Unmount $db]
+	::vfs::RegisterMount $local [list ::mk4vfs::_umount $db]
 	return $db
     }
 
-    proc Unmount {db local} {
-	vfs::filesystem unmount $local
-	::mk4vfs::_umount $db
-    }
-
     proc handler {db cmd root relative actualpath args} {
-	#puts stderr "handler: $db - $cmd - $root - $relative\
-	#- $actualpath - $args"
+	#puts stderr "handler: $db - $cmd - $root - $relative - $actualpath - $args"
 	if {$cmd == "matchindirectory"} {
 	    eval [list $cmd $db $relative $actualpath] $args
 	} elseif {$cmd == "fileattributes"} {
@@ -89,12 +93,7 @@ namespace eval vfs::mk4 {
 
     proc access {db name mode} {
 	# This needs implementing better.  
-	if {$mode & 2} {
-	    ::mk4vfs::stat $db $name
-	    #error "read-only"
-	} else {
-	    ::mk4vfs::stat $db $name
-	}
+	::mk4vfs::stat $db $name sb
     }
 
     proc open {db file mode permissions} {
@@ -108,14 +107,19 @@ namespace eval vfs::mk4 {
 		::mk4vfs::stat $db $file sb
 
 		if { $sb(csize) != $sb(size) } {
-		    set fd [vfs::memchan]
-		    fconfigure $fd -translation binary
-		    set s [mk::get $sb(ino) contents]
-		    puts -nonewline $fd [vfs::zip -mode decompress $s]
+		    if {$::mk4vfs::zstreamed} {
+		      set fd [mk::channel $sb(ino) contents r]
+		      fconfigure $fd -translation binary
+		      set fd [vfs::zstream decompress $fd $sb(csize) $sb(size)]
+		    } else {
+		      set fd [vfs::memchan]
+		      fconfigure $fd -translation binary
+		      set s [mk::get $sb(ino) contents]
+		      puts -nonewline $fd [vfs::zip -mode decompress $s]
 
-		    fconfigure $fd -translation auto
-		    seek $fd 0
-		    return $fd
+		      fconfigure $fd -translation auto
+		      seek $fd 0
+		    }
 		} elseif { $::mk4vfs::direct } {
 		    set fd [vfs::memchan]
 		    fconfigure $fd -translation binary
@@ -123,7 +127,6 @@ namespace eval vfs::mk4 {
 
 		    fconfigure $fd -translation auto
 		    seek $fd 0
-		    return $fd
 		} else {
 		    set fd [mk::channel $sb(ino) contents r]
 		}
@@ -231,6 +234,7 @@ namespace eval mk4vfs {
     variable compress 1     ;# HACK - needs to be part of "Super-Block"
     variable flush    5000  ;# Auto-Commit frequency
     variable direct   0	    ;# read through a memchan, or from Mk4tcl if zero
+    variable zstreamed 0    ;# decompress on the fly (needs zlib 1.1)
 
     namespace eval v {
 	variable seq      0
@@ -257,26 +261,33 @@ namespace eval mk4vfs {
 	mk::set $db.dirs!0 parent -1
     }
 
+    # deprecated, use vfs::mk4::Mount (first two args are reversed!)
     proc mount {local mkfile args} {
 	uplevel [list ::vfs::mk4::Mount $mkfile $local] $args
     }
 
-    proc _mount {path file args} {
+    proc _mount {{file ""} args} {
 	set db mk4vfs[incr v::seq]
 
-	eval [list mk::file open $db $file] $args
+	if {$file == ""} {
+	  mk::file open $db
+	  init $db
+	  set v::mode($db) ro
+	} else {
+	  eval [list mk::file open $db $file] $args
 
-	init $db
+	  init $db
 
-	set v::mode($db) rw
-	for {set idx 0} {$idx < [llength $args]} {incr idx} {
-	    switch -- [lindex $args $idx] {
-		-readonly   { set v::mode($db) ro }
-		-nocommit   { set v::mode($db) nc }
-	    }
-	}
-	if {$v::mode($db) == "rw"} {
-	  periodicCommit $db
+	  set v::mode($db) rw
+	  for {set idx 0} {$idx < [llength $args]} {incr idx} {
+	      switch -- [lindex $args $idx] {
+		  -readonly   { set v::mode($db) ro }
+		  -nocommit   { set v::mode($db) nc }
+	      }
+	  }
+	  if {$v::mode($db) == "rw"} {
+	    periodicCommit $db
+	  }
 	}
 	return $db
     }
@@ -287,10 +298,12 @@ namespace eval mk4vfs {
 	mk::file commit $db
     }
 
+    # deprecated: unmounts, but only if vfs was mounted on itself
     proc umount {local} {
 	foreach {db path} [mk::file open] {
 	    if {[string equal $local $path]} {
-		uplevel 1 [list ::vfs::mk4::Unmount $db $local]
+		vfs::filesystem unmount $local
+		_umount $db
 		return
 	    }
 	}
@@ -307,7 +320,6 @@ namespace eval mk4vfs {
     }
 
     proc stat {db path {arr ""}} {
-
 	set sp [::file split $path]
 	set tail [lindex $sp end]
 
@@ -332,8 +344,8 @@ namespace eval mk4vfs {
 	# Now check if final comp is a directory or a file
 	# CACHING is required - it can deliver a x15 speed-up!
 	
-	if {[string equal $tail "."] || [string equal $tail ":"] \
-	  || [string equal $tail ""]} {
+	if { [string equal $tail "."] || [string equal $tail ":"] \
+	  || [string equal $tail ""] } {
 	    set row $parent
 
 	} elseif { [info exists v::cache($db,$parent,$tail)] } {
@@ -369,16 +381,16 @@ namespace eval mk4vfs {
 		}
 	    }
 	}
-
-	if {![string length $arr]} {
-	    # The caller doesn't need more detailed information.
-	    return 1
-	}
-
+ 
+        if {![string length $arr]} {
+            # The caller doesn't need more detailed information.
+            return 1
+        }
+ 
 	set cur $view!$row
 
 	upvar 1 $arr sb
-	
+
 	set sb(type)    $type
 	set sb(view)    $view
 	set sb(ino)     $cur

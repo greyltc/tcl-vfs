@@ -5,6 +5,8 @@ package provide vfslib 1.3
 
 namespace eval ::vfs {
 
+    variable zseq 0	;# used to generate temp zstream cmd names
+
     # for backwards compatibility
     proc normalize {path} { ::file normalize $path }
 
@@ -33,7 +35,7 @@ namespace eval ::vfs {
 	}
     }
 
-    # use rechan to define memchan if available
+    # use rechan to define memchan and zstream if available
     if {[info command rechan] != "" || ![catch {load "" rechan}]} {
 
 	proc memchan_handler {cmd fd args} {
@@ -77,6 +79,71 @@ namespace eval ::vfs {
 	    set fd [rechan ::vfs::memchan_handler 6]
 	    set ::vfs::_memchan_buf($fd) ""
 	    set ::vfs::_memchan_pos($fd) 0
+	    return $fd
+	}
+
+	proc zstream_handler {zcmd ifd clen ilen imode cmd fd {a1 ""} {a2 ""}} {
+	    #puts stderr "z $zcmd $ifd $ilen $cmd $fd $a1 $a2"
+	    upvar ::vfs::_zstream_pos($fd) pos
+
+	    switch -- $cmd {
+		seek {
+		    switch $a2 {
+			1 - current { incr a1 $pos }
+			2 - end { incr a1 $ilen }
+		    }
+		    # to seek back, rewind, i.e. start from scratch
+		    if {$a1 < $pos} {
+		      rename $zcmd ""
+		      zlib $imode $zcmd
+		      seek $ifd 0
+		      set pos 0
+		    }
+		    # consume data while not yet at seek position
+		    while {$pos < $a1} {
+		      set n [expr {$a1 - $pos}]
+		      if {$n > 4096} { set n 4096 }
+		      read $fd $n
+		    }
+		    return $pos
+		}
+		read {
+		    set r ""
+		    set n $a1
+		    #puts stderr " want $n z $zcmd pos $pos ilen $ilen"
+		    if {$n + $pos > $ilen} { set n [expr {$ilen - $pos}] }
+		    while {$n > 0} {
+		      if {[$zcmd fill] == 0} {
+		        set c [expr {$clen - [tell $ifd]}]
+			if {$c > 4096} { set c 4096 }
+			set data [read $ifd $c]
+			#puts "filled $c [string length $data]"
+			$zcmd fill $data
+		      }
+		      set data [$zcmd drain $n]
+		      #puts stderr " read [string length $data]"
+		      if {$data eq ""} break
+		      append r $data
+		      incr pos [string length $data]
+		      incr n -[string length $data]
+		    }
+		    return $r
+		}
+		close {
+		    rename $zcmd ""
+		    close $ifd
+		    unset pos
+		}
+		default { error "bad cmd in zstream_handler: $cmd" }
+	    }
+	}
+
+	proc zstream {mode ifd clen ilen} {
+	    set cname _zstream_[incr ::vfs::zseq]
+	    zlib s$mode $cname
+	    set cmd [list ::vfs::zstream_handler $cname $ifd $clen $ilen s$mode]
+	    set fd [rechan $cmd 2]
+	    set ::vfs::_zstream_pos($fd) 0
 	    return $fd
 	}
     }
