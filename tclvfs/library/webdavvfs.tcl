@@ -1,12 +1,14 @@
 
 package require vfs 1.0
 package require http
+# part of tcllib
+package require base64
 
-# This works for basic operations, but has not been very debugged.
+# This works for very basic operations (cd, open, file stat, but not 'glob').
 
-namespace eval vfs::http {}
+namespace eval vfs::webdav {}
 
-proc vfs::http::Mount {dirurl local} {
+proc vfs::webdav::Mount {dirurl local} {
     ::vfs::log "http-vfs: attempt to mount $dirurl at $local"
     if {[string index $dirurl end] != "/"} {
 	append dirurl "/"
@@ -34,64 +36,102 @@ proc vfs::http::Mount {dirurl local} {
 	set user anonymous
     }
     
-    set token [::http::geturl $dirurl -validate 1]
+    set dirurl "http://$host/$path"
+    
+    set extraHeadersList "Authorization {Basic [base64::encode ${user}:${pass}]}"
 
+    set token [::http::geturl $dirurl -headers $extraHeadersList -validate 1]
+    http::cleanup $token
+    
     if {![catch {vfs::filesystem info $dirurl}]} {
 	# unmount old mount
 	::vfs::log "ftp-vfs: unmounted old mount point at $dirurl"
 	vfs::unmount $dirurl
     }
     ::vfs::log "http $host, $path mounted at $local"
-    vfs::filesystem mount $local [list vfs::http::handler $dirurl $path]
+    vfs::filesystem mount $local [list vfs::webdav::handler $dirurl $extraHeadersList $path]
     # Register command to unmount
-    vfs::RegisterMount $local [list ::vfs::http::Unmount $dirurl]
+    vfs::RegisterMount $local [list ::vfs::webdav::Unmount $dirurl]
     return $dirurl
 }
 
-proc vfs::http::Unmount {dirurl local} {
+proc vfs::webdav::Unmount {dirurl local} {
     vfs::filesystem unmount $local
 }
 
-proc vfs::http::handler {dirurl path cmd root relative actualpath args} {
+proc vfs::webdav::handler {dirurl extraHeadersList path cmd root relative actualpath args} {
     if {$cmd == "matchindirectory"} {
-	eval [list $cmd $dirurl $relative $actualpath] $args
+	eval [list $cmd $dirurl $extraHeadersList $relative $actualpath] $args
     } else {
-	eval [list $cmd $dirurl $relative] $args
+	eval [list $cmd $dirurl $extraHeadersList $relative] $args
     }
 }
 
 # If we implement the commands below, we will have a perfect
 # virtual file system for remote http sites.
 
-proc vfs::http::stat {dirurl name} {
+proc vfs::webdav::stat {dirurl extraHeadersList name} {
     ::vfs::log "stat $name"
     
-    # get information on the type of this file.  We describe everything
-    # as a file (not a directory) since with http, even directories
-    # really behave as the index.html they contain.
-    set state [::http::geturl "$dirurl$name" -validate 1]
+    # get information on the type of this file.  
+    if {$name == ""} {
+	set mtime 0
+	lappend res type directory
+	lappend res dev -1 uid -1 gid -1 nlink 1 depth 0 \
+	  atime $mtime ctime $mtime mtime $mtime mode 0777
+	return $res
+    }
+    
+    ::vfs::log [list ::http::geturl $dirurl$name -headers $extraHeadersList]
+    set token [::http::geturl $dirurl$name -headers $extraHeadersList]
+    ::vfs::log $token
+    upvar #0 $token state
+    if {![regexp " (OK|Moved Permanently)$" $state(http)]} {
+	::vfs::log "No good: $state(http)"
+	::http::cleanup $token
+	error "Not found"
+    }
+    
+    if {[regexp "Moved Permanently$" $state(http)]} {
+	regexp {<A HREF="([^"]+)">here</A>} $state(body) -> here
+	if {[string index $here end] == "/"} {
+	    set type directory
+	}
+    }
+    if {![info exists type]} {
+	set type file
+    }
+    
+    #parray state
     set mtime 0
-    lappend res type file
+
+    lappend res type $type
     lappend res dev -1 uid -1 gid -1 nlink 1 depth 0 \
-      atime $mtime ctime $mtime mtime $mtime mode 0777
+      atime $mtime ctime $mtime mtime $mtime mode 0777 \
+      size $state(totalsize)
+
+    ::http::cleanup $token
     return $res
 }
 
-proc vfs::http::access {dirurl name mode} {
+proc vfs::webdav::access {dirurl extraHeadersList name mode} {
     ::vfs::log "access $name $mode"
     if {$name == ""} { return 1 }
-    set state [::http::geturl "$dirurl$name"]
-    set info ""
-    if {[string length $info]} {
-	return 1
+    set token [::http::geturl $dirurl$name -headers $extraHeadersList]
+    upvar #0 $token state
+    if {![regexp " (OK|Moved Permanently)$" $state(http)]} {
+	::vfs::log "No good: $state(http)"
+	::http::cleanup $token
+	error "Not found"
     } else {
-	error "No such file"
+	::http::cleanup $token
+	return 1
     }
 }
 
 # We've chosen to implement these channels by using a memchan.
 # The alternative would be to use temporary files.
-proc vfs::http::open {dirurl name mode permissions} {
+proc vfs::webdav::open {dirurl extraHeadersList name mode permissions} {
     ::vfs::log "open $name $mode $permissions"
     # return a list of two elements:
     # 1. first element is the Tcl channel name which has been opened
@@ -100,14 +140,18 @@ proc vfs::http::open {dirurl name mode permissions} {
     switch -glob -- $mode {
 	"" -
 	"r" {
-	    set state [::http::geturl "$dirurl$name"]
+	    set token [::http::geturl $dirurl$name -headers $extraHeadersList]
+	    upvar #0 $token state
 
 	    set filed [vfs::memchan]
-	    fconfigure $filed -translation binary
-	    puts -nonewline $filed [::http::data $state]
+	    
+	    fconfigure $filed -encoding $state(charset)
+	    
+	    puts -nonewline $filed [::http::data $token]
 
 	    fconfigure $filed -translation auto
 	    seek $filed 0
+	    ::http::cleanup $token
 	    return [list $filed]
 	}
 	"a" -
@@ -120,7 +164,7 @@ proc vfs::http::open {dirurl name mode permissions} {
     }
 }
 
-proc vfs::http::matchindirectory {dirurl path actualpath pattern type} {
+proc vfs::webdav::matchindirectory {dirurl extraHeadersList path actualpath pattern type} {
     ::vfs::log "matchindirectory $path $pattern $type"
     set res [list]
 
@@ -137,22 +181,22 @@ proc vfs::http::matchindirectory {dirurl path actualpath pattern type} {
     return $res
 }
 
-proc vfs::http::createdirectory {dirurl name} {
+proc vfs::webdav::createdirectory {dirurl extraHeadersList name} {
     ::vfs::log "createdirectory $name"
     error "read-only"
 }
 
-proc vfs::http::removedirectory {dirurl name} {
+proc vfs::webdav::removedirectory {dirurl extraHeadersList name} {
     ::vfs::log "removedirectory $name"
     error "read-only"
 }
 
-proc vfs::http::deletefile {dirurl name} {
+proc vfs::webdav::deletefile {dirurl extraHeadersList name} {
     ::vfs::log "deletefile $name"
     error "read-only"
 }
 
-proc vfs::http::fileattributes {dirurl path args} {
+proc vfs::webdav::fileattributes {dirurl extraHeadersList path args} {
     ::vfs::log "fileattributes $args"
     switch -- [llength $args] {
 	0 {
@@ -172,7 +216,7 @@ proc vfs::http::fileattributes {dirurl path args} {
     }
 }
 
-proc vfs::http::utime {dirurl path actime mtime} {
+proc vfs::webdav::utime {dirurl extraHeadersList path actime mtime} {
     error "Can't set utime"
 }
 
