@@ -1,3 +1,10 @@
+2003-07-06  Vince Darley <vincentdarley@sourceforge.net>
+
+	* library/ftpvfs.tcl: fix to 'file stat' on a directory, which
+        fixes a variety of problems (e.g. recurisve 'file copy' in a 
+        directory).  Thanks to msofer for the detailed bug report and
+        test script.
+	
 2003-07-03  Vince Darley <vincentdarley@sourceforge.net>
 
 	* library/ftpvfs.tcl: added support for ports other than 21,

@@ -28,7 +28,7 @@ proc vfs::ftp::Mount {dirurl local} {
 	set port 21
     }
     
-    set fd [::ftp::Open $host $user $pass -port $port -output ::vfs::log]
+    set fd [::ftp::Open $host $user $pass -port $port -output ::vfs::ftp::log]
     if {$fd == -1} {
 	error "Mount failed"
     }
@@ -52,6 +52,11 @@ proc vfs::ftp::Mount {dirurl local} {
     # Register command to unmount
     vfs::RegisterMount $local [list ::vfs::ftp::Unmount $fd]
     return $fd
+}
+
+# Need this because vfs::log takes just one argument
+proc vfs::ftp::log {args} {
+    ::vfs::log $args
 }
 
 proc vfs::ftp::Unmount {fd local} {
@@ -89,15 +94,14 @@ proc vfs::ftp::stat {fd name} {
     ::vfs::log $ftpInfo
     set perms [lindex $ftpInfo 0]
     if {[string index $perms 0] == "d"} {
-	lappend res type directory
+	lappend res type directory size 0
 	set mtime 0
     } else {
-	lappend res type file
+	lappend res type file size [ftp::FileSize $fd $name]
 	set mtime [ftp::ModTime $fd $name]
     }
     lappend res dev -1 uid -1 gid -1 nlink 1 depth 0 \
-      atime $mtime ctime $mtime mtime $mtime mode 0777 \
-      size [ftp::FileSize $fd $name]
+      atime $mtime ctime $mtime mtime $mtime mode 0777
     return $res
 }
 
@@ -215,7 +219,7 @@ proc vfs::ftp::_parseListLine {line} {
 }
 
 proc vfs::ftp::matchindirectory {fd path actualpath pattern type} {
-    ::vfs::log "matchindirectory $path $pattern $type"
+    ::vfs::log "matchindirectory $fd $path $actualpath $pattern $type"
     set res [list]
     if {![string length $pattern]} {
 	# matching a single file
