@@ -5,18 +5,20 @@ package require ftp
 namespace eval vfs::ftp {}
 
 proc vfs::ftp::Mount {dirurl local} {
+    ::vfs::log "ftp-vfs: attempt to mount $dirurl at $local"
     if {[string range $dirurl 0 5] == "ftp://"} {
 	set dirurl [string range $dirurl 6 end]
     }
-    if {![regexp {(([^:]*)(:([^@]*))?@)?([^/]*)/(.*/)?([^/]*)$} $dirurl \
-      junk junk user junk pass host path file]} {
+    if {![regexp {(([^:]*)(:([^@]*))?@)?([^/]*)(/(.*/)?([^/]*))?$} $dirurl \
+      junk junk user junk pass host "" path file]} {
 	return -code error "Sorry I didn't understand\
 	  the url address \"$dirurl\""
     }
     
     if {[string length $file]} {
 	return -code error "Can only mount directories, not\
-	  files (perhaps you need a trailing '/')"
+	  files (perhaps you need a trailing '/' - I understood\
+	  a path '$path' and file '$file')"
     }
     
     if {![string length $user]} {
@@ -27,11 +29,13 @@ proc vfs::ftp::Mount {dirurl local} {
     if {$fd == -1} {
 	error "Mount failed"
     }
-    if {[catch {
-	::ftp::Cd $fd $path
-    } err]} {
-	ftp::Close $fd
-	error "Opened ftp connection, but then received error: $err"
+    if {$path != ""} {
+	if {[catch {
+	    ::ftp::Cd $fd $path
+	} err]} {
+	    ftp::Close $fd
+	    error "Opened ftp connection, but then received error: $err"
+	}
     }
     
     ::vfs::log "ftp $host, $path mounted at $fd"
@@ -82,7 +86,7 @@ proc vfs::ftp::stat {fd name} {
 }
 
 proc vfs::ftp::access {fd name mode} {
-    ::vfs::log "access $name $mode"
+    ::vfs::log "ftp-access $name $mode"
     if {$name == ""} { return 1 }
     set info [vfs::ftp::_findFtpInfo $fd $name]
     if {[string length $info]} {
