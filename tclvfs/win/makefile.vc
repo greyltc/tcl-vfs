@@ -141,7 +141,7 @@ RMDIR	= deltree /Y
 
 INCLUDES = \
     -I../../cvs-tcl/generic  \
-    -I../../cvs-tcl/windows  \
+    -I../../cvs-tcl/win  \
     -I$(TOOLS32)/include	\
     -I../generic
 
