@@ -73,7 +73,7 @@ proc vfs::tar::stat {tarfd name} {
 
 proc vfs::tar::access {tarfd name mode} {
     if {$mode & 2} {
-	error "read-only"
+	return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
     }
     # Readable, Exists and Executable are treated as 'exists'
     # Could we get more information from the archive?
@@ -114,22 +114,25 @@ proc vfs::tar::open {tarfd name mode permissions} {
 	    return [list $nfd]
 	}
 	default {
-	    return -code error "illegal access mode \"$mode\""
+	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
 	}
     }
 }
 
 proc vfs::tar::createdirectory {tarfd name} {
-    error "tar-archives are read-only (not implemented)"
+    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+    #error "tar-archives are read-only (not implemented)"
 }
 
 proc vfs::tar::removedirectory {tarfd name} {
     #::vfs::log "removedirectory $name"
-    error "tar-archives are read-only (not implemented)"
+    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+    #error "tar-archives are read-only (not implemented)"
 }
 
 proc vfs::tar::deletefile {tarfd name} {
-    error "tar-archives are read-only (not implemented)"
+    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+    #error "tar-archives are read-only (not implemented)"
 }
 
 # don't care about platform-specific attributes
@@ -149,14 +152,14 @@ proc vfs::tar::fileattributes {tarfd name args} {
 	    # set value
 	    set index [lindex $args 0]
 	    set val [lindex $args 1]
-	    error "tar-archives are read-only"
+	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
 	}
     }
 }
 
-# is this needed??
+# set the 'mtime' of a file.
 proc vfs::tar::utime {fd path actime mtime} {
-    error ""
+    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
 }
 
 #

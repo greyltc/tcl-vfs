@@ -59,6 +59,10 @@ proc ::vfs::unmount {mountpoint} {
     unset _unmountCmd($norm)
 }
 
+proc vfs::states {} {
+    return [list "readwrite" "translucent" "readonly"]
+}
+
 # vfs::attributes mountpoint ?-opt val? ?...-opt val?
 proc ::vfs::attributes {mountpoint args} {
     set handler [::vfs::filesystem info $mountpoint]

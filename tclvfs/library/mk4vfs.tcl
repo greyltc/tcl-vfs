@@ -59,10 +59,16 @@ namespace eval vfs::mk4 {
     proc state {db args} {
 	switch -- [llength $args] {
 	    0 {
-		return "translucent"
+		return $::mk4vfs::v::mode($db)
 	    }
 	    1 {
-		return -code error "Can't set state yet"
+		set val [lindex $args 0]
+		if {[lsearch -exact [::vfs::states] $val] == -1} {
+		    return -code error \
+		      "invalid state $val, must be one of: [vfs::states]"
+		}
+		set ::mk4vfs::v::mode($db) $val
+		::mk4vfs::setupCommits $db
 	    }
 	    default {
 		return -code error "Wrong num args"
@@ -111,8 +117,13 @@ namespace eval vfs::mk4 {
 	array get sb
     }
 
-    proc access {db name mode} {
-	# This needs implementing better.  
+    proc vfs::mk4::access {db name mode} {
+	if {$mode & 2} {
+	    if {$::mk4vfs::v::mode($db) == "readonly"} {
+		return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	    }
+	}
+	# We can probably do this more efficiently, can't we?
 	::mk4vfs::stat $db $name sb
     }
 
@@ -153,6 +164,9 @@ namespace eval vfs::mk4 {
 		return [list $fd]
 	    }
 	    a {
+		if {$::mk4vfs::v::mode($db) == "readonly"} {
+		    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+		}
 		if { [catch {::mk4vfs::stat $db $file sb }] } {
 		    # Create file
 		    ::mk4vfs::stat $db [file dirname $file] sb
@@ -186,9 +200,12 @@ namespace eval vfs::mk4 {
 		}
 		fconfigure $fd -translation auto
 		seek $fd 0 end
-		return [list $fd [list mk4vfs::do_close $fd $mode $sb(ino)]]
+		return [list $fd [list mk4vfs::do_close $db $fd $mode $sb(ino)]]
 	    }
 	    w*  {
+		if {$::mk4vfs::v::mode($db) == "readonly"} {
+		    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+		}
 		if { [catch {::mk4vfs::stat $db $file sb }] } {
 		    # Create file
 		    ::mk4vfs::stat $db [file dirname $file] sb
@@ -208,7 +225,7 @@ namespace eval vfs::mk4 {
 		} else {
 		    set fd [mk::channel $sb(ino) contents w]
 		}
-		return [list $fd [list mk4vfs::do_close $fd $mode $sb(ino)]]
+		return [list $fd [list mk4vfs::do_close $db $fd $mode $sb(ino)]]
 	    }
 	    default   {
 		error "illegal access mode \"$mode\""
@@ -242,6 +259,9 @@ namespace eval vfs::mk4 {
 	    }
 	    2 {
 		# set value
+		if {$::mk4vfs::mode($db) == "readonly"} {
+		    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+		}
 		set index [lindex $args 0]
 		set val [lindex $args 1]
 		return [::vfs::attributesSet $root $relative $index $val]
@@ -258,13 +278,14 @@ namespace eval mk4vfs {
 
     namespace eval v {
 	variable seq      0
-	variable mode	    ;# array key is db, value is mode (rw/ro/nc)
+	variable mode	    ;# array key is db, value is mode 
+	             	     # (readwrite/translucent/readonly)
 	variable timer	    ;# array key is db, set to afterid, periodicCommit
 
 	array set cache {}
 	array set fcache {}
 
-	array set mode {exe ro}
+	array set mode {exe translucent}
     }
 
     namespace export mount umount
@@ -290,24 +311,24 @@ namespace eval mk4vfs {
 	set db mk4vfs[incr v::seq]
 
 	if {$file == ""} {
-	  mk::file open $db
-	  init $db
-	  set v::mode($db) ro
+	    mk::file open $db
+	    init $db
+	    set v::mode($db) "translucent"
 	} else {
-	  eval [list mk::file open $db $file] $args
-
-	  init $db
-
-	  set v::mode($db) rw
-	  for {set idx 0} {$idx < [llength $args]} {incr idx} {
-	      switch -- [lindex $args $idx] {
-		  -readonly   { set v::mode($db) ro }
-		  -nocommit   { set v::mode($db) nc }
-	      }
-	  }
-	  if {$v::mode($db) == "rw"} {
-	    periodicCommit $db
-	  }
+	    eval [list mk::file open $db $file] $args
+	    
+	    init $db
+	    
+	    set v::mode($db) "readwrite"
+	    for {set idx 0} {$idx < [llength $args]} {incr idx} {
+		switch -- [lindex $args $idx] {
+		    -readonly   { set v::mode($db) "readonly" }
+		    -nocommit   { set v::mode($db) "translucent" }
+		}
+	    }
+	    if {$v::mode($db) == "readwrite"} {
+		periodicCommit $db
+	    }
 	}
 	return $db
     }
@@ -439,7 +460,7 @@ namespace eval mk4vfs {
 	}
     }
 
-    proc do_close {fd mode cur} {
+    proc do_close {db fd mode cur} {
 	if {![regexp {[aw]} $mode]} {
 	    error "mk4vfs::do_close called with bad mode: $mode"
 	}
@@ -462,17 +483,21 @@ namespace eval mk4vfs {
 	    mk::set $cur size [mk::get $cur -size contents]
 	}
 	# 16oct02 new logic to start a periodic commit timer if not yet running
-	setupCommits [lindex [split $cur .] 0]
+	setupCommits $db
+	return ""
     }
 
     proc setupCommits {db} {
-	if {$v::mode($db) ne "ro" && ![info exists v::timer($db)]} {
+	if {$v::mode($db) eq "readwrite" && ![info exists v::timer($db)]} {
 	    periodicCommit $db
 	    mk::file autocommit $db
 	}
     }
 
     proc mkdir {db path} {
+	if {$v::mode($db) == "readonly"} {
+	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	}
 	set sp [::file split $path]
 	set parent 0
 	set view $db.dirs
@@ -494,6 +519,7 @@ namespace eval mk4vfs {
 	    set parent [mk::cursor position cur]
 	}
 	setupCommits $db
+	return ""
     }
 
     proc getdir {db path {pat *}} {
@@ -515,6 +541,9 @@ namespace eval mk4vfs {
     }
 
     proc mtime {db path time} {
+	if {$v::mode($db) == "readonly"} {
+	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	}
 	stat $db $path sb
 	if { $sb(type) == "file" } {
 	    mk::set $sb(ino) date $time
@@ -524,6 +553,9 @@ namespace eval mk4vfs {
 
     proc delete {db path {recursive 0}} {
 	#puts stderr "mk4delete db $db path $path recursive $recursive"
+	if {$v::mode($db) == "readonly"} {
+	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+	}
 	stat $db $path sb
 	if {$sb(type) == "file" } {
 	    mk::row delete $sb(ino)

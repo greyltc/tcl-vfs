@@ -81,6 +81,9 @@ proc vfs::http::stat {dirurl name} {
 
 proc vfs::http::access {dirurl name mode} {
     ::vfs::log "access $name $mode"
+    if {$mode & 2} {
+	return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
+    }
     if {$name == ""} { return 1 }
     set state [::http::geturl "$dirurl$name"]
     set info ""
@@ -114,7 +117,7 @@ proc vfs::http::open {dirurl name mode permissions} {
 	}
 	"a" -
 	"w*" {
-	    error "Can't open $name for writing"
+	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
 	}
 	default {
 	    return -code error "illegal access mode \"$mode\""
@@ -141,17 +144,17 @@ proc vfs::http::matchindirectory {dirurl path actualpath pattern type} {
 
 proc vfs::http::createdirectory {dirurl name} {
     ::vfs::log "createdirectory $name"
-    error "read-only"
+    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
 }
 
 proc vfs::http::removedirectory {dirurl name} {
     ::vfs::log "removedirectory $name"
-    error "read-only"
+    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
 }
 
 proc vfs::http::deletefile {dirurl name} {
     ::vfs::log "deletefile $name"
-    error "read-only"
+    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
 }
 
 proc vfs::http::fileattributes {dirurl path args} {
@@ -169,12 +172,12 @@ proc vfs::http::fileattributes {dirurl path args} {
 	    # set value
 	    set index [lindex $args 0]
 	    set val [lindex $args 1]
-	    error "read-only"
+	    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
 	}
     }
 }
 
 proc vfs::http::utime {dirurl path actime mtime} {
-    error "Can't set utime"
+    return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
 }
 

@@ -680,11 +680,11 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
     int index;
 
     static CONST char *optionStrings[] = {
-	"info", "mount", "unmount", "fullynormalize",
+	"info", "mount", "unmount", "fullynormalize", "posixerror", 
 	NULL
     };
     enum options {
-	VFS_INFO, VFS_MOUNT, VFS_UNMOUNT, VFS_NORMALIZE
+	VFS_INFO, VFS_MOUNT, VFS_UNMOUNT, VFS_NORMALIZE, VFS_POSIXERROR
     };
 
     if (objc < 2) {
@@ -697,6 +697,18 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
     }
 
     switch ((enum options) index) {
+	case VFS_POSIXERROR: {
+	    int posixError = -1;
+	    if (objc != 3) {
+		Tcl_WrongNumArgs(interp, 2, objv, "errorcode");
+		return TCL_ERROR;
+	    }
+	    if (Tcl_GetIntFromObj(NULL, objv[2], &posixError) != TCL_OK) {
+		return TCL_ERROR;
+	    }
+	    Tcl_SetErrno(posixError);
+	    return TCL_OK;
+	}
 	case VFS_NORMALIZE: {
 	    Tcl_Obj *path;
 	    if (objc != 3) {
