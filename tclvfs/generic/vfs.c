@@ -378,7 +378,8 @@ int
 VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
     Tcl_Obj *normedObj;
     int len, splitPosition;
-    char remember;
+    /* Just set this to avoid a warning */
+    char remember = '\0';
     char *normed;
     Tcl_Interp* interp;
     VfsNativeRep *nativeRep;
