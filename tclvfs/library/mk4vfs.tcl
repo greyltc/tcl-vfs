@@ -363,6 +363,7 @@ namespace eval mk4vfs {
 	variable flush
 	set v::timer($db) [after $flush [list ::mk4vfs::periodicCommit $db]]
 	mk::file commit $db
+	return ;# 2005-01-20 avoid returning a value
     }
 
     proc _umount {db args} {

@@ -1,3 +1,7 @@
+2005-01-20  Jean-Claude Wippler  <jcw@equi4.com>
+
+	* library/mk4vfs.tcl: added return in periodicCommit
+
 2004-11-22  Andreas Kupries( <andreask@activestate.com>
 
 	* Makefile.in (PKG_TCL_SOURCES): Added 'tkvfs.tcl' to the list of
