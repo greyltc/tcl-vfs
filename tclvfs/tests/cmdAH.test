@@ -1027,11 +1027,11 @@ test cmdAH-16.3 {Tcl_FileObjCmd: readable} {unixOnly notRoot testchmod fsIsWrita
 test cmdAH-17.1 {Tcl_FileObjCmd: writable} {testchmod} {
     list [catch {file writable a b} msg] $msg
 } {1 {wrong # args: should be "file writable name"}}
-testchmod 555 gorp.file
+catch {testchmod 555 gorp.file}
 test cmdAH-17.2 {Tcl_FileObjCmd: writable} {notRoot testchmod fsIsWritable} {
     file writable gorp.file
 } 0
-testchmod 222 gorp.file
+catch {testchmod 222 gorp.file}
 test cmdAH-17.3 {Tcl_FileObjCmd: writable} {testchmod fsIsWritable} {
     file writable gorp.file
 } 1
