@@ -1,3 +1,16 @@
+2003-02-20  Vince Darley <vincentdarley@sourceforge.net>
+
+	* generic/vfs.c: completed use of internalerror and posix handling
+	for all functions.
+	* doc/vfs.n:
+	* doc/vfslib.n: more documentation regarding handling of errors
+	and use of the 'internalerror' feature.
+	
+        Around the time Tcl 8.4.2 is released we should increment tclvfs's
+	version to 1.3 and make a proper release.  In the meantime,
+	improvements to all .tcl implementations (esp. proper error
+	handling) would be greatly appreciated.
+	
 2003-02-20  Andreas Kupries  <andreask@activestate.com>
 
 	* library/mk4vfs.tcl: Switching to canceling the stored after id

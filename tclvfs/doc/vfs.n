@@ -68,10 +68,12 @@ effect is to provide the command \fBvfs::filesystem\fR which allows
 the interpreter to intercept filesystem commands and handle them with
 Tcl code in that interpreter.
 .PP
-There are two unsupported subcommands of \fBvfs::filesystem\fR,
-\fBfullynormalize path\fR and \fBposixerror int\fR, which are used to
-normalize a path (including any final symlink) and to register a posix 
-error code with a Tcl error, respectively.
+There are three somewhat unsupported subcommands of
+\fBvfs::filesystem\fR, \fBfullynormalize path\fR, \fBposixerror int\fR,
+\fBinternalerror ?script?\fR, which are used to normalize a path
+(including any final symlink), to register a posix error code with a Tcl
+error, and to trap/report internal errors in tclvfs implementations
+respectively.
 .TP
 \fBvfs::filesystem\fR \fImount\fR \fI?-volume?\fR \fIpath\fR \fIcommand\fR
 To use a virtual filesystem, it must be 'mounted'.  Mounting involves
@@ -145,13 +147,25 @@ Note that most filesystem operations will only require the
 \fIrelative\fR argument to work correctly, but the other arguments are
 actually required for correct operation of some subcommands.
 .PP
+Almost all of these commands should either return correctly (i.e. with a
+TCL_OK result at the C level) or they should use vfs::filesystem
+posixerror to signal the appropriate posix error code.  If a Tcl error is
+thrown, that should be considered a bug, but it will be interpreted as an
+unknown posix error in the filesystem call.  The exceptions to these
+rules are those filesystem commands which are able to specify a Tcl error
+message directly: open (when an interpreter is given), matchindirectory
+and fileattributes (for a set or get operation only).  These three
+commands are allowed to throw any Tcl error message which will be passed
+along to the caller, or they may throw a posix error which will be
+handled appropriately.
+.PP
 The actual commands are as follows (where \fIr-r-a\fR represents the
 standard argument triplet of \fIroot\fR, \fIrelative\fR and
 \fIactualpath\fR):
 .TP
 \fIcommand\fR \fIaccess\fR \fIr-r-a\fR \fImode\fR
-Return 1 or throw an error depending on whether the given access mode (which 
-is an integer) is compatible with the file.
+Return TCL_OK or throw a posix error depending on whether the given
+access mode (which is an integer) is compatible with the file.
 .TP
 \fIcommand\fR \fIcreatedirectory\fR \fIr-r-a\fR
 Create a directory with the given name.
@@ -193,7 +207,9 @@ example, seek to the beginning of the channel, read its contents and
 store that contents elsewhere (e.g. compressed or on a remote ftp
 site, etc).  The return code or any errors returned by the callback
 are ignored (if the callback wishes to signal an error, it must do so 
-asycnhronously, with bgerror, for example).
+asycnhronously, with bgerror, for example), unless the 'internalerror' 
+script has been specified, when they are passed to that script for
+further action.
 .TP
 \fIcommand\fR \fIremovedirectory\fR \fIr-r-a\fR
 Delete the given directory.
@@ -232,6 +248,12 @@ Does \fItypes\fR want files included?
 Returns that subset of the \fIfilelist\fR (which are either absolute
 paths or names of files in \fIinDir\fR) which are compatible with the
 \fItypes\fR given.
+
+.SH VFS DEBUGGING
+.PP
+Use something like this to debug problems in your implementation:
+vfs::filesystem internalerror report ; proc report {} { puts
+stderr $::errorInfo }
 
 .SH LIMITATIONS
 .PP

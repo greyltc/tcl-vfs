@@ -1346,7 +1346,7 @@ VfsOpenFileChannel(cmdInterp, pathPtr, mode, permissions)
 		Tcl_ResetResult(cmdInterp);
 		Tcl_AppendResult(cmdInterp, "couldn't open \"", 
 				 Tcl_GetString(pathPtr), "\": ",
-				 Tcl_PosixError(interp), (char *) NULL);
+				 Tcl_PosixError(cmdInterp), (char *) NULL);
 	    } else {
 		Tcl_Obj* error = Tcl_GetObjResult(interp);
 		/* 
@@ -1354,6 +1354,11 @@ VfsOpenFileChannel(cmdInterp, pathPtr, mode, permissions)
 		 * duplicating it in case of threading issues.
 		 */
 		Tcl_SetObjResult(cmdInterp, Tcl_DuplicateObj(error));
+	    }
+	} else {
+	    /* Report any error, since otherwise it is lost */
+	    if (returnVal != -1) {
+		VfsInternalError(interp);
 	    }
 	}
 	if (interp == cmdInterp) {
@@ -1665,6 +1670,11 @@ VfsFileAttrsGet(cmdInterp, index, pathPtr, objPtrRef)
 	    Tcl_SetObjResult(cmdInterp, *objPtrRef);
 	    *objPtrRef = NULL;
 	}
+    } else {
+	Tcl_ResetResult(cmdInterp);
+	Tcl_AppendResult(cmdInterp, "couldn't read attributes for \"", 
+			 Tcl_GetString(pathPtr), "\": ",
+			 Tcl_PosixError(cmdInterp), (char *) NULL);
     }
     
     return returnVal;
@@ -1701,7 +1711,12 @@ VfsFileAttrsSet(cmdInterp, index, pathPtr, objPtr)
     Tcl_RestoreResult(interp, &savedResult);
     Tcl_DecrRefCount(mountCmd);
     
-    if (errorPtr != NULL) {
+    if (returnVal == -1) {
+	Tcl_ResetResult(cmdInterp);
+	Tcl_AppendResult(cmdInterp, "couldn't set attributes for \"", 
+			 Tcl_GetString(pathPtr), "\": ",
+			 Tcl_PosixError(cmdInterp), (char *) NULL);
+    } else if (errorPtr != NULL) {
 	/* 
 	 * Leave error message in correct interp, errorPtr was
 	 * duplicated above, in case of threading issues.
