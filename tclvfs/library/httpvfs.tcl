@@ -10,86 +10,76 @@ package require http
 namespace eval vfs::http {}
 
 proc vfs::http::Mount {dirurl local} {
-    if {[string range $dirurl 0 5] == "http://"} {
-	set dirurl [string range $dirurl 6 end]
+    ::vfs::log "http-vfs: attempt to mount $dirurl at $local"
+    if {[string index $dirurl end] != "/"} {
+	append dirurl "/"
     }
-    if {![regexp {(([^:]*)(:([^@]*))?@)?([^/]*)/(.*/)?([^/]*)$} $dirurl \
-      junk junk user junk pass host path file]} {
+    if {[string range $dirurl 0 6] == "http://"} {
+	set rest [string range $dirurl 7 end]
+    } else {
+	set rest $dirurl
+	set dirurl "http://${dirurl}"
+    }
+    
+    if {![regexp {(([^:]*)(:([^@]*))?@)?([^/]*)(/(.*/)?([^/]*))?$} $rest \
+      junk junk user junk pass host junk path file]} {
 	return -code error "Sorry I didn't understand\
 	  the url address \"$dirurl\""
     }
     
     if {[string length $file]} {
 	return -code error "Can only mount directories, not\
-	  files (perhaps you need a trailing '/')"
+	  files (perhaps you need a trailing '/' - I understood\
+	  a path '$path' and file '$file')"
     }
     
     if {![string length $user]} {
 	set user anonymous
     }
     
-    set fd [::http::Open $host $user $pass $path]
-    if {$fd == -1} {
-	error "Mount failed"
-    }
-    if {[catch {
-	::http::Cd $fd $path
-    } err]} {
-	http::Close $fd
-	error "Opened http connection, but then received error: $err"
-    }
-    
-    ::vfs::log "http $host, $path mounted at $fd"
-    vfs::filesystem mount $local [list vfs::http::handler $fd $path]
+    set token [::http::geturl $dirurl -validate 1]
+
+    ::vfs::log "http $host, $path mounted at $local"
+    vfs::filesystem mount $local [list vfs::http::handler $dirurl $path]
     # Register command to unmount
-    vfs::RegisterMount $local [list ::vfs::http::Unmount $fd]
-    return $fd
+    vfs::RegisterMount $local [list ::vfs::http::Unmount $dirurl]
+    return $dirurl
 }
 
-proc vfs::http::Unmount {fd local} {
+proc vfs::http::Unmount {dirurl local} {
     vfs::filesystem unmount $local
-    ::http::Close $fd
 }
 
-proc vfs::http::handler {fd path cmd root relative actualpath args} {
+proc vfs::http::handler {dirurl path cmd root relative actualpath args} {
     if {$cmd == "matchindirectory"} {
-	eval [list $cmd $fd $relative $actualpath] $args
+	eval [list $cmd $dirurl $relative $actualpath] $args
     } else {
-	eval [list $cmd $fd $relative] $args
+	eval [list $cmd $dirurl $relative] $args
     }
 }
 
 # If we implement the commands below, we will have a perfect
 # virtual file system for remote http sites.
 
-proc vfs::http::stat {fd name} {
+proc vfs::http::stat {dirurl name} {
     ::vfs::log "stat $name"
-    if {$name == ""} {
-	return [list type directory mtime 0 size 0 mode 0777 ino -1 \
-	  depth 0 name "" dev -1 uid -1 gid -1 nlink 1]
-    }
     
-    # get information on the type of this file
-    set httpInfo [_findHttpInfo $fd $name]
-    if {$httpInfo == ""} { error "Couldn't find file info" }
-    ::vfs::log $httpInfo
-    set perms [lindex $httpInfo 0]
-    if {[string index $perms 0] == "d"} {
-	lappend res type directory
-	set mtime 0
-    } else {
-	lappend res type file
-	set mtime [http::ModTime $fd $name]
-    }
+    # get information on the type of this file.  We describe everything
+    # as a file (not a directory) since with http, even directories
+    # really behave as the index.html they contain.
+    set state [::http::geturl [file join $dirurl $name] -validate 1]
+    set mtime 0
+    lappend res type file
     lappend res dev -1 uid -1 gid -1 nlink 1 depth 0 \
       atime $mtime ctime $mtime mtime $mtime mode 0777
     return $res
 }
 
-proc vfs::http::access {fd name mode} {
+proc vfs::http::access {dirurl name mode} {
     ::vfs::log "access $name $mode"
     if {$name == ""} { return 1 }
-    set info [vfs::http::_findHttpInfo $fd $name]
+    set state [::http::geturl [file join $dirurl $name]]
+    set info ""
     if {[string length $info]} {
 	return 1
     } else {
@@ -99,7 +89,7 @@ proc vfs::http::access {fd name mode} {
 
 # We've chosen to implement these channels by using a memchan.
 # The alternative would be to use temporary files.
-proc vfs::http::open {fd name mode permissions} {
+proc vfs::http::open {dirurl name mode permissions} {
     ::vfs::log "open $name $mode $permissions"
     # return a list of two elements:
     # 1. first element is the Tcl channel name which has been opened
@@ -108,12 +98,12 @@ proc vfs::http::open {fd name mode permissions} {
     switch -glob -- $mode {
 	"" -
 	"r" {
-	    http::Get $fd $name -variable tmp
+	    set state [::http::geturl [file join $dirurl $name]]
 	    package require Memchan
 
 	    set filed [memchan]
 	    fconfigure $filed -translation binary
-	    puts -nonewline $filed $tmp
+	    puts -nonewline $filed [::http::data $state]
 
 	    fconfigure $filed -translation auto
 	    seek $filed 0
@@ -121,7 +111,6 @@ proc vfs::http::open {fd name mode permissions} {
 	}
 	"a" -
 	"w*" {
-	    # Try to write an empty file
 	    error "Can't open $name for writing"
 	}
 	default {
@@ -130,23 +119,9 @@ proc vfs::http::open {fd name mode permissions} {
     }
 }
 
-proc vfs::http::_findHttpInfo {fd name} {
-    ::vfs::log "findHttpInfo $fd $name"
-    set httpList [http::List $fd [file dirname $name]]
-    foreach p $httpList {
-	regsub -all "\[ \t\]+" $p " " p
-	set items [split $p " "]
-	set pname [lindex $items end]
-	if {$pname == [file tail $name]} {
-	    return $items
-	}
-    }
-    return ""
-}
-
-proc vfs::http::matchindirectory {fd path actualpath pattern type} {
+proc vfs::http::matchindirectory {dirurl path actualpath pattern type} {
     ::vfs::log "matchindirectory $path $pattern $type"
-    set httpList [http::List $fd $path]
+    set httpList [http::List $dirurl $path]
     ::vfs::log "httpList: $httpList"
     set res [list]
 
@@ -171,22 +146,22 @@ proc vfs::http::matchindirectory {fd path actualpath pattern type} {
     return $res
 }
 
-proc vfs::http::createdirectory {fd name} {
+proc vfs::http::createdirectory {dirurl name} {
     ::vfs::log "createdirectory $name"
     error "read-only"
 }
 
-proc vfs::http::removedirectory {fd name} {
+proc vfs::http::removedirectory {dirurl name} {
     ::vfs::log "removedirectory $name"
     error "read-only"
 }
 
-proc vfs::http::deletefile {fd name} {
+proc vfs::http::deletefile {dirurl name} {
     ::vfs::log "deletefile $name"
     error "read-only"
 }
 
-proc vfs::http::fileattributes {fd path args} {
+proc vfs::http::fileattributes {dirurl path args} {
     ::vfs::log "fileattributes $args"
     switch -- [llength $args] {
 	0 {
@@ -206,7 +181,7 @@ proc vfs::http::fileattributes {fd path args} {
     }
 }
 
-proc vfs::http::utime {fd path actime mtime} {
+proc vfs::http::utime {dirurl path actime mtime} {
     error "Can't set utime"
 }
 

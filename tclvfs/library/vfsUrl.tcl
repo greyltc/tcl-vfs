@@ -36,7 +36,7 @@ proc vfs::urltype::handler {type cmd root relative actualpath args} {
     }
 }
 
-# Stuff below not very well implemented.
+# Stuff below not very well implemented, but works more or less.
 
 proc vfs::urltype::stat {type root name} {
     ::vfs::log "stat $name"

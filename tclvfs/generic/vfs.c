@@ -140,8 +140,7 @@ static Tcl_Filesystem vfsFilesystem = {
     NULL,
     /* No copy directory */
     NULL, 
-    /* No load, unload */
-    NULL,
+    /* No load */
     NULL,
     /* We don't need a getcwd or chdir */
     NULL,
