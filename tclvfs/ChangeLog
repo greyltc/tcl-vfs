@@ -1,5 +1,6 @@
 2003-02-24  Jean-Claude Wippler  <jcw@equi4.com>
 
+	* pkgIndex.tcl, pkgIndex.tcl.in: starkit rev bumped to 1.2
 	* starkit.tcl: more contexts, panic ok if "." already gone
 
 2003-02-23  Jeff Hobbs  <jeffh@ActiveState.com>

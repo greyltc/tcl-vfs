@@ -1,7 +1,7 @@
 # Starkit support, see http://www.equi4.com/starkit/
 # by Jean-Claude Wippler, July 2002
 
-package provide starkit 1.1
+package provide starkit 1.2
 
 # Starkit scripts can launched in a number of ways:
 #   - wrapped or unwrapped
@@ -42,10 +42,14 @@ namespace eval starkit {
 
     # called from the startup script of a starkit to init topdir and auto_path
     # returns how the script was launched: starkit, starpack, unwrapped, or
-    # sourced (Jan 2003: also tclhttpd or plugin)
+    # sourced (2003: also tclhttpd, plugin, or service)
     proc startup {} {
 	global argv0
-	variable topdir ;# the root directory (while the starkit is mounted)
+
+	# 2003/02/11: new behavior, if starkit::topdir exists, don't disturb it
+	if {![info exists starkit::topdir]} {
+	  variable topdir ;# the root directory (while the starkit is mounted)
+	}
 
 	set script [file normalize [info script]]
 	set topdir [file dirname $script]
@@ -93,7 +97,7 @@ namespace eval starkit {
     # terminate with an error message, using most appropriate mechanism
     proc panic {msg} {
 	if {[info commands wm] ne ""} {
-	    wm withdraw .
+	    catch { wm withdraw . }
 	    tk_messageBox -icon error -message $msg -title "Fatal error"
 	} elseif {[info commands ::eventlog] ne ""} {
 	    eventlog error $msg
