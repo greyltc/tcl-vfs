@@ -63,6 +63,20 @@ static Tcl_Obj *vfsVolumes = NULL;
  */
 TCL_DECLARE_MUTEX(vfsVolumesMutex)
 
+/* 
+ * Stores a script to evaluate when an internal error is detected in
+ * a tclvfs implementation.  This is most useful for debugging.
+ * 
+ * When it is not NULL we keep a refCount on it.
+ */
+static Tcl_Obj *internalErrorScript = NULL;
+
+/* 
+ * Declare a mutex for thread-safety of modification of the
+ * internal error script.
+ */
+TCL_DECLARE_MUTEX(internalErrorMutex)
+
 /*
  * struct Vfs_InterpCmd --
  * 
@@ -680,11 +694,14 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
     int index;
 
     static CONST char *optionStrings[] = {
-	"info", "mount", "unmount", "fullynormalize", "posixerror", 
+	"info", "internalerror", "mount", "unmount", 
+	"fullynormalize", "posixerror", 
 	NULL
     };
+    
     enum options {
-	VFS_INFO, VFS_MOUNT, VFS_UNMOUNT, VFS_NORMALIZE, VFS_POSIXERROR
+	VFS_INFO, VFS_INTERNAL_ERROR, VFS_MOUNT, VFS_UNMOUNT, 
+	VFS_NORMALIZE, VFS_POSIXERROR
     };
 
     if (objc < 2) {
@@ -697,6 +714,39 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
     }
 
     switch ((enum options) index) {
+	case VFS_INTERNAL_ERROR: {
+	    int posixError = -1;
+	    if (objc > 3) {
+		Tcl_WrongNumArgs(interp, 2, objv, "?script?");
+		return TCL_ERROR;
+	    }
+	    if (objc == 2) {
+	        /* Return the current script */
+		Tcl_MutexLock(&internalErrorMutex);
+		if (internalErrorScript != NULL) {
+		    Tcl_SetObjResult(interp, internalErrorScript);
+		}
+		Tcl_MutexUnlock(&internalErrorMutex);
+	    } else {
+		/* Set the script */
+		int len;
+		CONST char* str = Tcl_GetStringFromObj(objv[2],&len);
+		Tcl_MutexLock(&internalErrorMutex);
+		if (internalErrorScript != NULL) {
+		    Tcl_DecrRefCount(internalErrorScript);
+		}
+		if (len == 0) {
+		    /* Clear our script */
+		    internalErrorScript = NULL;
+		} else {
+		    /* Set it */
+		    internalErrorScript = objv[2];
+		    Tcl_IncrRefCount(internalErrorScript);
+		}
+		Tcl_MutexUnlock(&internalErrorMutex);
+	    }
+	    return TCL_OK;
+	}
 	case VFS_POSIXERROR: {
 	    int posixError = -1;
 	    if (objc != 3) {
@@ -800,7 +850,18 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
     }
     return TCL_OK;
 }
-
+
+/* Handle an error thrown by a tcl vfs implementation */
+static void
+VfsInternalError(Tcl_Interp* interp) {
+    Tcl_MutexLock(&internalErrorMutex);
+    if (internalErrorScript != NULL) {
+        Tcl_EvalObjEx(interp, internalErrorScript, 
+		      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
+    }
+    Tcl_MutexUnlock(&internalErrorMutex);
+}
+
 /* Return fully normalized path owned by the caller */
 static Tcl_Obj*
 VfsFullyNormalizePath(Tcl_Interp *interp, Tcl_Obj *pathPtr) {
@@ -859,7 +920,8 @@ VfsFullyNormalizePath(Tcl_Interp *interp, Tcl_Obj *pathPtr) {
     Tcl_IncrRefCount(path);
     Tcl_DecrRefCount(pathPtr);
     return path;
-}
+}
+
 /*
  *----------------------------------------------------------------------
  *
@@ -1152,10 +1214,14 @@ VfsStat(pathPtr, bufPtr)
 	}
     }
     
+    if (returnVal != TCL_OK && returnVal != -1) {
+	VfsInternalError(interp);
+    }
+
     Tcl_RestoreResult(interp, &savedResult);
     Tcl_DecrRefCount(mountCmd);
     
-    if (returnVal != 0) {
+    if (returnVal != TCL_OK && returnVal != -1) {
 	Tcl_SetErrno(ENOENT);
         return -1;
     } else {
@@ -1183,6 +1249,9 @@ VfsAccess(pathPtr, mode)
     Tcl_SaveResult(interp, &savedResult);
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
+    if (returnVal != TCL_OK && returnVal != -1) {
+	VfsInternalError(interp);
+    }
     Tcl_RestoreResult(interp, &savedResult);
     Tcl_DecrRefCount(mountCmd);
 
@@ -1340,6 +1409,7 @@ VfsOpenFileChannel(cmdInterp, pathPtr, mode, permissions)
 static void 
 VfsCloseProc(ClientData clientData) {
     VfsChannelCleanupInfo * channelRet = (VfsChannelCleanupInfo*) clientData;
+    int returnVal;
     Tcl_SavedResult savedResult;
     Tcl_Channel chan = channelRet->channel;
     Tcl_Interp * interp = channelRet->interp;
@@ -1352,8 +1422,11 @@ VfsCloseProc(ClientData clientData) {
      * the Tcl code to use the channel's string-name).
      */
     Tcl_RegisterChannel(interp, chan);
-    Tcl_EvalObjEx(interp, channelRet->closeCallback, 
+    returnVal = Tcl_EvalObjEx(interp, channelRet->closeCallback, 
 		  TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
+    if (returnVal != TCL_OK) {
+	VfsInternalError(interp);
+    }
     Tcl_DecrRefCount(channelRet->closeCallback);
 
     /* 
@@ -1442,6 +1515,9 @@ VfsDeleteFile(
     Tcl_SaveResult(interp, &savedResult);
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
+    if (returnVal != TCL_OK && returnVal != -1) {
+	VfsInternalError(interp);
+    }
     Tcl_RestoreResult(interp, &savedResult);
     Tcl_DecrRefCount(mountCmd);
     return returnVal;
@@ -1465,6 +1541,9 @@ VfsCreateDirectory(
     Tcl_SaveResult(interp, &savedResult);
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
+    if (returnVal != TCL_OK && returnVal != -1) {
+	VfsInternalError(interp);
+    }
     Tcl_RestoreResult(interp, &savedResult);
     Tcl_DecrRefCount(mountCmd);
     return returnVal;
@@ -1495,6 +1574,9 @@ VfsRemoveDirectory(
     Tcl_SaveResult(interp, &savedResult);
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
+    if (returnVal != TCL_OK && returnVal != -1) {
+	VfsInternalError(interp);
+    }
     Tcl_RestoreResult(interp, &savedResult);
     Tcl_DecrRefCount(mountCmd);
 
@@ -1529,6 +1611,9 @@ VfsFileAttrStrings(pathPtr, objPtrRef)
     /* Now we execute this mount point's callback. */
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
+    if (returnVal != TCL_OK && returnVal != -1) {
+	VfsInternalError(interp);
+    }
     if (returnVal == TCL_OK) {
 	*objPtrRef = Tcl_DuplicateObj(Tcl_GetObjResult(interp));
     } else {
@@ -1646,6 +1731,9 @@ VfsUtime(pathPtr, tval)
     Tcl_SaveResult(interp, &savedResult);
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
+    if (returnVal != TCL_OK && returnVal != -1) {
+	VfsInternalError(interp);
+    }
     Tcl_RestoreResult(interp, &savedResult);
     Tcl_DecrRefCount(mountCmd);
 

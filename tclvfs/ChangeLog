@@ -1,3 +1,23 @@
+2003-02-20  Vince Darley <vincentdarley@sourceforge.net>
+
+	* generic/vfs.c: added new debugging feature 
+	'vfs::filesystem internalerror ?script?' which can be used
+	to specify a script to evaluate when any tclvfs implementation
+	throws an error.  Once implementation of all .tcl's is complete,
+	they should only return TCL_OK or a posix error code.  Any other
+	code will signal an error which can be caught using this new
+	proc.  If the script is not set, the behaviour of this extension
+	is unchanged.
+	
+	Note that this has only been applied to those VFS api's which
+	are not currently able to pass an error message at the Tcl level.
+	Some (open, matchindirectory, fileattributes with get/set) are
+	already able to pass their errors up, so these cases are *not*
+	passed to this handler.
+
+	* library/mk4vfs.tcl: made one change to support the above
+	feature.
+	
 2003-02-19  Vince Darley <vincentdarley@sourceforge.net>
 
 	* library/mk4vfs.tcl: added 'commit' attribute
