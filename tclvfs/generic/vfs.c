@@ -32,8 +32,9 @@
 
 EXTERN int Vfs_Init _ANSI_ARGS_((Tcl_Interp*));
 
-static void Vfs_AddVolume _ANSI_ARGS_((Tcl_Obj*));
-static int Vfs_RemoveVolume _ANSI_ARGS_((Tcl_Obj*));
+/* Functions to add and remove a volume from the list of volumes */
+static void Vfs_AddVolume    _ANSI_ARGS_((Tcl_Obj*));
+static int  Vfs_RemoveVolume _ANSI_ARGS_((Tcl_Obj*));
 
 /* 
  * Stores the list of volumes registered with the vfs 
@@ -182,6 +183,12 @@ static Tcl_Obj*          VfsCommand(Tcl_Interp* interp, CONST char* cmd,
     #define VFS_SEPARATOR '/'
 #endif
 
+/* 
+ * This cannot be 'const' because Tcl wants to trample
+ * over it when it tries to parse things.  In the future
+ * we won't rely upon Tcl to do this for us.
+ */
+static char* mountVar = "vfs::mount";
 
 
 /*
@@ -301,7 +308,7 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		i = 2;
 	    }
 	    path = Tcl_FSGetNormalizedPath(interp, objv[i]);
-	    if (Tcl_SetVar2Ex(vfsInterp, "vfs::mount", 
+	    if (Tcl_SetVar2Ex(vfsInterp, mountVar, 
 			      Tcl_GetString(path), objv[i+1], 
 			      TCL_LEAVE_ERR_MSG | TCL_GLOBAL_ONLY) == NULL) {
 		return TCL_ERROR;
@@ -327,7 +334,7 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		Tcl_GlobalEval(interp, "array names ::vfs::mount");
 	    } else {
 		path = Tcl_FSGetNormalizedPath(interp, objv[2]);
-		val = Tcl_GetVar2Ex(vfsInterp, "vfs::mount", Tcl_GetString(path),
+		val = Tcl_GetVar2Ex(vfsInterp, mountVar, Tcl_GetString(path),
 				    TCL_LEAVE_ERR_MSG | TCL_GLOBAL_ONLY);
 				  
 		if (val == NULL) {
@@ -363,7 +370,7 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		i = 2;
 	    }
 	    path = Tcl_FSGetNormalizedPath(interp, objv[i]);
-	    res = Tcl_UnsetVar2(vfsInterp, "vfs::mount", Tcl_GetString(path), 
+	    res = Tcl_UnsetVar2(vfsInterp, mountVar, Tcl_GetString(path), 
 				TCL_LEAVE_ERR_MSG | TCL_GLOBAL_ONLY);
 	    if (res == TCL_OK) {
 		if (i == 3) {
@@ -388,13 +395,13 @@ VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
     VfsNativeRep *nativeRep;
     Tcl_Obj* mountCmd = NULL;
     
-    /* 
-     * Even Tcl_FSGetNormalizedPath may fail due to lack of system
-     * encodings, so we just say we can't handle anything if
-     * we are in the middle of the exit sequence.  We could
-     * perhaps be more subtle than this!
-     */
     if (TclInExit()) {
+	/* 
+	 * Even Tcl_FSGetNormalizedPath may fail due to lack of system
+	 * encodings, so we just say we can't handle anything if we are
+	 * in the middle of the exit sequence.  We could perhaps be
+	 * more subtle than this!
+	 */
 	return -1;
     }
 
@@ -418,7 +425,7 @@ VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
      * checks here.
      */
     while (mountCmd == NULL) {
-	mountCmd = Tcl_GetVar2Ex(interp, "vfs::mount", normed,
+	mountCmd = Tcl_GetVar2Ex(interp, mountVar, normed,
 				 TCL_GLOBAL_ONLY);
 				 
 	if (mountCmd != NULL) break;
@@ -437,7 +444,7 @@ VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
 	if ((splitPosition > 0) && (splitPosition != len)) {
 	    remember = normed[splitPosition + 1];
 	    normed[splitPosition+1] = '\0';
-	    mountCmd = Tcl_GetVar2Ex(interp, "vfs::mount", normed,
+	    mountCmd = Tcl_GetVar2Ex(interp, mountVar, normed,
 				     TCL_GLOBAL_ONLY);
 				     
 	    if (mountCmd != NULL) {
