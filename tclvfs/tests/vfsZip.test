@@ -15,36 +15,4 @@ if {[lsearch [namespace children] ::tcltest] == -1} {
     namespace import ::tcltest::*
 }
 
-set dir [pwd]
-if {[catch {
-    puts stdout "Zipping tests" ; update
-    cd [file dirname [file dirname [file normalize [info script]]]]
-    foreach f [concat [glob -dir [pwd] -join -tails tests *.test] \
-      [glob -dir [pwd] -join -tails tests *.tcl]] {
-	if {[file tail $f] != "vfsZip.test"} {
-	    lappend filelist $f
-	}
-    }
-    catch {file delete [file join tests tests.zip]}
-    eval [list exec zip -q -9 [file join tests tests.zip]] $filelist
-    puts stdout "Done zipping"
-    cd [file dirname [info script]]
-    
-    package require vfs
-    set mount [vfs::zip::Mount tests.zip tests.zip]
-    cd tests.zip
-    cd tests
-    source all.tcl
-    vfs::zip::Unmount $mount tests.zip
-} err]} {
-    puts "vfsZip.test: running tests from a zip vfs failed"
-    global errorInfo
-    puts $errorInfo
-} else {
-    puts "vfsZip.test: running tests from a zip vfs succeeded"
-}
-
-puts "vfsZip.test: complete"
-cd $dir
-
 

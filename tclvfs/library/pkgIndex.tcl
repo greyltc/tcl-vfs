@@ -20,10 +20,6 @@ if {[info tclversion] == 8.4} {
     }
 }
 
-if {[lsearch -exact $auto_path $dir] == -1} {
-    lappend auto_path $dir
-}
-
 if {[info exists tcl_platform(debug)]} {
     set file [file join $dir vfs10d[info sharedlibextension]]
 } else {
@@ -37,7 +33,16 @@ if {![file exists $file]} {
     return
 }
 
-package ifneeded vfs 1.0 [list load $file]
+proc loadvfs {file} {
+    global auto_path
+    set dir [file dirname $file]
+    if {[lsearch -exact $auto_path $dir] == -1} {
+	lappend auto_path $dir
+    }
+    load $file
+}
+
+package ifneeded vfs 1.0 [list loadvfs $file]
 unset file
 
 package ifneeded mk4vfs 1.0 [list source [file join $dir mk4vfs.tcl]]

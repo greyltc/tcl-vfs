@@ -1,3 +1,14 @@
+2002-05-03  Vince Darley <vincentdarley@sourceforge.net>
+	* tests/*: more test improvements, and new file vfsArchive.test
+	which will test the running of the tests inside an archive. 
+	This requires recursive invocation of the 'tcltest' package,
+	which may well cause some problems if it isn't designed to
+	handle that (i.e. executing one test actually causes the
+	execution of a lot of other tests).
+	* library/pkgIndex.tcl: update to try to avoid the 'no such
+	command vfs::*::Mount' error messages which you can get, if
+	the relevant .tcl files are not on your auto_path.
+
 2002-05-02  Vince Darley <vincentdarley@sourceforge.net>
 	* tests/vfs.test: tests work independent of directory in which
 	they run.  Tests added to check that at least 'vfs::memchan'
