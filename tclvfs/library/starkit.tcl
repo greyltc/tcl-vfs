@@ -106,4 +106,39 @@ namespace eval starkit {
 	}
 	exit
     }
+
+    # the following proc was copied from the critcl package:
+
+    # return a platform designator, including both OS and machine
+    #
+    # only use first element of $tcl_platform(os) - we don't care
+    # whether we are on "Windows NT" or "Windows XP" or whatever
+    #
+    # transforms $tcl_platform(machine) for some special cases
+    #  - on SunOS, matches for sun4* are transformed to sparc
+    #  - on all OS's matches for intel and i*86* are transformed to x86
+    #  - on MacOS X "Power Macintosh" is transformed to ppc
+    #
+    proc platform {} {
+        global tcl_platform
+        set plat [lindex $tcl_platform(os) 0]
+        set mach $tcl_platform(machine)
+        switch -glob -- $mach {
+            sun4* { set mach sparc }
+            intel -
+            i*86* { set mach x86 }
+            "Power Macintosh" { set mach ppc }
+        }
+	switch -- $plat {
+	  AIX   { set mach ppc }
+	  HP-UX { set mach hppa }
+	}
+        return "$plat-$mach"
+    }
+
+    # load extension from a platform-specific subdirectory
+    proc pload {dir name args} {
+      set f [file join $dir [platform] $name[info sharedlibext]]
+      uplevel 1 [linsert $args 0 load $f]
+    }
 }

@@ -1,3 +1,9 @@
+2003-09-28  Jean-Claude Wippler  <jcw@equi4.com>
+
+	* starkit.tcl: added "package" and "pload" procs, to simplify
+	loading compiled extensions from a platform-specific subdir.
+	The naming conventions and code were adopted from Critcl.
+
 2003-09-26  Jean-Claude Wippler  <jcw@equi4.com>
 
 	* starkit.tcl: add file normalize around info nameofexe, fixes
