@@ -44,7 +44,9 @@ evaluate the command
 .PP
 \fIvfs::urltype::Mount ftp\fR
 .PP
-for instance.
+for instance.  Any access inside the new volume will result in an
+attempt to mount a new path through 'vfs::${type}::Mount', which must 
+therefore exist, or errors will be thrown.
 .PP
 .SH LIMITATIONS
 .PP
