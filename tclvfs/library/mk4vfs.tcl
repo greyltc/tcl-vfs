@@ -4,13 +4,14 @@
 #
 # $Id$
 #
-# 1.3 jcw	05-04-2002 	fixed append mode & close,
-#				privatized memchan_handler
-#				added zip, crc back in
-# 1.4 jcw	28-04-2002 	reorged memchan and pkg dependencies
-# 1.5 jcw	22-06-2002 	fixed recursive dir deletion
+# 05apr02 jcw	1.3	fixed append mode & close,
+#			privatized memchan_handler
+#			added zip, crc back in
+# 28apr02 jcw	1.4	reorged memchan and pkg dependencies
+# 22jun02 jcw	1.5	fixed recursive dir deletion
+# 16oct02 jcw	1.6	fixed periodic commit once a change is made
 
-package provide mk4vfs 1.5
+package provide mk4vfs 1.6
 package require Mk4tcl
 package require vfs
 
@@ -222,13 +223,17 @@ namespace eval vfs::mk4 {
 namespace eval mk4vfs {
     variable compress 1     ;# HACK - needs to be part of "Super-Block"
     variable flush    5000  ;# Auto-Commit frequency
-    variable direct   0	  ;# read through a memchan, or from Mk4tcl if zero
+    variable direct   0	    ;# read through a memchan, or from Mk4tcl if zero
 
     namespace eval v {
 	variable seq      0
+	variable mode	    ;# array key is db, value is mode (rw/ro/nc)
+	variable timer	    ;# array key is db, set to afterid, periodicCommit
 
 	array set cache {}
 	array set fcache {}
+
+	array set mode {exe ro}
     }
 
     namespace export mount umount
@@ -256,22 +261,22 @@ namespace eval mk4vfs {
 
 	init $db
 
-	set flush 1
+	set v::mode($db) rw
 	for {set idx 0} {$idx < [llength $args]} {incr idx} {
 	    switch -- [lindex $args $idx] {
-		-readonly   -
-		-nocommit   {set flush 0}
+		-readonly   { set v::mode($db) ro }
+		-nocommit   { set v::mode($db) nc }
 	    }
 	}
-	if { $flush } {
-	    _commit $db
+	if {$v::mode($db) == "rw"} {
+	  periodicCommit $db
 	}
 	return $db
     }
 
-    proc _commit {db} {
+    proc periodicCommit {db} {
 	variable flush
-	after $flush [list mk4vfs::_commit $db]
+	set v::timer($db) [after $flush [list mk4vfs::periodicCommit $db]]
 	mk::file commit $db
     }
 
@@ -286,7 +291,9 @@ namespace eval mk4vfs {
     }
 
     proc _umount {db} {
-	after cancel [list mk4vfs::_commit $db]
+	after cancel [list mk4vfs::periodicCommit $db]
+	array unset v::mode $db
+	array unset v::timer $db
 	array unset v::cache $db,*
 	array unset v::fcache $db.*
 	mk::file close $db
@@ -408,9 +415,15 @@ namespace eval mk4vfs {
 	} else {
 	    mk::set $cur size [mk::get $cur -size contents]
 	}
-	# added 30-10-2000
-	set db [lindex [split $cur .] 0]
-	mk::file autocommit $db
+	# 16oct02 new logic to start a periodic commit timer if not yet running
+	setupCommits [lindex [split $cur .] 0]
+    }
+
+    proc setupCommits {db} {
+	if {$v::mode($db) ne "ro" && ![info exists v::timer($db)]} {
+	    periodicCommit $db
+	    mk::file autocommit $db
+	}
     }
 
     proc mkdir {db path} {
@@ -434,6 +447,7 @@ namespace eval mk4vfs {
 	    set cur [mk::row append $view name $ele parent $parent]
 	    set parent [mk::cursor position cur]
 	}
+	setupCommits $db
     }
 
     proc getdir {db path {pat *}} {
@@ -495,6 +509,7 @@ namespace eval mk4vfs {
 	    # get rid of file entries to release the space in the datafile
 	    mk::view size $sb(ino).files 0
 	}
+	setupCommits $db
 	return ""
     }
 }

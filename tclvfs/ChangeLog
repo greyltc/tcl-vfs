@@ -1,3 +1,8 @@
+2002-10-19  Jean-Claude Wippler <jcw@equi4.com>
+
+	* library/pkgIndex.tcl:
+	* library/mk4vfs.tcl: merged 1.6 changes, periodic commit/flush
+
 2002-10-18  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Makefile.in: add tclIndex to install
@@ -35,6 +40,12 @@
 	* tclconfig/install-sh (new):
 	* tclconfig/tcl.m4 (new):
 	* generic/vfs.c: changed BUILD_Vfs to BUILD_vfs
+
+2002-09-10  Jean-Claude Wippler <jcw@equi4.com>
+	* library/pkgIndex.tcl:	adjusted for two new packages,
+	also fixed to use proper file name on unix (as shared lib)
+	* library/starkit.tcl: added, new impl of scripdoc.tcl
+	* library/vfslib.tcl: added back in, need by above
 
 2002-07-18  Vince Darley <vincentdarley@sourceforge.net>
 	* generic/vfs.c: ensure all mount activity is with fully
