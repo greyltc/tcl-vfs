@@ -59,6 +59,16 @@ which involves opening files.  The zip vfs also require 'Trf' (for its
 
 The vfs's currently available are:
 
+package vfs::ftp 1.0 
+package vfs::http 0.5
+package vfs::mk4 1.6 
+package vfs::ns 0.5 
+package vfs::tar 0.9
+package vfs::test 1.0
+package vfs::urltype 1.0
+package vfs::webdav 0.1
+package vfs::zip 1.0 
+
 --------+-----------------------------------------------------------------
 vfs     |  example mount command                       
 --------+-----------------------------------------------------------------
