@@ -218,6 +218,10 @@ We may add \fIlink\fR and \fIlstat\fR commands in the future to allow
 virtual filesystems to support reading and writing links - this is
 supported by the C API, but has simply not been exposed to Tcl in this
 extension.
+.PP
+The Tcl 'Tcl_FSMatchInDirectory' function takes a variety of type
+information in a Tcl_GlobTypeData structure.  We currently only expose 
+the 'type' fields from that structure.
 .SH KEYWORDS
 vfs, filesystem, file
 
