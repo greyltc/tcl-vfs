@@ -393,6 +393,14 @@ AC_DEFUN(TEA_ENABLE_SHARED, [
 	SHARED_BUILD=0
 	AC_DEFINE(STATIC_BUILD)
     fi
+
+    # These are escaped so that only CFLAGS is picked up at configure time.
+    # The other values will be substituted at make time.
+    CFLAGS="${CFLAGS} \${CFLAGS_DEFAULT} \${CFLAGS_WARNING}"
+    if test "${SHARED_BUILD}" = "1" ; then
+	CFLAGS="${CFLAGS} \${SHLIB_CFLAGS}"
+    fi
+    AC_SUBST(SHARED_BUILD)
 ])
 
 #------------------------------------------------------------------------
@@ -508,6 +516,7 @@ AC_DEFUN(TEA_ENABLE_THREADS, [
 # TEA_ENABLE_SYMBOLS --
 #
 #	Specify if debugging symbols should be used
+#	Memory (TCL_MEM_DEBUG) debugging can also be enabled.
 #
 # Arguments:
 #	none
@@ -546,23 +555,37 @@ AC_DEFUN(TEA_ENABLE_SYMBOLS, [
 
     AC_MSG_CHECKING([for build with symbols])
     AC_ARG_ENABLE(symbols, [  --enable-symbols        build with debugging symbols [--disable-symbols]],    [tcl_ok=$enableval], [tcl_ok=no])
-    if test "$tcl_ok" = "yes"; then
-	CFLAGS_DEFAULT='$(CFLAGS_DEBUG)'
-	LDFLAGS_DEFAULT='$(LDFLAGS_DEBUG)'
-	DBGX=${tcl_dbgx}
-	TCL_DBGX=${tcl_dbgx}
-	AC_MSG_RESULT([yes])
-    else
+    if test "$tcl_ok" = "no"; then
 	CFLAGS_DEFAULT='$(CFLAGS_OPTIMIZE)'
 	LDFLAGS_DEFAULT='$(LDFLAGS_OPTIMIZE)'
 	DBGX=""
 	TCL_DBGX=""
 	AC_MSG_RESULT([no])
+    else
+	CFLAGS_DEFAULT='$(CFLAGS_DEBUG)'
+	LDFLAGS_DEFAULT='$(LDFLAGS_DEBUG)'
+	DBGX=${tcl_dbgx}
+	TCL_DBGX=${tcl_dbgx}
+	if test "$tcl_ok" = "yes"; then
+	    AC_MSG_RESULT([yes (standard debugging)])
+	fi
     fi
 
     AC_SUBST(TCL_DBGX)
     AC_SUBST(CFLAGS_DEFAULT)
     AC_SUBST(LDFLAGS_DEFAULT)
+
+    if test "$tcl_ok" = "mem" -o "$tcl_ok" = "all"; then
+	AC_DEFINE(TCL_MEM_DEBUG)
+    fi
+
+    if test "$tcl_ok" != "yes" -a "$tcl_ok" != "no"; then
+	if test "$tcl_ok" = "all"; then
+	    AC_MSG_RESULT([enabled symbols mem debugging])
+	else
+	    AC_MSG_RESULT([enabled $tcl_ok debugging])
+	fi
+    fi
 ])
 
 #------------------------------------------------------------------------
@@ -690,7 +713,7 @@ AC_DEFUN(TEA_ENABLE_LANGINFO, [
 #
 #		STLIB_LD
 #		SHLIB_LD
-#		SHLIB_CFAGS
+#		SHLIB_CFLAGS
 #		SHLIB_LDFLAGS
 #		LDFLAGS_DEBUG
 #		LDFLAGS_OPTIMIZE
@@ -717,17 +740,6 @@ AC_DEFUN(TEA_CONFIG_CFLAGS, [
     if test "$do64bitVIS" = "yes"; then
 	# Force 64bit on with VIS
 	do64bit=yes
-    fi
-
-    # Step 0.c: Enable memory debugging? (TCL_MEM_DEBUG)
-
-    AC_MSG_CHECKING([if memory debugging is requested])
-    AC_ARG_ENABLE(memdebug, [  --enable-memdebug       build with memory debugging [--disable-memdebug]], [doMemDebug=$enableval], [doMemDebug=no])
-    if test "$doMemDebug" = "yes"; then
-	AC_DEFINE(TCL_MEM_DEBUG)
-	AC_MSG_RESULT([yes])
-    else
-	AC_MSG_RESULT([no])
     fi
 
     # Step 1: set the variable "system" to hold the name and version number
@@ -919,14 +931,17 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 	    	AC_DEFINE(USE_DELTA_FOR_TZ)
 	    fi
 
-	    # Check to enable 64-bit flags for compiler/linker
-	    if test "$do64bit" = "yes" ; then
+	    # Check to enable 64-bit flags for compiler/linker on AIX 4+
+	    if test "$do64bit" = "yes" -o "`uname -v`" -gt "3" ; then
 		if test "$GCC" = "yes" ; then
 		    AC_MSG_WARN("64bit mode not supported with GCC on $system")
 		else 
 		    do64bit_ok=yes
 		    EXTRA_CFLAGS="-q64"
 		    LDFLAGS="-q64"
+		    RANLIB="${RANLIB} -X64"
+		    AR="${AR} -X64"
+		    SHLIB_LDFLAGS="-b64"
 		fi
 	    fi
 	    ;;
@@ -969,7 +984,7 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 	    if test "$tcl_ok" = yes; then
 		SHLIB_CFLAGS="+z"
 		SHLIB_LD="ld -b"
-		SHLIB_LD_LIBS=""
+		SHLIB_LD_LIBS='{$LIBS}'
 		DL_OBJS="tclLoadShl.o"
 		DL_LIBS="-ldld"
 		LDFLAGS="-Wl,-E"
@@ -1880,14 +1895,18 @@ closedir(d);
 #	autoconf macro will return an include directory that contains
 #	no include files, so double-check its result just to be safe.
 #
+#	This should be called after TEA_CONFIG_CFLAGS as setting the
+#	LIBS line can confuse some configure macro magic.
+#
 # Arguments:
 #	none
 #	
 # Results:
 #
-#	Sets the the following vars:
+#	Sets the following vars:
 #		XINCLUDES
 #		XLIBSW
+#		LIBS (appends to)
 #
 #--------------------------------------------------------------------
 
@@ -2398,7 +2417,7 @@ The PACKAGE variable must be defined by your TEA configure.in])
     AC_MSG_RESULT([ok])
     TEA_INITED=ok
     case "`uname -s`" in
-	*win32*|*WIN32*|*CYGWIN_NT*|*CYGWIN_98*|*CYGWIN_95*|*CYGWIN_ME*|*MINGW32_*)
+	*win32*|*WIN32*|*CYGWIN_NT*|*CYGWIN_9*|*CYGWIN_ME*|*MINGW32_*)
 	    AC_CHECK_PROG(CYGPATH, cygpath, cygpath -w, echo)
 	    EXEEXT=".exe"
 	    TEA_PLATFORM="windows"
