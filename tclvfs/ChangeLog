@@ -1,6 +1,8 @@
 2002-12-24  Vince Darley <vincentdarley@sourceforge.net>
 	* library/ftpvfs.tcl: set the 'size' element in stat calls.
 	(Bug reported on comp.lang.tcl).
+	* library/vfsUtils.tcl: added '.kit' to the set of extensions
+	which vfs::auto will recognise for auto-mounting.
 	
 2002-10-30  Andreas Kupries  <andreask@activestate.com>
 
