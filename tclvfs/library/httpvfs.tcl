@@ -125,6 +125,16 @@ proc vfs::http::matchindirectory {dirurl path actualpath pattern type} {
     ::vfs::log "matchindirectory $path $pattern $type"
     set res [list]
 
+    if {[string length $pattern]} {
+	# need to match all files in a given remote http site.
+	
+    } else {
+	# single file
+	if {![catch {access $dirurl $path}]} {
+	    lappend res $path
+	}
+    }
+    
     return $res
 }
 

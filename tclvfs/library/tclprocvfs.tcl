@@ -114,12 +114,22 @@ proc vfs::ns::matchindirectory {ns path actualpath pattern type} {
 
     if {[::vfs::matchDirectories $type]} {
 	# add matching directories to $res
-	eval lappend res [namespace children ::${ns}::${path} $pattern]
+	if {[string length $pattern]} {
+	    eval lappend res [namespace children ::${ns}::${path} $pattern]
+	} else {
+	    if {[namespace exists ::${ns}::${path}]} {
+		eval lappend res ::${ns}::${path}
+	    }
+	}
     }
     
     if {[::vfs::matchFiles $type]} {
 	# add matching files to $res
-	eval lappend res [info procs ::${ns}::${path}::$pattern]
+	if {[string length $pattern]} {
+	    eval lappend res [info procs ::${ns}::${path}::$pattern]
+	} else {
+	    eval lappend res [info procs ::${ns}]
+	}
     }
     set realres [list]
     foreach r $res {

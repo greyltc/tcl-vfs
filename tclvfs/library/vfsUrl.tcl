@@ -97,6 +97,10 @@ proc vfs::urltype::matchindirectory {type root path actualpath pattern types} {
 
     if {![vfs::matchDirectories $types]} { return [list] }
 
+    if {![string length $pattern]} {
+	return foo
+    }
+    
     set res [list]
     set len [string length $root]
     

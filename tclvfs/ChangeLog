@@ -1,3 +1,15 @@
+2002-02-19  Vince Darley <vincentdarley@sourceforge.net>
+	* library/*.tcl: updated the vfs implementations to deal
+	with the 2002-02-01 change below.  More work needed.
+
+2002-02-17  Vince Darley <vincentdarley@sourceforge.net>
+	* generic/vfs.c: updated for TIP#72 application to cvs head.
+	The 'file stat' implementation now deals with files of size
+	greater than a 32 bit representation.  This requires the
+	very latest cvs head of Tcl 8.4a4, and is not compatible
+	with previous releases (but that is fine, since we're still
+	tracking alpha releases anyway).
+
 2002-02-01 Vince Darley <vincentdarley@sourceforge.net>
 	* generic/vfs.c: allow 'pattern' to be NULL in calls to 
 	Tcl_FSMatchInDirectory in preparation for fix of Tcl bug
@@ -51,11 +63,6 @@
 	* examples/simpleExamples.tcl: a demo
 	* doc/vfslib.n: some documentation on the 'library' code.
 	
-2002-02-17  Vince Darley <vincentdarley@sourceforge.net>
-	* generic/vfs.c: updated for TIP#72 application to cvs head.
-	The 'file stat' implementation now deals with files of size
-	greater than a 32 bit representation.
-
 2001-10-29  Vince Darley <vincentdarley@sourceforge.net>
         * win/makefile.vc: installation is better.
 	* library/vfsUrl.tcl: improved urltype mounting.  The following

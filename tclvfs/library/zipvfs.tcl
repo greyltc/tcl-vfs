@@ -43,6 +43,9 @@ proc vfs::zip::handler {zipfd cmd root relative actualpath args} {
 
 proc vfs::zip::matchindirectory {zipfd path actualpath pattern type} {
     #::vfs::log [list matchindirectory $path $actualpath $pattern $type]
+
+    # This call to zip::getdir handles empty patterns properly as asking
+    # for the existence of a single file $path only
     set res [::zip::getdir $zipfd $path $pattern]
     #::vfs::log "got $res"
     set newres [list]
@@ -436,6 +439,7 @@ proc zip::stat {fd path arr} {
     return ""
 }
 
+# Treats empty pattern as asking for a particular file only
 proc zip::getdir {fd path {pat *}} {
 #    ::vfs::log [list getdir $fd $path $pat]
     upvar #0 zip::$fd.toc toc
@@ -444,7 +448,9 @@ proc zip::getdir {fd path {pat *}} {
 	set path $pat
     } else {
 	set path [string tolower $path]
-	append path /$pat
+	if {$pat != ""} {
+	    append path /$pat
+	}
     }
     set depth [llength [file split $path]]
 
