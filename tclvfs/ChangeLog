@@ -1,3 +1,6 @@
+2002-05-13  Vince Darley <vincentdarley@sourceforge.net>
+	* library/mk4vfs.tcl: newer version from tclkit.
+
 2002-05-03  Vince Darley <vincentdarley@sourceforge.net>
 	* tests/*: more test improvements, and new file vfsArchive.test
 	which will test the running of the tests inside an archive. 
