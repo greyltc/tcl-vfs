@@ -35,7 +35,7 @@ vfs_LIB_FILE	= @vfs_LIB_FILE@
 RUNTIME_SOURCES	= pkgIndex.tcl ftpvfs.tcl httpvfs.tcl mk4vfs.tcl \
 		  starkit.tcl tclprocvfs.tcl testvfs.tcl \
 		  vfslib.tcl vfsUrl.tcl vfsUtils.tcl \
-		  webdavvfs.tcl zipvfs.tcl
+		  webdavvfs.tcl zipvfs.tcl tclIndex
 
 #========================================================================
 # This is a list of header files to be installed
@@ -307,9 +307,9 @@ install-lib-binaries:
 	    fi; \
 	  fi; \
 	done
+	@echo "Installing runtime sources in $(DESTDIR)$(pkglibdir)/"
 	@list='$(RUNTIME_SOURCES)'; for p in $$list; do \
 	  if test -f $(srcdir)/library/$$p; then \
-	    echo " Install $$p $(DESTDIR)$(pkglibdir)/$$p"; \
 	    $(INSTALL_DATA) $(srcdir)/library/$$p $(DESTDIR)$(pkglibdir)/$$p; \
 	  fi; \
 	done

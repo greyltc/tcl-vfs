@@ -1,3 +1,16 @@
+2002-10-18  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Makefile.in: add tclIndex to install
+
+	* library/mk4vfs.tcl:
+	* library/starkit.tcl:
+	* library/vfsUtils.tcl:
+	* library/vfslib.tcl:
+	* library/webdavvfs.tcl: whitespace cleanup
+
+	* library/pkgIndex.tcl: remove 8.4 alpha checks, use vfs::dll var
+	to store library name.
+
 2002-10-15  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* tclconfig/tcl.m4:
