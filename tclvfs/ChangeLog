@@ -1,3 +1,11 @@
+2002-02-01 Vince Darley <vincentdarley@sourceforge.net>
+	* generic/vfs.c: allow 'pattern' to be NULL in calls to 
+	Tcl_FSMatchInDirectory in preparation for fix of Tcl bug
+	511666.  This will require additions to each individual
+	filesystem to handle that special case (and thereby fix the
+	bug that fully specified files were not matched against
+	'types').
+
 2002-01-28 Vince Darley <vincentdarley@sourceforge.net>
 	* generic/vfs.c: const, MacOS fixes (also thanks Daniel Steffen).
 

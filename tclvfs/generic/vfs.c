@@ -1275,7 +1275,11 @@ VfsMatchInDirectory(
 	type = types->type;
     }
 
-    Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewStringObj(pattern,-1));
+    if (pattern == NULL) {
+	Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewObj());
+    } else {
+	Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewStringObj(pattern,-1));
+    }
     Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewIntObj(type));
     Tcl_SaveResult(interp, &savedResult);
     /* Now we execute this mount point's callback. */
