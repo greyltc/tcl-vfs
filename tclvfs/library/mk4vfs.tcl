@@ -104,17 +104,17 @@
 namespace eval vfs::mk4 {}
 
 proc vfs::mk4::Mount {what local args} {
-    set dd [eval [list ::mk4vfs::mount $what $local] $args]
+    set db [eval [list ::mk4vfs::mount $what $local] $args]
 
-    ::vfs::filesystem mount $path [list ::vfs::mk4::handler $db]
+    ::vfs::filesystem mount $what [list ::vfs::mk4::handler $db]
     # Register command to unmount
-    vfs::RegisterMount $local [list ::vfs::mk4::Unmount $db]
-    return $dd
+    ::vfs::RegisterMount $local [list ::vfs::mk4::Unmount $db]
+    return $db
 }
 
 proc vfs::mk4::Unmount {db local} {
     vfs::filesystem unmount $local
-    ::mk4tcl::umount $db
+    ::mk4vfs::umount $db
 }
 
 proc vfs::mk4::handler {db cmd root relative actualpath args} {
