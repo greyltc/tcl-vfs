@@ -218,7 +218,7 @@ further action.
 Delete the given directory.  \fIrecursive\fR is either 0 or 1. If
 it is 1 then even if the directory is non-empty, an attempt should
 be made to recursively delete it and its contents.  If it is 0 and
-the directory is non-empty, a posix error (ENOTEMPTY) should be
+the directory is non-empty, a posix error (EEXIST) should be
 thrown.
 .TP
 \fIcommand\fR \fIstat\fR \fIr-r-a\fR

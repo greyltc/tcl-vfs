@@ -245,7 +245,7 @@ Delete the given directory. Argument [arg recursive] is a boolean. If
 the specified value is [const true] then even if the directory is
 non-empty, an attempt has to be made to recursively delete it and its
 contents.  If the spcified value is [const false] and the directory is
-non-empty, a posix error ([const ENOTEMPTY]) has to be thrown.
+non-empty, a posix error ([const EEXIST]) has to be thrown.
 
 
 [call [cmd vfshandler] [method stat] [arg root] [arg relative] [arg actualpath]]

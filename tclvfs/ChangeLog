@@ -1,3 +1,8 @@
+2004-07-15  Vince Darley <vincentdarley@sourceforge.net>
+
+	* doc/*: fix to removedirectory docs which should say to return
+	a posix EEXIST error if the directory is non-empty.
+
 2004-07-04  Andreas Kupries <andreas_kupries@users.sourceforge.net>
 	
 	* library/vfsUtils.tcl (crc, zip): Modified the Trf adapter
