@@ -59,4 +59,6 @@ namespace eval ::vfs {
 	puts stderr "$tag: [expr {${cnt'} - $cnt}] ops, $time us"
 	return -code $rc -errorcode $ec -errorinfo $ei $ret
     }
+    # for backwards compatibility
+    proc normalize {path} { ::file normalize $path }
 }

@@ -38,6 +38,7 @@ PROJECT = vfs$(DLL_VERSION)$(DBGX)
 ROOT    = ..
 WINDIR		= $(ROOT)\win
 GENERICDIR	= $(ROOT)\generic
+LIBDIR          = $(ROOT)\library
 TOOLS32		= C:\Progra~1\devstudio\vc
 TOOLS32_rc	= C:\Progra~1\devstudio\sharedide
 
@@ -53,6 +54,7 @@ include32	= -I"$(TOOLS32)\include"
 
 TCL     = c:\progra~1\tcl
 TCLLIB  = $(TCL)\lib\tclstub84$(DBGX).lib
+INSTALLDIR = $(TCL)\lib\vfs1.0
 
 ######################################################################
 # Compile flags
@@ -145,6 +147,11 @@ DLLOBJS = \
 
 all: $(PROJECT).dll
 
+install:	$(PROJECT).dll
+	-@md $(INSTALLDIR)
+	$(CP) $(PROJECT).dll $(INSTALLDIR)\$(PROJECT).dll
+	$(CP) $(LIBDIR)\*.tcl $(INSTALLDIR)
+	$(CP) $(LIBDIR)\tclIndex $(INSTALLDIR)
 
 $(PROJECT).dll: $(DLLOBJS)
 	$(link32) $(ldebug) $(dlllflags) $(TCLLIB) \

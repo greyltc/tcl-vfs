@@ -1,3 +1,8 @@
+2001-09-07  Vince Darley <vincentdarley@sourceforge.net>
+	* Further minor improvements, unfortunately requires
+	new release of Tcl from cvs (today).  Also added
+	'install' target to vc++ makefile.
+
 2001-08-29  Vince Darley <vincentdarley@sourceforge.net>
 	* can now mount root volumes which end in separator
 	characters (such as 'ftp://').  The code handles path
