@@ -356,7 +356,7 @@ namespace eval mk4vfs {
 
     proc periodicCommit {db} {
 	variable flush
-	set v::timer($db) [after $flush [list :mk4vfs::periodicCommit $db]]
+	set v::timer($db) [after $flush [list ::mk4vfs::periodicCommit $db]]
 	mk::file commit $db
     }
 
