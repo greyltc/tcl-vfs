@@ -83,6 +83,9 @@ proc vfs::webdav::stat {dirurl extraHeadersList name} {
 	return $res
     }
     
+    # This is a bit of a hack.  We really want to do a 'PROPFIND'
+    # request with depth 0, I believe.  I don't think Tcl's http
+    # package supports that.
     set token [::http::geturl $dirurl$name -headers $extraHeadersList]
     upvar #0 $token state
 
@@ -168,6 +171,8 @@ proc vfs::webdav::matchindirectory {dirurl extraHeadersList path actualpath patt
     ::vfs::log "matchindirectory $path $pattern $type"
     set res [list]
 
+    puts stderr "The 'PROPFIND' method not implemented.  Please help!"
+    
     if {[string length $pattern]} {
 	# need to match all files in a given remote http site.
 	
