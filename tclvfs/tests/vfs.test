@@ -90,7 +90,9 @@ test vfs-2.2 {mount, delete sub interp} {
 test vfs-3.1 {vfs helpers: in memory channels} {
     close [::vfs::memchan]
     # If we get here, it's ok.  If this test fails,
-    # probably many other tests will fail too.
+    # probably many other tests will fail too.  In particular
+    # any use of 'open', 'source', 'load', and usually also
+    # 'file copy', 'file rename' in a vfs will fail.
 } {}
 
 test vfs-3.2 {vfs helpers: crc} {

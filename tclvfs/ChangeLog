@@ -1,7 +1,9 @@
-2002-04-27  Vince Darley <vincentdarley@sourceforge.net>
+2002-05-02  Vince Darley <vincentdarley@sourceforge.net>
 	* tests/vfs.test: tests work independent of directory in which
 	they run.  Tests added to check that at least 'vfs::memchan'
-	basically works.
+	basically works, and vfs::zip, vfs::crc helpers do what they
+	are supposed to.
+	* tests/vfsZip.test: test to run all tests inside a zip.
 	* mac/*: updated for removal of scripdoc.tcl and vfs.tcl
 	
 2002-04-25  Jean-Claude Wippler <jcw@equi4.com>
