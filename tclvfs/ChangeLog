@@ -1,7 +1,17 @@
+2004-08-05  Andreas Kupries  <andreask@activestate.com>
+
+	* library/zipvfs.tcl (Data): Fixed [SF Tclvfs Bug 1003591]. This
+	  reverts an incomplete and unrecorded fix for handling dashes at
+	  the beginning of data, giving precedence to '2004-07-04 @
+	  library/vfsUtils.tcl' instead, see below. The unrecorded fix was
+	  entered two days before and clashes with the other one. As it
+	  was incomplete the other fix was chosen, despite coming later.
+
 2004-08-04  Andreas Kupries  <andreask@activestate.com>
 
-	* library/zipvfs.tcl: Fixed [SF Tclvfs Bug 1003574]. Added code
-	  preventing us from seeking before the beginning of the zip file.
+	* library/zipvfs.tcl (EndOfArchive): Fixed [SF Tclvfs Bug
+	  1003574]. Added code preventing us from seeking before the
+	  beginning of the zip file.
 
 2004-07-15  Andreas Kupries  <andreask@activestate.com>
 
