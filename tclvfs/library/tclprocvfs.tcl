@@ -147,7 +147,7 @@ proc vfs::ns::createdirectory {ns name} {
     namespace eval ::${ns}::${name} {}
 }
 
-proc vfs::ns::removedirectory {ns name} {
+proc vfs::ns::removedirectory {ns name recursive} {
     ::vfs::log "removedirectory $name"
     namespace delete ::${ns}::${name}
 }

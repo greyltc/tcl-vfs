@@ -56,7 +56,7 @@ proc vfs::test::createdirectory {what name} {
     puts "createdirectory $name"
 }
 
-proc vfs::test::removedirectory {what name} {
+proc vfs::test::removedirectory {what name recursive} {
     puts "removedirectory $name"
 }
 

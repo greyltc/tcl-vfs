@@ -129,7 +129,7 @@ proc vfs::tar::createdirectory {tarfd name} {
     #error "tar-archives are read-only (not implemented)"
 }
 
-proc vfs::tar::removedirectory {tarfd name} {
+proc vfs::tar::removedirectory {tarfd name recursive} {
     #::vfs::log "removedirectory $name"
     vfs::filesystem posixerror $::vfs::posix(EROFS)
     #error "tar-archives are read-only (not implemented)"

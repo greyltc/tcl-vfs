@@ -83,7 +83,9 @@ proc vfs::ftp::stat {fd name} {
     }
     # get information on the type of this file
     set ftpInfo [_findFtpInfo $fd $name]
-    if {$ftpInfo == ""} { error "Couldn't find file info" }
+    if {$ftpInfo == ""} { 
+	vfs::filesystem posixerror $::vfs::posix(ENOENT)
+    }
     ::vfs::log $ftpInfo
     set perms [lindex $ftpInfo 0]
     if {[string index $perms 0] == "d"} {
@@ -106,7 +108,7 @@ proc vfs::ftp::access {fd name mode} {
     if {[string length $info]} {
 	return 1
     } else {
-	error "No such file"
+	vfs::filesystem posixerror $::vfs::posix(ENOENT)
     }
 }
 
@@ -164,7 +166,10 @@ proc vfs::ftp::_closing {fd name filed action} {
 	::ftp::Type $fd binary
     }
     if {![::ftp::$action $fd -data $contents $name]} {
-	error "Failed to write to $name"
+	# Would be better if we could be more specific here, with
+	# one of ENETRESET ENETDOWN ENETUNREACH or whatever.
+	vfs::filesystem posixerror $::vfs::posix(EIO)
+	#error "Failed to write to $name"
     }
     if {[info exists oldType]} {
 	::ftp::Type $fd $oldType
@@ -262,8 +267,8 @@ proc vfs::ftp::createdirectory {fd name} {
     }
 }
 
-proc vfs::ftp::removedirectory {fd name} {
-    ::vfs::log "removedirectory $name"
+proc vfs::ftp::removedirectory {fd name recursive} {
+    ::vfs::log "removedirectory $name $recursive"
     if {![ftp::RmDir $fd $name]} {
 	error "failed"
     }
@@ -272,6 +277,7 @@ proc vfs::ftp::removedirectory {fd name} {
 proc vfs::ftp::deletefile {fd name} {
     ::vfs::log "deletefile $name"
     if {![ftp::Delete $fd $name]} {
+	# Can we be more specific here?
 	error "failed"
     }
 }
@@ -286,11 +292,13 @@ proc vfs::ftp::fileattributes {fd path args} {
 	1 {
 	    # get value
 	    set index [lindex $args 0]
+	    vfs::filesystem posixerror $::vfs::posix(ENODEV)
 	}
 	2 {
 	    # set value
 	    set index [lindex $args 0]
 	    set val [lindex $args 1]
+	    vfs::filesystem posixerror $::vfs::posix(ENODEV)
 	}
     }
 }

@@ -129,7 +129,7 @@ proc vfs::zip::createdirectory {zipfd name} {
     vfs::filesystem posixerror $::vfs::posix(EROFS)
 }
 
-proc vfs::zip::removedirectory {zipfd name} {
+proc vfs::zip::removedirectory {zipfd name recursive} {
     #::vfs::log "removedirectory $name"
     vfs::filesystem posixerror $::vfs::posix(EROFS)
 }

@@ -128,7 +128,7 @@ proc vfs::urltype::createdirectory {type root name} {
     error ""
 }
 
-proc vfs::urltype::removedirectory {type root name} {
+proc vfs::urltype::removedirectory {type root name recursive} {
     ::vfs::log "removedirectory $name"
     # For ftp/http/file types we don't want to allow anything here.
     error ""

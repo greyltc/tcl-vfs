@@ -253,7 +253,7 @@ proc vfs::webdav::createdirectory {dirurl extraHeadersList name} {
     error "write access not implemented"
 }
 
-proc vfs::webdav::removedirectory {dirurl extraHeadersList name} {
+proc vfs::webdav::removedirectory {dirurl extraHeadersList name recursive} {
     ::vfs::log "removedirectory $name"
     error "write access not implemented"
 }

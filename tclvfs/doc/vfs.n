@@ -214,8 +214,12 @@ asycnhronously, with bgerror, for example), unless the 'internalerror'
 script has been specified, when they are passed to that script for
 further action.
 .TP
-\fIcommand\fR \fIremovedirectory\fR \fIr-r-a\fR
-Delete the given directory.
+\fIcommand\fR \fIremovedirectory\fR \fIr-r-a\fR \fIrecursive\fR
+Delete the given directory.  \fIrecursive\fR is either 0 or 1. If
+it is 1 then even if the directory is non-empty, an attempt should
+be made to recursively delete it and its contents.  If it is 0 and
+the directory is non-empty, a posix error (ENOTEMPTY) should be
+thrown.
 .TP
 \fIcommand\fR \fIstat\fR \fIr-r-a\fR
 Return a list of even length containing field-name and value pairs for

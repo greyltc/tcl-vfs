@@ -147,7 +147,7 @@ proc vfs::http::createdirectory {dirurl name} {
     vfs::filesystem posixerror $::vfs::posix(EROFS)
 }
 
-proc vfs::http::removedirectory {dirurl name} {
+proc vfs::http::removedirectory {dirurl name recursive} {
     ::vfs::log "removedirectory $name"
     vfs::filesystem posixerror $::vfs::posix(EROFS)
 }
