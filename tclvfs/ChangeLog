@@ -1,3 +1,7 @@
+2003-05-15  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* library/pkgIndex.tcl.in: use vfs::dll var directly
+
 2003-05-14  Vince Darley <vincentdarley@sourceforge.net>
 
 	* library/vfsUtils.tcl: fix to package names
