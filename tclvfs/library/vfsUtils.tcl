@@ -154,3 +154,90 @@ proc vfs::matchFiles {types} {
 
 proc vfs::modeToString {mode} {
 }
+
+proc vfs::posixError {name} {
+    variable posix
+    return $posix($name)
+}
+
+set vfs::posix(EPERM)		1		;# Operation not permitted
+set vfs::posix(ENOENT)		2		;# No such file or directory
+set vfs::posix(ESRCH)		3		;# No such process
+set vfs::posix(EINTR)		4		;# Interrupted system call
+set vfs::posix(EIO)		5		;# Input/output error
+set vfs::posix(ENXIO)		6		;# Device not configured
+set vfs::posix(E)2BIG		7		;# Argument list too long
+set vfs::posix(ENOEXEC)		8		;# Exec format error
+set vfs::posix(EBADF)		9		;# Bad file descriptor
+set vfs::posix(ECHILD)		10		;# No child processes
+set vfs::posix(EDEADLK)		11		;# Resource deadlock avoided
+					;# 11 was EAGAIN
+set vfs::posix(ENOMEM)		12		;# Cannot allocate memory
+set vfs::posix(EACCES)		13		;# Permission denied
+set vfs::posix(EFAULT)		14		;# Bad address
+set vfs::posix(ENOTBLK)		15		;# Block device required
+set vfs::posix(EBUSY)		16		;# Device busy
+set vfs::posix(EEXIST)		17		;# File exists
+set vfs::posix(EXDEV)		18		;# Cross-device link
+set vfs::posix(ENODEV)		19		;# Operation not supported by device
+set vfs::posix(ENOTDIR)		20		;# Not a directory
+set vfs::posix(EISDIR)		21		;# Is a directory
+set vfs::posix(EINVAL)		22		;# Invalid argument
+set vfs::posix(ENFILE)		23		;# Too many open files in system
+set vfs::posix(EMFILE)		24		;# Too many open files
+set vfs::posix(ENOTTY)		25		;# Inappropriate ioctl for device
+set vfs::posix(ETXTBSY)		26		;# Text file busy
+set vfs::posix(EFBIG)		27		;# File too large
+set vfs::posix(ENOSPC)		28		;# No space left on device
+set vfs::posix(ESPIPE)		29		;# Illegal seek
+set vfs::posix(EROFS)		30		;# Read-only file system
+set vfs::posix(EMLINK)		31		;# Too many links
+set vfs::posix(EPIPE)		32		;# Broken pipe
+set vfs::posix(EDOM)		33		;# Numerical argument out of domain
+set vfs::posix(ERANGE)		34		;# Result too large
+set vfs::posix(EAGAIN)		35		;# Resource temporarily unavailable
+set vfs::posix(EWOULDBLOCK)	35		;# Operation would block
+set vfs::posix(EINPROGRESS)	36		;# Operation now in progress
+set vfs::posix(EALREADY)	37		;# Operation already in progress
+set vfs::posix(ENOTSOCK)	38		;# Socket operation on non-socket
+set vfs::posix(EDESTADDRREQ)	39		;# Destination address required
+set vfs::posix(EMSGSIZE)	40		;# Message too long
+set vfs::posix(EPROTOTYPE)	41		;# Protocol wrong type for socket
+set vfs::posix(ENOPROTOOPT)	42		;# Protocol not available
+set vfs::posix(EPROTONOSUPPORT)	43		;# Protocol not supported
+set vfs::posix(ESOCKTNOSUPPORT)	44		;# Socket type not supported
+set vfs::posix(EOPNOTSUPP)	45		;# Operation not supported on socket
+set vfs::posix(EPFNOSUPPORT)	46		;# Protocol family not supported
+set vfs::posix(EAFNOSUPPORT)	47		;# Address family not supported by protocol family
+set vfs::posix(EADDRINUSE)	48		;# Address already in use
+set vfs::posix(EADDRNOTAVAIL)	49		;# Can't assign requested address
+set vfs::posix(ENETDOWN)	50		;# Network is down
+set vfs::posix(ENETUNREACH)	51		;# Network is unreachable
+set vfs::posix(ENETRESET)	52		;# Network dropped connection on reset
+set vfs::posix(ECONNABORTED)	53		;# Software caused connection abort
+set vfs::posix(ECONNRESET)	54		;# Connection reset by peer
+set vfs::posix(ENOBUFS)		55		;# No buffer space available
+set vfs::posix(EISCONN)		56		;# Socket is already connected
+set vfs::posix(ENOTCONN)	57		;# Socket is not connected
+set vfs::posix(ESHUTDOWN)	58		;# Can't send after socket shutdown
+set vfs::posix(ETOOMANYREFS)	59		;# Too many references: can't splice
+set vfs::posix(ETIMEDOUT)	60		;# Connection timed out
+set vfs::posix(ECONNREFUSED)	61		;# Connection refused
+set vfs::posix(ELOOP)		62		;# Too many levels of symbolic links
+set vfs::posix(ENAMETOOLONG)	63		;# File name too long
+set vfs::posix(EHOSTDOWN)	64		;# Host is down
+set vfs::posix(EHOSTUNREACH)	65		;# No route to host
+set vfs::posix(ENOTEMPTY)	66		;# Directory not empty
+set vfs::posix(EPROCLIM)	67		;# Too many processes
+set vfs::posix(EUSERS)		68		;# Too many users
+set vfs::posix(EDQUOT)		69		;# Disc quota exceeded
+set vfs::posix(ESTALE)		70		;# Stale NFS file handle
+set vfs::posix(EREMOTE)		71		;# Too many levels of remote in path
+set vfs::posix(EBADRPC)		72		;# RPC struct is bad
+set vfs::posix(ERPCMISMATCH)	73		;# RPC version wrong
+set vfs::posix(EPROGUNAVAIL)	74		;# RPC prog. not avail
+set vfs::posix(EPROGMISMATCH)	75		;# Program version wrong
+set vfs::posix(EPROCUNAVAIL)	76		;# Bad procedure for program
+set vfs::posix(ENOLCK)		77		;# No locks available
+set vfs::posix(ENOSYS)		78		;# Function not implemented
+set vfs::posix(EFTYPE)		79		;# Inappropriate file type or format

@@ -667,15 +667,38 @@ VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
 		}
 	    }
 	}
+	Tcl_RestoreResult(interp, &savedResult);
     } else {
-	/* 
-	 * Copy over the error message to cmdInterp, duplicating it in
-	 * case of threading issues.
-	 */
-	Tcl_SetObjResult(cmdInterp, Tcl_DuplicateObj(Tcl_GetObjResult(interp)));
+	/* Leave an error message if the cmdInterp is non NULL */
+	if (cmdInterp != NULL) {
+	    int posixError = -1;
+	    Tcl_Obj* error = Tcl_GetObjResult(interp);
+	    if (Tcl_GetIntFromObj(NULL, error, &posixError) == TCL_OK) {
+		Tcl_SetErrno(posixError);
+		Tcl_ResetResult(cmdInterp);
+		Tcl_AppendResult(cmdInterp, "couldn't open \"", 
+				 Tcl_GetString(pathPtr), "\": ",
+				 Tcl_PosixError(interp), (char *) NULL);
+				 
+	    } else {
+		/* 
+		 * Copy over the error message to cmdInterp,
+		 * duplicating it in case of threading issues.
+		 */
+		Tcl_SetObjResult(cmdInterp, Tcl_DuplicateObj(error));
+	    }
+	}
+	if (interp == cmdInterp) {
+	    /* 
+	     * We want our error message to propagate up,
+	     * so we want to forget this result
+	     */
+	    Tcl_DiscardResult(&savedResult);
+	} else {
+	    Tcl_RestoreResult(interp, &savedResult);
+	}
     }
-    
-    Tcl_RestoreResult(interp, &savedResult);
+
     Tcl_DecrRefCount(mountCmd);
 
     if (channelRet != NULL) {

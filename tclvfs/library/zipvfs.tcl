@@ -30,7 +30,7 @@ proc vfs::zip::handler {zipfd cmd root relative actualpath args} {
 # virtual file system for zip files.
 
 proc vfs::zip::matchindirectory {zipfd path actualpath pattern type} {
-    puts stderr [list matchindirectory $path $actualpath $pattern $type]
+    #puts stderr [list matchindirectory $path $actualpath $pattern $type]
     set res [::zip::getdir $zipfd $path $pattern]
     #puts stderr "got $res"
     set newres [list]
@@ -42,14 +42,14 @@ proc vfs::zip::matchindirectory {zipfd path actualpath pattern type} {
 }
 
 proc vfs::zip::stat {zipfd name} {
-    puts "stat $name"
+    #puts "stat $name"
     ::zip::stat $zipfd $name sb
-    puts [array get sb]
+    #puts [array get sb]
     array get sb
 }
 
 proc vfs::zip::access {zipfd name mode} {
-    puts "zip-access $name $mode"
+    #puts "zip-access $name $mode"
     if {$mode & 2} {
 	error "read-only"
     }
@@ -64,7 +64,7 @@ proc vfs::zip::access {zipfd name mode} {
 }
 
 proc vfs::zip::open {zipfd name mode permissions} {
-    puts "open $name $mode $permissions"
+    #puts "open $name $mode $permissions"
     # return a list of two elements:
     # 1. first element is the Tcl channel name which has been opened
     # 2. second element (optional) is a command to evaluate when
@@ -73,6 +73,10 @@ proc vfs::zip::open {zipfd name mode permissions} {
     switch -- $mode {
 	"" -
 	"r" {
+	    if {![::zip::exists $zipfd $name]} {
+		return -code error $::vfs::posix(ENOENT)
+	    }
+	    
 	    ::zip::stat $zipfd $name sb
 
 	    package require Trf
@@ -97,22 +101,22 @@ proc vfs::zip::open {zipfd name mode permissions} {
 }
 
 proc vfs::zip::createdirectory {zipfd name} {
-    puts stderr "createdirectory $name"
+    #puts stderr "createdirectory $name"
     error "read-only"
 }
 
 proc vfs::zip::removedirectory {zipfd name} {
-    puts stderr "removedirectory $name"
+    #puts stderr "removedirectory $name"
     error "read-only"
 }
 
 proc vfs::zip::deletefile {zipfd name} {
-    puts "deletefile $name"
+    #puts "deletefile $name"
     error "read-only"
 }
 
 proc vfs::zip::fileattributes {zipfd name args} {
-    puts "fileattributes $args"
+    #puts "fileattributes $args"
     switch -- [llength $args] {
 	0 {
 	    # list strings
