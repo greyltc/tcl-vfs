@@ -22,7 +22,11 @@
 	
 	* DESCRIPTION.txt:
 	* make55.tcl: new files for TIP55 compliance. (Steve Cassidy)
-	
+
+        * tests/*:
+	* doc/tcllib.n: updated tests and docs for the above 'package'
+	information.
+
 2003-01-16  Vince Darley <vincentdarley@sourceforge.net>
 	* library/tarvfs.tcl: 
 	* library/zipvfs.tcl: ::close .zip or .tar file when unmounting
