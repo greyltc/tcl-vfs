@@ -1,3 +1,25 @@
+2004-06-04  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* examples/simpleExamples.tcl:
+	* tests/vfsUrl.test: s/scriptics.com/tcl.tk
+
+	* library/zipvfs.tcl (zip::Data): add zip::stat call that
+	correctly determines size for some zip files (Ferril).
+
+	* generic/vfs.c: use PACKAGE_VERSION instead of hard-coded version
+	info.
+
+	* configure, configure.in, Makefile.in, tclconfig/tcl.m4: updated
+	to the latest TEA3 spec
+	* pkgIndex.tcl.in (added): move from library/ subdir
+	* library/pkgIndex.tcl.in (removed): 
+
+2004-06-03  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* configure (regened):
+	* tclconfig/tcl.m4 (TEA_TCL_64BIT_FLAGS): update to define
+	TCL_WIDE_INT_IS_LONG when 'using long'.
+
 2004-05-21  Vince Darley <vincentdarley@sourceforge.net>
 
 	* win/makefile.vc: fix to compilation problem with new #includes
