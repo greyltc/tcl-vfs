@@ -55,6 +55,7 @@ directory [file xxx],
 [enum]
 and the command executed is [cmd {file exists yyy}].
 [list_end]
+[nl]
 
 The file separator between [arg root] and [arg relative] is omitted.
 Most filesystem operations need only the [arg relative] argument for
@@ -198,22 +199,31 @@ throws an error describing how the operation failed.
 The list returned upon success contains at least one and at most two
 elements. The first, obligatory, element is always the handle of the
 channel which was created to allow access to the contents of the
-file. If specified the second element will be interpreted as a
-callback, i.e. a command prefix. This prefix will always be executed
-as is, i.e. without additional arguments. Any required arguments have
-to be returned as part of the result of the call to [method open].
+file.
 
 [nl]
 
-If present the specified callback will be evaluated by the generic
-filesystem layer just before the channel whose handle was returned as
-the first element of the list is closed. Additionally all available
-data will have been flushed into it. This means, for example, that the
-callback can seek to the beginning of the said channel, read its
-contents and then store the gathered data elsewhere. In other words,
-this callback is not only crucial to the cleanup of any resources
-associated with an opened file, but also for the ability to implement
-a filesystem which can be written to.
+If specified the second element will be interpreted as a callback,
+i.e. a command prefix. This prefix will always be executed as is,
+i.e. without additional arguments. Any required arguments have to be
+returned as part of the result of the call to [method open].
+
+[nl]
+
+If present the specified callback will be evaluated just before the
+channel is closed [emph {by the generic filesystem layer}]. The
+callback itself [emph {must not}] call [cmd close].
+
+[nl]
+
+The channel however is live enough to allow [cmd seek] and [cmd read]
+operations. In addition all available data will have been flushed into
+it already. This means, for example, that the callback can seek to the
+beginning of the said channel, read its contents and then store the
+gathered data elsewhere. In other words, this callback is not only
+crucial to the cleanup of any resources associated with an opened
+file, but also for the ability to implement a filesystem which can be
+written to.
 
 [nl]
 
