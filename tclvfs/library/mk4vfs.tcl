@@ -288,7 +288,7 @@ namespace eval vfs::mk4 {
 	    }
 	    2 {
 		# set value
-		if {$::mk4vfs::mode($db) == "readonly"} {
+		if {$::mk4vfs::v::mode($db) == "readonly"} {
 		    vfs::filesystem posixerror $::vfs::posix(EROFS)
 		}
 		set index [lindex $args 0]

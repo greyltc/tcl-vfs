@@ -1,6 +1,7 @@
 2003-05-14  Vince Darley <vincentdarley@sourceforge.net>
 
 	* library/vfsUtils.tcl: fix to package names
+	* library/mk4vfs.tcl: fix to 'file attributes' implementation
 	
 2003-04-29  Vince Darley <vincentdarley@sourceforge.net>
 
