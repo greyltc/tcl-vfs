@@ -1,3 +1,11 @@
+2003-02-23  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* configure: regen
+	* configure.in:
+	* tclconfig/tcl.m4: regen from latest TEA setup
+	* Makefile.in: only use pkgIndex.tcl with shared builds
+	Handle RUNTIME_SOURCES properly when srcdir == top_builddir
+
 2003-02-21  Vince Darley <vincentdarley@sourceforge.net>
 
 	* doc/vfs.n:
