@@ -1040,7 +1040,6 @@ VfsCommand(Tcl_Interp* interp, CONST char* cmd, Tcl_Obj * pathPtr) {
     int len;
     int splitPosition;
     int dummyLen;
-    int returnVal;
     VfsNativeRep *nativeRep;
     char *normedString;
 
