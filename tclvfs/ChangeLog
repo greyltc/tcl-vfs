@@ -1,4 +1,9 @@
 2001-09-07  Vince Darley <vincentdarley@sourceforge.net>
+	* generic/vfs.c: Fixed '==' error
+	* doc/vfs.n: Improved docs.
+	* library/mk4vfs.tcl: Better mk support
+
+2001-09-06  Vince Darley <vincentdarley@sourceforge.net>
 	* Further minor improvements, unfortunately requires
 	new release of Tcl from cvs (today).  Also added
 	'install' target to vc++ makefile.

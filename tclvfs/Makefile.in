@@ -31,7 +31,7 @@ BINARIES=$(lib_BINARIES)
 # This will be used when a dist target is added to the Makefile.
 #========================================================================
 
-vfs_SOURCES = vfs.c
+vfs_SOURCES = generic/vfs.c
 SOURCES = $(vfs_SOURCES)
 
 #========================================================================
@@ -42,7 +42,7 @@ SOURCES = $(vfs_SOURCES)
 #
 #========================================================================
 
-vfs_OBJECTS =  vfs.$(OBJEXT)
+vfs_OBJECTS =  generic/vfs.$(OBJEXT)
 OBJECTS = $(vfs_OBJECTS)
 
 #========================================================================
@@ -163,7 +163,7 @@ AUTOCONF = autoconf
 
 LDFLAGS = $(LDFLAGS_DEFAULT)
 
-INCLUDES = @TCL_INCLUDES@
+INCLUDES = @TCL_INCLUDES@ 
 
 EXTRA_CFLAGS = $(TCL_DEFS) $(PROTO_FLAGS) $(SECURITY_FLAGS) $(MEM_DEBUG_FLAGS) $(KEYSYM_FLAGS) $(NO_DEPRECATED_FLAGS) $(TCL_EXTRA_CFLAGS)
 
@@ -177,8 +177,9 @@ CONFIG_CLEAN_FILES = mkIndex.tcl
 CPPFLAGS = @CPPFLAGS@
 LIBS = @LIBS@
 AR = ar
-CFLAGS = @CFLAGS@
-COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+## need to include the tcl source dir here for tclPort.h
+CFLAGS = @CFLAGS@ -I@TCL_SRC_DIR@/generic
+COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) 
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
 

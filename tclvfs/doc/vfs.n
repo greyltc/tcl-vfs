@@ -1,5 +1,5 @@
 '\"
-'\" Copyright (c) 2001 Vince Darley
+'\" Copyright (c) 2001, Vince Darley
 '\" 
 '\" 
 .so man.macros
@@ -21,6 +21,8 @@
 .sp
 \fBvfs::filesystem\fR \fIunmount\fR
 .sp
+\fBvfs::filesystem\fR \fImountschanged\fR
+.sp
 .sp
 \fBvfs::foo \fIa b c\fR
 .BE
@@ -34,7 +36,14 @@ filesystem is in place, the standard Tcl \fBfile\fP, \fBglob\fP,
 the Tcl library (e.g. \fBTcl_FSOpenFileChannel\fR,
 \fBTcl_FSMatchInDirectory\fR,...), can be used within the filesystem
 (and indeed, properly written extensions such as Tk which may open or
-read files will also transparently access the virtual filesystem).
+read files will also transparently access the virtual filesystem). 
+Because all of Tcl's FS activity passes through a single layer, it can
+all be intercepted.  This package does just that.  Notice that this
+is quite different to overloading the \fBfile\fP command in Tcl.  We
+are actually providing vfs replacements for C commands like
+\fBaccess\fP, \fBstat\fP.  By implementing just a handful of commands
+at this low level, we ensure that all commands at higher levels
+function irrespective of what is going on inside the FS layer.
 .PP
 The \fBpackage require vfs\fP command should be used to access this
 library.  It automatically registers the vfs hooks into Tcl's
@@ -59,6 +68,12 @@ If no arguments are given, this returns a list of all filesystems
 mounted.  If a path argument is given, then the \fIcommand\fR to be
 used for that path is returned, or an error is thrown if no vfs is
 mounted for that path.
+.TP
+\fBvfs::filesystem\fR \fImountschanged\fR
+There is generally no need to call this.  It is used by the library
+when the list of volumes changes, or when any kind of new mount point
+is added.  It ensures that Tcl's cached file representations are not
+out of date.
 .PP
 Currently mount information is stored by the extension in the
 vfs::mount array variable, but this should be considered private
@@ -77,7 +92,8 @@ Here \fIsubcmd\fR may be any of the following: \fIaccess\fR,
 \fImatchindirectory\fR, \fIopen\fR, \fIremovedirectory\fR, \fIstat\fR,
 \fIutime\fR. If \fIcommand\fR takes appropriate action for each of
 these cases, a complete, perfect virtual filesystem will be achieved,
-indistinguishable to Tcl from the native filesystem. 
+indistinguishable to Tcl from the native filesystem.  (CAVEATS: right 
+now I don't expose to Tcl all the permission-related flags of 'glob').
 .PP
 The remaining arguments specify a file path on which to operate (all
 commands operate on one of these), and any additional arguments which
