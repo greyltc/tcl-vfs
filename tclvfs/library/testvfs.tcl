@@ -75,3 +75,6 @@ proc vfs::test::fileattributes {what args} {
     }
 }
 
+proc vfs::test::utime {what name actime mtime} {
+    puts "utime $name"
+}

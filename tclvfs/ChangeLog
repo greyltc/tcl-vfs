@@ -1,2 +1,8 @@
+2001-08-10  Vince Darley <vincentdarley@sourceforge.net>
+	* added 'utime' to various vfs
+	* included mk4tcl vfs implementation which works
+	* added some support files so this library can be
+	  used more easily with TclKit.
+
 2001-05-09  Vince Darley <vincentdarley@sourceforge.net>
-	* initial distribution zip vfs works
+	* initial distribution, zip vfs works

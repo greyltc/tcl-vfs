@@ -155,6 +155,90 @@ proc vfs::matchFiles {types} {
 proc vfs::modeToString {mode} {
 }
 
+# These lists are used to convert attribute indices into the string equivalent.
+# They are copied from Tcl's C sources.  There is no need for them to be
+# the same as in the native filesystem; we can use completely different
+# attribute sets.  However some items, like '-longname' it is probably
+# best to implement.
+set vfs::attributes(windows) [list -archive -hidden -longname -readonly -shortname -system -vfs]
+set vfs::attributes(macintosh) [list -creator -hidden -readonly -type -vfs]
+set vfs::attributes(unix) [list -group -owner -permissions -vfs]
+
+proc vfs::listAttributes {} {
+    variable attributes
+    global tcl_platform
+    set attributes($tcl_platform(platform))
+}
+
+proc vfs::indexToAttribute {idx} {
+    return [lindex [listAttributes] $idx]
+}
+
+proc vfs::attributesGet {root stem index} {
+    # Return standard Tcl result, or error.
+    set attribute [indexToAttribute $index]
+    switch -- $attribute {
+	"-longname" {
+	    # We always use the normalized form!
+	    return [file join $root $stem]
+	}
+	"-shortname" {
+	    set rootdir [file attributes [file dirname $root] -shortname]
+	    return [file join $rootdir [file tail $root] $stem]
+	}
+	"-archive" {
+	    return 0
+	}
+	"-hidden" {
+	    return 0
+	}
+	"-readonly" {
+	    return 0
+	}
+	"-system" {
+	    return 0
+	}
+	"-vfs" {
+	    return 1
+	}
+	"-owner" {
+	    return
+	}
+	"-group" {
+	    return
+	}
+    }
+}
+
+proc vfs::attributesSet {root stem index val} {
+    # Return standard Tcl result, or error.
+    set attribute [indexToAttribute $index]
+    #puts "$attribute"
+    switch -- $attribute {
+	"-owner" {
+	    return
+	}
+	"-group" {
+	    return
+	}
+	"-archive" {
+	    return
+	}
+	"-hidden" {
+	    return
+	}
+	"-permissions" {
+	    return
+	}
+	"-longname" {
+	    error "no such luck"
+	}
+	"-vfs" {
+	    error "read-only"
+	}
+    }
+}
+
 proc vfs::posixError {name} {
     variable posix
     return $posix($name)

@@ -181,3 +181,7 @@ proc vfs::tclproc::fileattributes {ns name args} {
     }
 }
 
+proc vfs::tclproc::utime {what name actime mtime} {
+    puts stderr "utime $name"
+    error ""
+}

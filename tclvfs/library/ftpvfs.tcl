@@ -90,3 +90,7 @@ proc vfs::ftp::fileattributes {fd path args} {
     }
 }
 
+proc vfs::ftp::utime {fd path actime mtime} {
+    
+}
+

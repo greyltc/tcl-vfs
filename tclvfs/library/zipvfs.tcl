@@ -8,7 +8,7 @@ namespace eval vfs::zip {}
 
 proc vfs::zip::Mount {zipfile local} {
     set fd [::zip::open [::file normalize $zipfile]]
-    vfs::filesystem mount $local [list vfs::zip::handler $fd]
+    vfs::filesystem mount $local [list ::vfs::zip::handler $fd]
     return $fd
 }
 
@@ -135,6 +135,11 @@ proc vfs::zip::fileattributes {zipfd name args} {
 	}
     }
 }
+
+proc vfs::zip::utime {fd path actime mtime} {
+    error ""
+}
+
 
 # Below copied from TclKit distribution
 
