@@ -27,7 +27,7 @@ proc filelistrelative {filelist {remove ""}} {
 	}
 	set filelist $newlist
     }
-    set dir [file normalize [file dirname [info script]]]
+    set dir [file normalize [pwd]]
     set len [string length $dir]
     incr len
     set res {}

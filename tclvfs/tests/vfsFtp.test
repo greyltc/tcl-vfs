@@ -24,19 +24,28 @@ if {![auto_load ::vfs::ftp::Mount]} {
 puts stdout "These tests require an internet connection, and might"
 puts stdout "take a long time to complete."
 
-test vfsFtp-1.1 {mount and source} {
-    set dir [pwd]
+set dir [pwd]
+
+test vfsFtp-1.1 {mount and cd} {
     vfs::ftp::Mount ftp://ftp.ucsd.edu/pub/alpha/ localmount
-    cd localmount ; cd tcl
-    set res [source vfsTest.tcl]
-    cd $dir
-    set res
+    cd localmount
+    cd tcl
+    file tail [pwd]
+} {tcl}
+
+test vfsFtp-1.2 {mount and glob} {
+    glob -nocomplain vfsTest.tcl
+} {vfsTest.tcl}
+
+test vfsFtp-1.3 {mount and source} {
+    source vfsTest.tcl
 } {This was returned from a remote file}
 
 # cleanup
 catch {
     vfs::ftp::Unmount ftp://ftp.ucsd.edu/pub/alpha/ localmount
 }
+cd $dir
 
 ::tcltest::cleanupTests
 return
