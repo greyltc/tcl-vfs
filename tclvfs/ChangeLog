@@ -1,3 +1,8 @@
+2004-05-21  Daniel Steffen <das@users.sourceforge.net>
+
+	* starkit.tcl: improved previous symbolic link patch by
+	using [vfs::filesystem fullynormalize], as suggessted by Vince.
+
 2004-05-19  Jean-Claude Wippler  <jcw@equi4.com>
 
 	* starkit.tcl: added a patch from Bryan Schofield to properly

@@ -1,7 +1,9 @@
 # Starkit support, see http://www.equi4.com/starkit/
 # by Jean-Claude Wippler, July 2002
 
-package provide starkit 1.3.1
+package provide starkit 1.3
+
+package require vfs
 
 # Starkit scripts can launched in a number of ways:
 #   - wrapped or unwrapped
@@ -40,47 +42,6 @@ namespace eval starkit {
 	    package require ${driver}vfs
 	    eval [list ::vfs::${driver}::Mount $self $self] $args
 
-
-
-    # resolveFile --
-    #
-    #    Resolves the filename to an absolute path with no links anywhere in
-    #    the file name or directories in the file path.
-    #    B.Schofield 19 May 2004
-    #
-    # Arguments:
-    #    filename - a file name
-    # Results:
-    #    absolute file path
-    #
-    proc resolveFile {filename} {
-       # remember where we are, we'll be changing directories and will need to
-       # restore the current working directory
-       set cwd [pwd]
-       
-       # If the filename is a link, we'll need to follow it. Hopefully, the
-       # link doesn't point to another link...
-       if {[file type $filename] eq "link"} {
-	  # we'd better change to directory where the link is, or our
-	  # normalize might give an incorrect result
-	  cd [file dirname $filename]
-	  set filename [file readlink $filename]
-       }
-	
-       # normalize the file name to get a good guess as to where the file is
-       set filename [file normalize $filename]
-       # change to it's parent directory so we know exactly where it is.
-       cd [file dirname $filename]
-       # resolve all links that might be in the path to the file. By using
-       # [pwd] in the file's directory, we'll remove all links in the path
-       set filename [file join [pwd] [file tail $filename]]
-       # return to the directory where we started
-       cd $cwd
-       # now give back one link free, full path to the file
-       return $filename
-    }
-
-
 	    uplevel [list source [file join $self main.tcl]]
 	}]} {
 	    panic $::errorInfo
@@ -102,20 +63,16 @@ namespace eval starkit {
 	# 2003/02/11: new behavior, if starkit::topdir exists, don't disturb it
 	if {![info exists starkit::topdir]} { variable topdir }
 
-        # 2004/05/19: added "resolveFile" calls instead of "file normalize" to
-        # remove any links in the paths to the file names, which were causing
-        # this method to return in correct start up modes.
-        set script [resolveFile [info script]]
-        set topdir [resolveFile [file dirname $script]]
-        set noe    [resolveFile [info nameofexe]]
+	set script [vfs::filesystem fullynormalize [info script]]
+	set topdir [file dirname $script]
 
-	if {$topdir eq [file normalize $noe]} { return starpack }
+	if {$topdir eq [vfs::filesystem fullynormalize [info nameofexe]]} { return starpack }
 
 	# pkgs live in the $topdir/lib/ directory
-        set lib [resolveFile [file join $topdir lib]]
+	set lib [file join $topdir lib]
 	if {[file isdir $lib]} { autoextend $lib }
 
-	set a0 [resolveFile $argv0]
+	set a0 [vfs::filesystem fullynormalize $argv0]
 	if {$topdir eq $a0} { return starkit }
 	if {$script eq $a0} { return unwrapped }
 
@@ -127,14 +84,14 @@ namespace eval starkit {
 
 	# detect when run as an NT service
 	if {[info exists ::tcl_service]} { return service }
-       
-        return sourced
+
+	return sourced
     }
 
     # append an entry to auto_path if it's not yet listed
     proc autoextend {dir} {
 	global auto_path
-	set dir [file normalize $dir]
+	set dir [vfs::filesystem fullynormalize $dir]
 	if {[lsearch $auto_path $dir] < 0} {
 	    lappend auto_path $dir
 	}
