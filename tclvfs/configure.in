@@ -82,11 +82,6 @@ AC_SUBST(CLEANFILES)
 
 TEA_ENABLE_THREADS
 
-
-SC_TCL_EARLY_FLAGS
-SC_TCL_64BIT_FLAGS
-
-
 TEA_ENABLE_SHARED
 
 TEA_CONFIG_CFLAGS
@@ -103,4 +98,9 @@ TEA_PROG_TCLSH
 # Finally, substitute all of the various values into the Makefile.
 #--------------------------------------------------------------------
 
-AC_OUTPUT([Makefile library/pkgIndex.tcl])
+OUTFILES="Makefile"
+if test "x${SHARED_BUILD}" = "x1" ; then
+    OUTFILES="$OUTFILES library/pkgIndex.tcl"
+fi
+
+AC_OUTPUT([$OUTFILES])

@@ -173,7 +173,7 @@ binaries: $(BINARIES)
 libraries:
 	@mkdir -p $(top_builddir)/library/
 	@list='$(RUNTIME_SOURCES)'; for p in $$list; do \
-	    $(INSTALL_DATA) $(srcdir)/library/$$p $(top_builddir)/library/$$p;\
+            $(INSTALL_DATA) $(srcdir)/library/$$p $(top_builddir)/library/$$p;\
 	done
 
 doc:
@@ -265,7 +265,7 @@ clean:
 	-rm -f *.$(OBJEXT) core *.core
 	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 	list='$(RUNTIME_SOURCES)'; for p in $$list; do \
-	  rm -f library/$$p; \
+            rm -f library/$$p; \
 	done
 
 distclean: clean
@@ -306,9 +306,9 @@ install-lib-binaries:
 	@echo "Installing runtime sources in $(DESTDIR)$(pkglibdir)/"
 	@list='$(RUNTIME_SOURCES)'; for p in $$list; do \
 	  rm -f $(DESTDIR)$(pkglibdir)/`basename $$p`; \
-	  $(INSTALL_DATA) $(top_builddir)/library/$$p $(DESTDIR)$(pkglibdir)/;\
+	  $(INSTALL_DATA) $(srcdir)/library/$$p $(DESTDIR)$(pkglibdir)/;\
 	done
-	@if test "@SHARED_BUILD@" = "1"; then \
+	@if test "x$(SHARED_BUILD)" = "x1"; then \
 	  echo "Installing pkgIndex.tcl in $(DESTDIR)$(pkglibdir)/"; \
 	  $(INSTALL_DATA) $(top_builddir)/library/pkgIndex.tcl $(DESTDIR)$(pkglibdir)/;\
 	fi
@@ -331,10 +331,12 @@ install-bin-binaries:
 .SUFFIXES: .c .$(OBJEXT)
 
 library/pkgIndex.tcl: $(srcdir)/library/pkgIndex.tcl.in $(top_builddir)/config.status
-	cd $(top_builddir) \
-	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
+	@if test "x$(SHARED_BUILD)" = "x1"; then \
+	  cd $(top_builddir) \
+	    && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status; \
+	fi
 
-Makefile: library/pkgIndex.tcl $(srcdir)/Makefile.in $(top_builddir)/config.status
+Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
