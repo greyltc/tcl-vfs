@@ -6,11 +6,13 @@ namespace eval vfs::ftp {}
 
 proc vfs::ftp::Mount {dirurl local} {
     ::vfs::log "ftp-vfs: attempt to mount $dirurl at $local"
-    if {[string range $dirurl 0 5] == "ftp://"} {
-	set dirurl [string range $dirurl 6 end]
+    if {[string index $dirurl end] != "/"} {
+	::vfs::log "ftp-vfs: adding missing directory delimiter to mount point"
+	append dirurl "/"
     }
-    if {![regexp {(([^:]*)(:([^@]*))?@)?([^/]*)(/(.*/)?([^/]*))?$} $dirurl \
-      junk junk user junk pass host "" path file]} {
+    
+    if {![regexp {(ftp://)?(([^:]*)(:([^@]*))?@)?([^/]*)(/(.*/)?([^/]*))?$} \
+      $dirurl junk junk junk user junk pass host "" path file]} {
 	return -code error "Sorry I didn't understand\
 	  the url address \"$dirurl\""
     }
@@ -38,6 +40,11 @@ proc vfs::ftp::Mount {dirurl local} {
 	}
     }
     
+    if {![catch {vfs::filesystem info $dirurl}]} {
+	# unmount old mount
+	::vfs::log "ftp-vfs: unmounted old mount point at $dirurl"
+	vfs::unmount $dirurl
+    }
     ::vfs::log "ftp $host, $path mounted at $fd"
     vfs::filesystem mount $local [list vfs::ftp::handler $fd $path]
     # Register command to unmount

@@ -36,6 +36,11 @@ proc vfs::http::Mount {dirurl local} {
     
     set token [::http::geturl $dirurl -validate 1]
 
+    if {![catch {vfs::filesystem info $dirurl}]} {
+	# unmount old mount
+	::vfs::log "ftp-vfs: unmounted old mount point at $dirurl"
+	vfs::unmount $dirurl
+    }
     ::vfs::log "http $host, $path mounted at $local"
     vfs::filesystem mount $local [list vfs::http::handler $dirurl $path]
     # Register command to unmount

@@ -17,14 +17,24 @@
 namespace eval ::vfs::urltype {}
 
 proc vfs::urltype::Mount {type} {
-    # This requires Tcl 8.4a4.
+    set mountPoint [_typeToMount $type]
+    ::vfs::addVolume $mountPoint
+    ::vfs::filesystem mount $mountPoint [list vfs::urltype::handler $type]
+    return "Mounted at \"${mountPoint}\""
+}
+
+proc vfs::urltype::Unmount {type} {
+    set mountPoint [_typeToMount $type]
+    ::vfs::filesystem unmount $mountPoint
+    ::vfs::removeVolume $mountPoint
+}
+
+proc vfs::urltype::_typeToMount {type} {
     set mountPoint "${type}://"
     if {$type == "file"} {
 	append mountPoint "/"
     }
-    ::vfs::addVolume "${mountPoint}"
-    ::vfs::filesystem mount $mountPoint [list vfs::urltype::handler $type]
-    return "Mounted at \"${mountPoint}\""
+    return $mountPoint
 }
 
 proc vfs::urltype::handler {type cmd root relative actualpath args} {
