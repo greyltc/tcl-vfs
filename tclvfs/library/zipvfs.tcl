@@ -6,13 +6,24 @@ package require vfs 1.0
 
 namespace eval vfs::zip {}
 
+# Used to execute a zip archive.  This is rather like a jar file
+# but simpler.  We simply mount it and then source a toplevel
+# file called 'main.tcl'.
+proc vfs::zip::Execute {zipfile} {
+    Mount $zipfile $zipfile
+    source [file join $zipfile main.tcl]
+}
+
 proc vfs::zip::Mount {zipfile local} {
     set fd [::zip::open [::file normalize $zipfile]]
     vfs::filesystem mount $local [list ::vfs::zip::handler $fd]
+    # Register command to unmount
+    vfs::RegisterMount $local [list ::vfs::zip::Unmount $fd]
     return $fd
 }
 
 proc vfs::zip::Unmount {fd} {
+    vfs::filesystem unmount $local
     ::zip::_close $fd
 }
 

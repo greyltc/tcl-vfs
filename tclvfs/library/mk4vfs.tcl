@@ -104,8 +104,17 @@
 namespace eval vfs::mk4 {}
 
 proc vfs::mk4::Mount {what local args} {
-    set fd [eval [list ::mk4vfs::mount $what $local] $args]
-    return $fd
+    set dd [eval [list ::mk4vfs::mount $what $local] $args]
+
+    ::vfs::filesystem mount $path [list ::vfs::mk4::handler $db]
+    # Register command to unmount
+    vfs::RegisterMount $local [list ::vfs::mk4::Unmount $db]
+    return $dd
+}
+
+proc vfs::mk4::Unmount {db local} {
+    vfs::filesystem unmount $local
+    ::mk4tcl::umount $db
 }
 
 proc vfs::mk4::handler {db cmd root relative actualpath args} {
@@ -355,8 +364,6 @@ proc mk4vfs::mount {path file args} {
 
     init $db
 
-    ::vfs::filesystem mount $path [list ::vfs::mk4::handler $db]
-
     set flush 1
     for {set idx 0} {$idx < [llength $args]} {incr idx} {
         switch -- [lindex $args $idx] {
@@ -375,9 +382,9 @@ proc mk4vfs::_commit {db} {
     mk::file commit $db
 }
 
-proc mk4vfs::umount {path args} {
-    tclLog [list unmount $path $args]
-    return [eval [list vfs::filesystem unmount $path] $args]
+proc mk4vfs::umount {db} {
+    tclLog [list unmount $db]
+    mk::file close $db
 }
 
 proc mk4vfs::stat {db path arr} {

@@ -1,11 +1,16 @@
 
 package require vfs 1.0
 
-proc vfs::testMount {what local} {
-    vfs::filesystem mount $local [list vfs::test::handler $what]
+namespace eval vfs::test {}
+
+proc vfs::test::Mount {what local} {
+    vfs::filesystem mount $local [list ::vfs::test::handler $what]
+    vfs::RegisterMount $local [list ::vfs::test::Unmount]
 }
 
-namespace eval vfs::test {}
+proc vfs::test::Unmount {local} {
+    vfs::filesystem unmount $local
+}
 
 proc vfs::test::handler {what cmd root relative actualpath args} {
     eval [list $cmd $what $relative] $args

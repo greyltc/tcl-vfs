@@ -11,6 +11,21 @@ proc ::vfs::autoMountUrl {type cmd {pkg ""}} {
     set urlMounts($type) [list $cmd $pkg]
 }
 
+proc ::vfs::log {str} {
+    puts stderr $str
+}
+
+proc ::vfs::RegisterMount {mountpoint unmountcmd} {
+    variable _unmountCmd
+    set _unmountCmd([file normalize $mountpoint]) $unmountcmd
+}
+
+proc ::vfs::unmount {mountpoint} {
+    variable _unmountCmd
+    set norm [file normalize $mountpoint]
+    uplevel \#0 $_unmountCmd($norm) [list $norm]
+}
+
 ::vfs::autoMountExtension .zip ::vfs::zip::Mount vfs
 ::vfs::autoMountUrl ftp ::vfs::ftp::Mount vfs
 ::vfs::autoMountUrl file ::vfs::fileUrlMount vfs

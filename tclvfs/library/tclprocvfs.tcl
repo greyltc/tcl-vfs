@@ -15,9 +15,11 @@ proc vfs::tclproc::Mount {ns local} {
     }
     puts "tclproc $ns mounted at $local"
     vfs::filesystem mount $local [list vfs::tclproc::handler $ns]
+    vfs::RegisterMount $local [list vfs::tclproc::handler]
 }
 
-proc vfs::tclproc::Unmount {ns} {
+proc vfs::tclproc::Unmount {local} {
+    vfs::filesystem unmount $local
 }
 
 proc vfs::tclproc::handler {ns cmd root relative actualpath args} {
