@@ -168,7 +168,10 @@ Return TCL_OK or throw a posix error depending on whether the given
 access mode (which is an integer) is compatible with the file.
 .TP
 \fIcommand\fR \fIcreatedirectory\fR \fIr-r-a\fR
-Create a directory with the given name.
+Create a directory with the given name.  The command can assume
+that all sub-directories in the path exist and are valid, and
+that the actual desired path does not yet exist (Tcl takes care
+of all of that for us).
 .TP
 \fIcommand\fR \fIdeletefile\fR \fIr-r-a\fR
 Delete the given file.
