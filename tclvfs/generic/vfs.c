@@ -266,6 +266,7 @@ static void            Vfs_RegisterWithInterp _ANSI_ARGS_((Tcl_Interp*));
 static VfsNativeRep*   VfsGetNativePath(Tcl_Obj* pathObjPtr);
 static Tcl_CloseProc   VfsCloseProc;
 static void            VfsExitProc(ClientData clientData);
+static Tcl_Obj*	       VfsFullyNormalizePath(Tcl_Interp *interp, Tcl_Obj *pathPtr);
 static Tcl_Obj*        VfsBuildCommandForPath(Tcl_Interp **iRef, 
 			          CONST char* cmd, Tcl_Obj * pathPtr);
 
@@ -679,11 +680,11 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
     int index;
 
     static CONST char *optionStrings[] = {
-	"info", "mount", "unmount",
+	"info", "mount", "unmount", "fullynormalize",
 	NULL
     };
     enum options {
-	VFS_INFO, VFS_MOUNT, VFS_UNMOUNT
+	VFS_INFO, VFS_MOUNT, VFS_UNMOUNT, VFS_NORMALIZE
     };
 
     if (objc < 2) {
@@ -696,8 +697,24 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
     }
 
     switch ((enum options) index) {
-	case VFS_MOUNT: {
-	    int i;
+	case VFS_NORMALIZE: {
+	    Tcl_Obj *path;
+	    if (objc != 3) {
+		Tcl_WrongNumArgs(interp, 2, objv, "path");
+		return TCL_ERROR;
+	    }
+	    path = VfsFullyNormalizePath(interp, objv[2]);
+	    if (path == NULL) {
+		Tcl_AppendStringsToObj(Tcl_GetObjResult(interp),
+			"not a valid path \"", Tcl_GetString(objv[2]), 
+			"\"", (char *) NULL);
+	    } else {
+		Tcl_SetObjResult(interp, path);
+		Tcl_DecrRefCount(path);
+		return TCL_OK;
+	    }
+	}
+        case VFS_MOUNT: {
 	    if (objc < 4 || objc > 5) {
 		Tcl_WrongNumArgs(interp, 1, objv, "mount ?-volume? path cmd");
 		return TCL_ERROR;
@@ -710,13 +727,14 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 			    "\": must be -volume", (char *) NULL);
 		    return TCL_ERROR;
 		}
-		i = 3;
-		return Vfs_AddMount(objv[i], 1, interp, objv[i+1]);
+		return Vfs_AddMount(objv[3], 1, interp, objv[4]);
 	    } else {
 		Tcl_Obj *path;
-		i = 2;
-		path = Tcl_FSGetNormalizedPath(interp, objv[i]);
-		return Vfs_AddMount(path, 0, interp, objv[i+1]);
+		int retVal;
+		path = VfsFullyNormalizePath(interp, objv[2]);
+		retVal = Vfs_AddMount(path, 0, interp, objv[3]);
+		if (path != NULL) Tcl_DecrRefCount(path);
+		return retVal;
 	    }
 	    break;
 	}
@@ -732,8 +750,10 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		
 		val = Vfs_FindMount(objv[2], -1);
 		if (val == NULL) {
-		    Tcl_Obj *path = Tcl_FSGetNormalizedPath(interp, objv[2]);
+		    Tcl_Obj *path;
+		    path = VfsFullyNormalizePath(interp, objv[2]);
 		    val = Vfs_FindMount(path, -1);
+		    Tcl_DecrRefCount(path);
 		    if (val == NULL) {
 			Tcl_AppendStringsToObj(Tcl_GetObjResult(interp),
 				"no such mount \"", Tcl_GetString(objv[2]), 
@@ -751,9 +771,12 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		return TCL_ERROR;
 	    }
 	    if (Vfs_RemoveMount(objv[2], interp) == TCL_ERROR) {
-		Tcl_Obj * path;
-		path = Tcl_FSGetNormalizedPath(interp, objv[2]);
-		if (Vfs_RemoveMount(path, interp) == TCL_ERROR) {
+		Tcl_Obj *path;
+		int retVal;
+		path = VfsFullyNormalizePath(interp, objv[2]);
+		retVal = Vfs_RemoveMount(path, interp);
+		Tcl_DecrRefCount(path);
+		if (retVal == TCL_ERROR) {
 		    Tcl_AppendStringsToObj(Tcl_GetObjResult(interp),
 			    "no such mount \"", Tcl_GetString(objv[2]), 
 			    "\"", (char *) NULL);
@@ -765,7 +788,33 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
     }
     return TCL_OK;
 }
-
+
+/* Return fully normalized path owned by the caller */
+static Tcl_Obj*
+VfsFullyNormalizePath(Tcl_Interp *interp, Tcl_Obj *pathPtr) {
+    Tcl_Obj *path;
+    int counter = 0;
+
+    Tcl_IncrRefCount(pathPtr);
+    while (1) {
+	path = Tcl_FSLink(pathPtr,NULL,0);
+	if (path == NULL) {
+	    break;
+	}
+	Tcl_DecrRefCount(pathPtr);
+	pathPtr = path;
+	counter++;
+	if (counter > 10) {
+	    /* Too many links */
+	    Tcl_DecrRefCount(pathPtr);
+	    return NULL;
+	}
+    }
+    path = Tcl_FSGetNormalizedPath(interp, pathPtr);
+    Tcl_IncrRefCount(path);
+    Tcl_DecrRefCount(pathPtr);
+    return path;
+}
 /*
  *----------------------------------------------------------------------
  *

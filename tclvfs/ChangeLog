@@ -1,3 +1,9 @@
+2002-07-18  Vince Darley <vincentdarley@sourceforge.net>
+	* generic/vfs.c: ensure all mount activity is with fully
+	normalized paths in which the last path element is not a link.
+	Solves (together with latest cvs head changes) a problem in
+	starting up a tclkit(sh) from a link.
+	
 2002-07-08  Vince Darley <vincentdarley@sourceforge.net>
 	* generic/vfs.c: update for latest cvs head.
 	* win/makefile.vc: compilation into Release and Debug
