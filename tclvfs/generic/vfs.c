@@ -1045,7 +1045,7 @@ VfsStat(pathPtr, bufPtr)
     }
 }
 
-int
+static int
 VfsAccess(pathPtr, mode)
     Tcl_Obj *pathPtr;		/* Path of file to access (in current CP). */
     int mode;                   /* Permission setting. */
@@ -1076,7 +1076,7 @@ VfsAccess(pathPtr, mode)
     }
 }
 
-Tcl_Channel
+static Tcl_Channel
 VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
     Tcl_Interp *cmdInterp;              /* Interpreter for error reporting;
 					 * can be NULL. */
@@ -1204,7 +1204,7 @@ VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
  * entire contents of the channel and, say, compress it for storage
  * into a tclkit or zip archive.
  */
-void 
+static void 
 VfsCloseProc(ClientData clientData) {
     VfsChannelCleanupInfo * channelRet = (VfsChannelCleanupInfo*) clientData;
     Tcl_SavedResult savedResult;
@@ -1236,7 +1236,7 @@ VfsCloseProc(ClientData clientData) {
     ckfree((char*)channelRet);
 }
 
-int
+static int
 VfsMatchInDirectory(
     Tcl_Interp *cmdInterp,	/* Interpreter to receive error msgs. */
     Tcl_Obj *returnPtr,		/* Object to receive results. */
@@ -1286,7 +1286,7 @@ VfsMatchInDirectory(
     return returnVal;
 }
 
-int
+static int
 VfsDeleteFile(
     Tcl_Obj *pathPtr)		/* Pathname of file to be removed (UTF-8). */
 {
@@ -1309,7 +1309,7 @@ VfsDeleteFile(
     return returnVal;
 }
 
-int
+static int
 VfsCreateDirectory(
     Tcl_Obj *pathPtr)		/* Pathname of directory to create (UTF-8). */
 {
@@ -1332,7 +1332,7 @@ VfsCreateDirectory(
     return returnVal;
 }
 
-int
+static int
 VfsRemoveDirectory(
     Tcl_Obj *pathPtr,		/* Pathname of directory to be removed
 				 * (UTF-8). */
@@ -1371,7 +1371,7 @@ VfsRemoveDirectory(
     return returnVal;
 }
 
-char**
+static char**
 VfsFileAttrStrings(pathPtr, objPtrRef)
     Tcl_Obj* pathPtr;
     Tcl_Obj** objPtrRef;
@@ -1401,7 +1401,7 @@ VfsFileAttrStrings(pathPtr, objPtrRef)
     return NULL;
 }
 
-int
+static int
 VfsFileAttrsGet(cmdInterp, index, pathPtr, objPtrRef)
     Tcl_Interp *cmdInterp;	/* The interpreter for error reporting. */
     int index;			/* index of the attribute command. */
@@ -1445,7 +1445,7 @@ VfsFileAttrsGet(cmdInterp, index, pathPtr, objPtrRef)
     return returnVal;
 }
 
-int
+static int
 VfsFileAttrsSet(cmdInterp, index, pathPtr, objPtr)
     Tcl_Interp *cmdInterp;	/* The interpreter for error reporting. */
     int index;			/* index of the attribute command. */
@@ -1487,7 +1487,7 @@ VfsFileAttrsSet(cmdInterp, index, pathPtr, objPtr)
     return returnVal;
 }
 
-int 
+static int 
 VfsUtime(pathPtr, tval)
     Tcl_Obj* pathPtr;
     struct utimbuf *tval;
@@ -1514,7 +1514,7 @@ VfsUtime(pathPtr, tval)
     return returnVal;
 }
 
-Tcl_Obj*
+static Tcl_Obj*
 VfsListVolumes(void)
 {
     Tcl_Obj *retVal;
@@ -1531,7 +1531,7 @@ VfsListVolumes(void)
     return retVal;
 }
 
-void
+static void
 Vfs_AddVolume(volume)
     Tcl_Obj *volume;
 {
@@ -1557,7 +1557,7 @@ Vfs_AddVolume(volume)
     Tcl_MutexUnlock(&vfsVolumesMutex);
 }
 
-int
+static int
 Vfs_RemoveVolume(volume)
     Tcl_Obj *volume;
 {
@@ -1711,8 +1711,8 @@ VfsBuildCommandForPath(Tcl_Interp **iRef, CONST char* cmd, Tcl_Obj *pathPtr) {
     return mountCmd;
 }
 
-static 
-void VfsExitProc(ClientData clientData)
+static void 
+VfsExitProc(ClientData clientData)
 {
     Tcl_FSUnregister(&vfsFilesystem);
     /* 
