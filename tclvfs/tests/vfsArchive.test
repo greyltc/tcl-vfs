@@ -50,22 +50,36 @@ proc makeAndMountMk4Archive {} {
 
 # This actually calls the test suite recursively, which probably
 # causes some problems, although it shouldn't really!
+test vfsArchive-1.0 {package require vfs} {
+    if {![catch {package require vfs} res]} {
+	set res "ok"
+    }
+    set res
+} {ok}
+
+# This actually calls the test suite recursively, which probably
+# causes some problems, although it shouldn't really!
 test vfsArchive-1.1 {run tests in zip archive} {nativefs} {
     # If this test fails, you probably don't have 'zip' installed.
     set testdir [pwd]
-    puts stderr $testdir
     package require vfs
     if {[catch {makeAndMountZipArchive} unmount]} {
-	set res "Couldn't make zip archive to test with: $unmount"
+	set res "Couldn't make and mount zip archive to test with: $unmount"
+	puts $::errorInfo
 	puts stderr $::auto_path
     } else {
-	cd tests
-	source all.tcl
-	cd ..
-	cd ..
-	puts [pwd]
-	eval $unmount
-	set res "ok"
+	puts stdout "=== Running tests in zip archive ==="
+	if {![catch {
+	    cd tests
+	    source all.tcl
+	    cd ..
+	    cd ..
+	    puts [pwd]
+	    eval $unmount
+	} res]} {
+	    set res "ok"
+	}
+	puts stdout "=== End of embedded zip tests ==="
     }
     cd $testdir
     set res
@@ -81,9 +95,10 @@ test vfsArchive-1.2 {run tests in mk4 archive} {nativefs} {
     puts stderr $testdir
     package require vfs
     if {[catch {makeAndMountMk4Archive} unmount]} {
-	set res "Couldn't make mk4 archive to test with: $unmount"
+	set res "Couldn't make and mount mk4 archive to test with: $unmount"
 	puts stderr $::auto_path
     } else {
+	puts stdout "=== Running tests in mk4 archive ==="
 	cd tests
 	source all.tcl
 	cd ..
@@ -91,6 +106,7 @@ test vfsArchive-1.2 {run tests in mk4 archive} {nativefs} {
 	puts [pwd]
 	eval $unmount
 	set res "ok"
+	puts stdout "=== End of embedded mk4 tests ==="
     }
     cd $testdir
     set res

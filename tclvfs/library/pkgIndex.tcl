@@ -26,10 +26,16 @@ if {$::tcl_platform(platform) eq "unix"} {
 } else {
     set dll vfs13
 }
+if {![info exists dir]} {
+    set dir [file dirname [info script]]
+}
 set dll [file join $dir $dll[info sharedlibextension]]
 
-proc loadvfs {dll} {
+proc loadvfs {dir dll} {
     global auto_path
+    if {[lsearch -exact $auto_path $dir] == -1} {
+	lappend auto_path $dir
+    }
     if {![file exists $dll]} { return }
     set dir [file dirname $dll]
     if {[lsearch -exact $auto_path $dir] == -1} {
@@ -38,7 +44,7 @@ proc loadvfs {dll} {
     load $dll
 }
 
-package ifneeded vfs 1.3.0 [list loadvfs $dll]
+package ifneeded vfs 1.3.0 [list loadvfs $dir $dll]
 package ifneeded starkit 1.3 [list source [file join $dir starkit.tcl]]
 package ifneeded vfslib 1.3.1 [list source [file join $dir vfslib.tcl]]
 
