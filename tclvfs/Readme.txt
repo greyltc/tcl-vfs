@@ -88,11 +88,6 @@ versions a little more complex.  Also Prowrap contains a similar zip-vfs
 implementation using the same old APIs (it is BSD-licensed).  Either of 
 these can probably be modified to work with the new APIs quite easily.
 
-Limitations
------------
-
-None yet.
-
 Helping!
 --------
 
@@ -101,8 +96,8 @@ which means it isn't necessarily even particular well thought out, so if
 you wish to contribute a single line of code or a complete re-write, I'd be
 very happy!
 
-Future thoughts
----------------
+Limitations & Future thoughts
+-----------------------------
 
 See:
 
