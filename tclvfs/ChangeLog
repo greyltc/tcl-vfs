@@ -1,3 +1,9 @@
+2002-04-27  Vince Darley <vincentdarley@sourceforge.net>
+	* tests/vfs.test: tests work independent of directory in which
+	they run.  Tests added to check that at least 'vfs::memchan'
+	basically works.
+	* mac/*: updated for removal of scripdoc.tcl and vfs.tcl
+	
 2002-04-25  Jean-Claude Wippler <jcw@equi4.com>
 	* library/*vfs.tcl: switching to vfs::{crc,memchan,zip}
 	* library/vfsUtils.tcl: fixed env to be global, added unset

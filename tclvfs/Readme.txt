@@ -151,7 +151,7 @@ you couldn't hook the code up to input/output pipes).
 Debugging virtual filesystems
 -----------------------------
 
-Bugs in Tcl vfs's are hard to track down, since error messages can't
+Bugs in Tcl vfs's are hard to track down, since error _messages_ can't
 necessarily propagate to the toplevel (errors of course do propagate and
 result in a filesystem action failing, but informative error messages cannot
 usually be provided, since Tcl is only expecting one of the standard POSIX

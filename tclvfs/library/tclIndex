@@ -97,7 +97,7 @@ set auto_index(::vfs::urltype::deletefile) [list source [file join $dir vfsUrl.t
 set auto_index(::vfs::urltype::fileattributes) [list source [file join $dir vfsUrl.tcl]]
 set auto_index(::vfs::urltype::utime) [list source [file join $dir vfsUrl.tcl]]
 set auto_index(::vfs::memchan) [list source [file join $dir vfsUtils.tcl]]
-set auto_index(::vfs::zlib) [list source [file join $dir vfsUtils.tcl]]
+set auto_index(::vfs::crc) [list source [file join $dir vfsUtils.tcl]]
 set auto_index(::vfs::zip) [list source [file join $dir vfsUtils.tcl]]
 set auto_index(::vfs::autoMountExtension) [list source [file join $dir vfsUtils.tcl]]
 set auto_index(::vfs::autoMountUrl) [list source [file join $dir vfsUtils.tcl]]

@@ -102,10 +102,8 @@ read 'TEXT' (VFS_LIBRARY_RESOURCES + 1, "vfs:tclIndex", purgeable) "tclIndex.tcl
 read 'TEXT' (VFS_LIBRARY_RESOURCES + 2, "ftpvfs", purgeable)   "ftpvfs.tcl";
 read 'TEXT' (VFS_LIBRARY_RESOURCES + 3, "httpvfs", purgeable)   "httpvfs.tcl";
 read 'TEXT' (VFS_LIBRARY_RESOURCES + 4, "mk4vfs", purgeable)   "mk4vfs.tcl";
-read 'TEXT' (VFS_LIBRARY_RESOURCES + 5, "scripdoc", purgeable)   "scripdoc.tcl";
 read 'TEXT' (VFS_LIBRARY_RESOURCES + 6, "tclprocvfs", purgeable)   "tclprocvfs.tcl";
 read 'TEXT' (VFS_LIBRARY_RESOURCES + 7, "testvfs", purgeable)   "testvfs.tcl";
-read 'TEXT' (VFS_LIBRARY_RESOURCES + 8, "vfs", purgeable)   "vfs.tcl";
 read 'TEXT' (VFS_LIBRARY_RESOURCES + 9, "vfsUrl", purgeable)   "vfsUrl.tcl";
 read 'TEXT' (VFS_LIBRARY_RESOURCES + 10, "vfsUtils", purgeable)   "vfsUtils.tcl";
 read 'TEXT' (VFS_LIBRARY_RESOURCES + 11, "zipvfs", purgeable)   "zipvfs.tcl";

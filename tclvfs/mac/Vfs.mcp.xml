@@ -995,24 +995,6 @@
                     <PATHTYPE>PathRelative</PATHTYPE>
                     <PATHROOT>Project</PATHROOT>
                     <ACCESSPATH>::library:</ACCESSPATH>
-                    <PATH>:scripdoc.tcl</PATH>
-                    <PATHFORMAT>MacOS</PATHFORMAT>
-                    <FILEKIND>Text</FILEKIND>
-                    <FILEFLAGS></FILEFLAGS>
-                </FILE>
-                <FILE>
-                    <PATHTYPE>PathRelative</PATHTYPE>
-                    <PATHROOT>Project</PATHROOT>
-                    <ACCESSPATH>::library:</ACCESSPATH>
-                    <PATH>:vfs.tcl</PATH>
-                    <PATHFORMAT>MacOS</PATHFORMAT>
-                    <FILEKIND>Text</FILEKIND>
-                    <FILEFLAGS></FILEFLAGS>
-                </FILE>
-                <FILE>
-                    <PATHTYPE>PathRelative</PATHTYPE>
-                    <PATHROOT>Project</PATHROOT>
-                    <ACCESSPATH>::library:</ACCESSPATH>
                     <PATH>:vfsUrl.tcl</PATH>
                     <PATHFORMAT>MacOS</PATHFORMAT>
                     <FILEKIND>Text</FILEKIND>
@@ -1161,20 +1143,6 @@
                         <PATHROOT>Project</PATHROOT>
                         <ACCESSPATH>::library:</ACCESSPATH>
                         <PATH>:mk4vfs.tcl</PATH>
-                        <PATHFORMAT>MacOS</PATHFORMAT>
-                    </FILEREF>
-                    <FILEREF>
-                        <PATHTYPE>PathRelative</PATHTYPE>
-                        <PATHROOT>Project</PATHROOT>
-                        <ACCESSPATH>::library:</ACCESSPATH>
-                        <PATH>:scripdoc.tcl</PATH>
-                        <PATHFORMAT>MacOS</PATHFORMAT>
-                    </FILEREF>
-                    <FILEREF>
-                        <PATHTYPE>PathRelative</PATHTYPE>
-                        <PATHROOT>Project</PATHROOT>
-                        <ACCESSPATH>::library:</ACCESSPATH>
-                        <PATH>:vfs.tcl</PATH>
                         <PATHFORMAT>MacOS</PATHFORMAT>
                     </FILEREF>
                     <FILEREF>
@@ -2133,24 +2101,6 @@
                     <PATHTYPE>PathRelative</PATHTYPE>
                     <PATHROOT>Project</PATHROOT>
                     <ACCESSPATH>::library:</ACCESSPATH>
-                    <PATH>:scripdoc.tcl</PATH>
-                    <PATHFORMAT>MacOS</PATHFORMAT>
-                    <FILEKIND>Text</FILEKIND>
-                    <FILEFLAGS></FILEFLAGS>
-                </FILE>
-                <FILE>
-                    <PATHTYPE>PathRelative</PATHTYPE>
-                    <PATHROOT>Project</PATHROOT>
-                    <ACCESSPATH>::library:</ACCESSPATH>
-                    <PATH>:vfs.tcl</PATH>
-                    <PATHFORMAT>MacOS</PATHFORMAT>
-                    <FILEKIND>Text</FILEKIND>
-                    <FILEFLAGS></FILEFLAGS>
-                </FILE>
-                <FILE>
-                    <PATHTYPE>PathRelative</PATHTYPE>
-                    <PATHROOT>Project</PATHROOT>
-                    <ACCESSPATH>::library:</ACCESSPATH>
                     <PATH>:vfsUrl.tcl</PATH>
                     <PATHFORMAT>MacOS</PATHFORMAT>
                     <FILEKIND>Text</FILEKIND>
@@ -2296,20 +2246,6 @@
                     <PATHROOT>Project</PATHROOT>
                     <ACCESSPATH>::library:</ACCESSPATH>
                     <PATH>:mk4vfs.tcl</PATH>
-                    <PATHFORMAT>MacOS</PATHFORMAT>
-                </FILEREF>
-                <FILEREF>
-                    <PATHTYPE>PathRelative</PATHTYPE>
-                    <PATHROOT>Project</PATHROOT>
-                    <ACCESSPATH>::library:</ACCESSPATH>
-                    <PATH>:scripdoc.tcl</PATH>
-                    <PATHFORMAT>MacOS</PATHFORMAT>
-                </FILEREF>
-                <FILEREF>
-                    <PATHTYPE>PathRelative</PATHTYPE>
-                    <PATHROOT>Project</PATHROOT>
-                    <ACCESSPATH>::library:</ACCESSPATH>
-                    <PATH>:vfs.tcl</PATH>
                     <PATHFORMAT>MacOS</PATHFORMAT>
                 </FILEREF>
                 <FILEREF>
@@ -2966,14 +2902,6 @@
                 <PATHTYPE>PathRelative</PATHTYPE>
                 <PATHROOT>Project</PATHROOT>
                 <ACCESSPATH>::library:</ACCESSPATH>
-                <PATH>:scripdoc.tcl</PATH>
-                <PATHFORMAT>MacOS</PATHFORMAT>
-            </FILEREF>
-            <FILEREF>
-                <TARGETNAME>Vfs Extension-C68k</TARGETNAME>
-                <PATHTYPE>PathRelative</PATHTYPE>
-                <PATHROOT>Project</PATHROOT>
-                <ACCESSPATH>::library:</ACCESSPATH>
                 <PATH>:tclprocvfs.tcl</PATH>
                 <PATHFORMAT>MacOS</PATHFORMAT>
             </FILEREF>
@@ -2983,14 +2911,6 @@
                 <PATHROOT>Project</PATHROOT>
                 <ACCESSPATH>::library:</ACCESSPATH>
                 <PATH>:testvfs.tcl</PATH>
-                <PATHFORMAT>MacOS</PATHFORMAT>
-            </FILEREF>
-            <FILEREF>
-                <TARGETNAME>Vfs Extension-C68k</TARGETNAME>
-                <PATHTYPE>PathRelative</PATHTYPE>
-                <PATHROOT>Project</PATHROOT>
-                <ACCESSPATH>::library:</ACCESSPATH>
-                <PATH>:vfs.tcl</PATH>
                 <PATHFORMAT>MacOS</PATHFORMAT>
             </FILEREF>
             <FILEREF>
