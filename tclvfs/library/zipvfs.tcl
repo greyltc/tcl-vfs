@@ -491,4 +491,5 @@ proc zip::_close {fd} {
     variable $fd.toc
     unset $fd
     unset $fd.toc
+    ::close $fd
 }

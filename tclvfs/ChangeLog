@@ -1,3 +1,8 @@
+2003-01-16  Vince Darley <vincentdarley@sourceforge.net>
+	* library/tarvfs.tcl: 
+	* library/zipvfs.tcl: ::close .zip or .tar file when unmounting
+	the filesystem.
+	
 2003-01-14  Vince Darley <vincentdarley@sourceforge.net>
 	* library/tarvfs.tcl: new 'tar' filesystem courtesy of Stefan
 	Vogel -- many thanks!  The tar vfs is currently read-only and
