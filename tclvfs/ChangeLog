@@ -1,4 +1,5 @@
 2001-08-10  Vince Darley <vincentdarley@sourceforge.net>
+	* added a man page vfs.n
 	* added 'utime' to various vfs
 	* included mk4tcl vfs implementation which works
 	* added some support files so this library can be

@@ -1,0 +1,175 @@
+'\"
+'\" Copyright (c) 2001 Vince Darley
+'\" 
+'\" 
+.so man.macros
+.TH vfs n 1.0 Vfs "Tcl-only Virtual File Systems"
+.BS
+'\" Note:  do not modify the .sh NAME line immediately below!
+.SH NAME
+::vfs \- Commands and Procedures to create virtual filesystems
+.SH SYNOPSIS
+.BS
+.sp
+\fBpackage require Tcl 8.4\fR
+.sp
+\fBpackage require vfs ?1.0?\fR
+.sp
+\fBvfs::filesystem\fR \fIinfo\fR
+.sp
+\fBvfs::filesystem\fR \fImount\fR
+.sp
+\fBvfs::filesystem\fR \fIunmount\fR
+.sp
+.sp
+\fBvfs::foo \fIa b c\fR
+.BE
+.SH DESCRIPTION
+.PP
+The \fB::vfs\fR package provides commands to query, mount and unmount
+virtual filesystems, and provides as Tcl libraries some facilities for
+helping the writing of new virtual filesystems in Tcl.  Once a virtual
+filesystem is in place, the standard Tcl \fBfile\fP, \fBglob\fP,
+\fBcd\fP, \fBpwd\fP, \fBopen\fP commands, including all their C APIs,
+can be used within the filesystem (and indeed, properly written
+extensions such as Tk which may open or read files will also
+transparently access the virtual filesystem).
+.PP
+The \fBpackage require vfs\fP command should be used to access this
+library.  It automatically registers the vfs hooks into Tcl's
+filesystem, and these will not be removed until Tcl exits (if desired,
+control over this could be exposed to Tcl in the future).  However, the
+vfs package will at that stage not have any new filesystems mounted, so
+it will have little effect.
+.TP
+\fBvfs::filesystem\fR \fImount\fR \fIpath\fR \fIcommand\fR
+To use a virtual filesystem, it must be 'mounted'.  Mounting involves
+declaring to the vfs package that any subdirectories of a given
+\fIpath\fR in the filesystem should be handled by the given \fIcommand\fR
+which should be a Tcl command or procedure.
+.TP
+\fBvfs::filesystem\fR \fIunmount\fR \fIpath\fR 
+This unmounts the virtual filesystem which was mounted at \fIpath\fR
+hence removing it from Tcl's filesystem, or throws an error if no
+filesystem was mounted there.
+.TP
+\fBvfs::filesystem\fR \fIinfo\fR \fI?path?\fR
+If no arguments are given, this returns a list of all filesystems
+mounted.  If a path argument is given, then the \fIcommand\fR to be
+used for that path is returned, or an error is thrown if no vfs is
+mounted for that path.
+.SH IMPLEMENTING A TCL ONLY VFS
+.PP
+The vfs package will intercept every filesystem operation which falls
+within a given mount point, and pass the operation on to the mount
+point's \fIcommand\fR. In general this occurs by the C equivalent of an
+evaluation like this: \fIeval $command [list $subcmd $root $relative
+$actualpath] $args\fR.
+.PP
+Here \fIsubcmd\fR may be any of the following: \fIaccess\fR,
+\fIcreatedirectory\fR, \fIdeletefile\fR, \fIfileattributes\fR,
+\fImatchindirectory\fR, \fIopen\fR, \fIremovedirectory\fR, \fIstat\fR, 
+\fIutime\fR. If \fIcommand\fR takes appropriate action for each of
+these cases, a complete, perfect virtual filesystem will be achieved,
+indistinguishable to Tcl from the native filesystem.
+.PP
+The remaining arguments specify a file path on which to operate (all
+commands operate on one of these), and any additional arguments which
+may be required to carry out the action.  The file path is specified by
+three arguments: \fIroot\fR is the part of the path which lies outside
+this filesystem's mount point, \fIrelative\fR is the part of the path
+which lies inside this filesytem, and \fIactualpath\fR is the original
+(unnormalized) name of the path which was used in the current command
+wherever it originated (in Tcl or C).  For example, if
+\fIC:/foo/bar/mount.zip/xxx/yyy\fR is a path in your filesystem, where
+\fImount.zip\fR is a zip archive which has been mounted (on top of
+itself) and contains \fIxxx/yyy\fR, and the current working directory
+is inside \fIxxx\fR, and we evaluate a command like \fIfile exists
+yyy\fR, then \fIroot\R will be \fIC:/foo/bar/mount.zip\fR,
+\fIrelative\fR will be \fIxxx/yyy\fR, and \fIactualpath\fR will be
+\fIyyy\fR. The file separator between the \fIroot\fR and \fIrelative\fR
+is omitted.
+.PP
+Note that most filesystem operations will only require the
+\fIrelative\fR argument to work correctly, but the other arguments are
+actually required for correct operation of some subcommands.
+.PP
+The actual commands are as follows:
+.TP
+\fI...\fR \fIaccess\fR \fIr-r-a\fR \fImode\fR
+Return 1 or throw an error depending on whether the given access mode (which 
+is an integer) is compatible with the file.
+.TP
+\fI...\fR \fIcreatedirectory\fR \fIr-r-a\fR
+Create a directory with the given name.
+.TP
+\fI...\fR \fIdeletefile\fR \fIr-r-a\fR
+Delete the given file.
+.TP
+\fI...\fR \fIfileattributes\fR \fIr-r-a\fR \fI?index?\fR \fI?value?\fR
+If neither index nor value is given, then return a list of all
+acceptable attribute values.  If \fIindex\fR is given, but no value,
+then retrieve the value of the \fIindex\fR'th attribute for the given 
+file.  If a value is also given then set the \fIindex\fR'th attribute of
+the given file to that value.
+.TP
+\fI...\fR \fImatchindirectory\fR \fIr-r-a\fR \fIpattern\fR \fItypes\fR
+Return the list of files or directories in the given path (which is
+always the name of an existing directory), which match the \fIpattern\fR
+and are compatible with the \fItypes\fR given.  It is very important
+that the command correctly handle \fItypes\fR requests for directories
+only (and files only).
+.TP
+\fI...\fR \fIopen\fR \fIr-r-a\fR \fImode\fR \fIpermissions\fR
+For this command, \fImode\fR is a list of POSIX open modes or a 
+string such as "rw".  If the open involves creating a file, then 
+\fIpermissions\fR dictates what modes to create it with.  If the
+open operation is successful, the command
+should return a list of one or two items.  The first item (which
+is obligatory) is the name of the channel which has been created.
+The second item, if given, is a Tcl-callback to be used when the
+channel is closed, so that the vfs can clean up as appropriate.
+If the open operation was not successful, an error should be thrown.
+.TP
+\fI...\fR \fIremovedirectory\fR \fIr-r-a\fR
+Delete the given directory.
+.TP
+\fI...\fR \fIstat\fR \fIr-r-a\fR
+Return a list of even length containing field-name and value pairs for
+the contents of a stat structure.  The order is not important.  
+The option names are dev (long), ino (long), mode (int), nlink (long),
+uid (long), gid (long), size (long), atime (long), mtime (long), ctime
+(long), type (string which is either "directory" or "file"), where the
+type of each argument is given in brackets.  The procedure should
+therefore return with something like \fIreturn [list dev 0 type file 
+mtime 1234 ...]\fR.
+.TP
+\fI...\fR \fIutime\fR \fIr-r-a\fR \fIactime\fR \fImtime\fR
+Set the access and modification times of the given file (these are
+read with 'stat').
+
+.SH VFS HELPERS
+.PP
+The vfslib provides a number of Tcl procedures which can help with
+writing command procedures to handle the above possibilities.  These
+are:
+.TP
+\fBvfs::accessMode\fR \fImode\fR
+converts an integer \fIaccess\fR mode to a somewhat more preferable
+string, any of F X W XW R RX RW.
+.TP
+\fBvfs::matchDirectories\fR \fItypes\fR
+Does \fItypes\fR want directories included?
+.TP
+\fBvfs::matchFiles\fR \fItypes\fR
+Does \fItypes\fR want files included?
+.TP
+\fBvfs::matchCorrectTypes\fR \fItypes\fR \fIfilelist\fR \fI?inDir?\fR
+Returns that subset of the \fIfilelist\fR (which are either absolute
+paths or names of files in \fIinDir\fR) which are compatible with the
+\fItypes\fR given.
+
+.SH KEYWORDS
+vfs, filesystem, file
+
+
