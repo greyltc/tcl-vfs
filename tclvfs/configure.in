@@ -98,4 +98,4 @@ TEA_PROG_TCLSH
 # Finally, substitute all of the various values into the Makefile.
 #--------------------------------------------------------------------
 
-AC_OUTPUT([Makefile] library/pkgIndex.tcl)
+AC_OUTPUT([Makefile library/pkgIndex.tcl])
