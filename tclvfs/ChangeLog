@@ -1,3 +1,12 @@
+2003-02-06  Andreas Kupries  <andreask@activestate.com>
+
+	* tclconfig/tcl.m4: Added SC_TCL_EARLY_FLAGS and
+	* configure.in:     SC_TCL64BIT_FLAGS, copied from the Tcl
+	* configure:        configuration. Usage prevents mismatch
+	                    between tcl core and tclvfs with regard
+			    to the selected types for wide integer
+			    and Tcl_StatBuf. Regenerated configure.
+
 2003-02-04  Vince Darley <vincentdarley@sourceforge.net>
 
 	* doc/vfs.n: 
