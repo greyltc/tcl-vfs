@@ -185,7 +185,8 @@ proc vfs::tar::utime {fd path actime mtime} {
 
 namespace eval tar {
     
-    set HEADER_SIZE 500 set BLOCK_SIZE 512
+    set HEADER_SIZE 500
+    set BLOCK_SIZE 512
     
     # fields of header with start/end-index in "comments": length of
     # field in bytes (just for documentation) prefix is the
