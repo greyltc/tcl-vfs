@@ -1,3 +1,21 @@
+2002-09-25  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Makefile.in:               replace the ancient build system
+	* README.cygwin:             with TEA 2002 build spec.
+	* aclocal.m4:
+	* config.guess (removed):
+	* config.sub (removed):
+	* configure:
+	* configure.in:
+	* install-sh (removed):
+	* mkIndex.tcl.in (removed):
+	* mkinstalldirs (removed):
+	* tcl.m4 (removed):
+	* tclconfig/README.txt (new):
+	* tclconfig/install-sh (new):
+	* tclconfig/tcl.m4 (new):
+	* generic/vfs.c: changed BUILD_Vfs to BUILD_vfs
+
 2002-07-18  Vince Darley <vincentdarley@sourceforge.net>
 	* generic/vfs.c: ensure all mount activity is with fully
 	normalized paths in which the last path element is not a link.

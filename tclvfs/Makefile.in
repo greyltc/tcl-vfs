@@ -18,46 +18,24 @@
 #========================================================================
 
 #========================================================================
-# Change the name of the variable "vfs_LIB_FILE" to match the one
-# used in the configure script.  This is the parameterized name of the
-# library that we are building.
-#========================================================================
-
-lib_BINARIES=$(vfs_LIB_FILE)
-BINARIES=$(lib_BINARIES)
-
-#========================================================================
 # Enumerate the names of the source files included in this package.
 # This will be used when a dist target is added to the Makefile.
 #========================================================================
 
-vfs_SOURCES = generic/vfs.c
-SOURCES = $(vfs_SOURCES)
+vfs_SOURCES	= vfs.c
+
+vfs_OBJECTS	= vfs.$(OBJEXT)
+vfs_LIB_FILE	= @vfs_LIB_FILE@
 
 #========================================================================
-# Enumerate the names of the object files included in this package.
-# These objects are created and linked into the final library.  In
-# most cases these object files will correspond to the source files
-# above.
-#
+# RUNTIME_SOURCES identifies Tcl runtime files that are associated with
+# this package that need to be installed, if any.
 #========================================================================
 
-# Don't change: moved here so the next definition works with more make's
-OBJEXT = @OBJEXT@
-
-vfs_OBJECTS =  generic/vfs.$(OBJEXT)
-OBJECTS = $(vfs_OBJECTS)
-
-#========================================================================
-# The substitution of "vfs_LIB_FILE" into the variable name below
-# allows us to refer to the objects for the library without knowing the name
-# of the library in advance.  It also lets us use the "$@" variable in
-# the rule for building the library, so we can refer to both the list of 
-# objects and the library itself in a platform-independent manner.
-#========================================================================
-
-vfs_LIB_FILE = @vfs_LIB_FILE@
-$(vfs_LIB_FILE)_OBJECTS = $(vfs_OBJECTS)
+RUNTIME_SOURCES	= pkgIndex.tcl ftpvfs.tcl httpvfs.tcl mk4vfs.tcl \
+		  starkit.tcl tclprocvfs.tcl testvfs.tcl \
+		  vfslib.tcl vfsUrl.tcl vfsUtils.tcl \
+		  webdavvfs.tcl zipvfs.tcl
 
 #========================================================================
 # This is a list of header files to be installed
@@ -66,124 +44,106 @@ $(vfs_LIB_FILE)_OBJECTS = $(vfs_OBJECTS)
 GENERIC_HDRS= 
 
 #========================================================================
-# Add additional lines to handle any additional AC_SUBST cases that
-# have been added to the configure script.
-#========================================================================
-
-SAMPLE_NEW_VAR=@SAMPLE_NEW_VAR@
-
-#========================================================================
 # Nothing of the variables below this line need to be changed.  Please
 # check the TARGETS section below to make sure the make targets are
 # correct.
 #========================================================================
 
-SHELL = @SHELL@
+#========================================================================
+# The variable "$(PACKAGE)_LIB_FILE" is the parameterized name of the
+# library that we are building.
+#========================================================================
 
-srcdir = @srcdir@
-top_srcdir = @top_srcdir@
-prefix = @prefix@
-exec_prefix = @exec_prefix@
+lib_BINARIES	= $($(PACKAGE)_LIB_FILE)
+BINARIES	= $(lib_BINARIES)
 
-bindir = @bindir@
-sbindir = @sbindir@
-libexecdir = @libexecdir@
-datadir = @datadir@
-sysconfdir = @sysconfdir@
-sharedstatedir = @sharedstatedir@
-localstatedir = @localstatedir@
-libdir = @libdir@
-infodir = @infodir@
-mandir = @mandir@
-includedir = @includedir@
-oldincludedir = /usr/include
+SHELL		= @SHELL@
 
-DESTDIR =
+srcdir		= @srcdir@
+prefix		= @prefix@
+exec_prefix	= @exec_prefix@
 
-pkgdatadir = $(datadir)/@PACKAGE@@VERSION@
-pkglibdir = $(libdir)/@PACKAGE@@VERSION@
-pkgincludedir = $(includedir)/@PACKAGE@@VERSION@
+bindir		= @bindir@
+libdir		= @libdir@
+datadir		= @datadir@
+mandir		= @mandir@
+includedir	= @includedir@
 
-top_builddir = .
+DESTDIR		=
 
-INSTALL = @INSTALL@
-INSTALL_PROGRAM = @INSTALL_PROGRAM@
-INSTALL_DATA = @INSTALL_DATA@
-INSTALL_SCRIPT = @INSTALL_SCRIPT@
-INSTALL_STRIP_FLAG =
-transform = @program_transform_name@
+PKG_DIR		= $(PACKAGE)$(VERSION)
+pkgdatadir	= $(datadir)/$(PKG_DIR)
+pkglibdir	= $(libdir)/$(PKG_DIR)
+pkgincludedir	= $(includedir)/$(PKG_DIR)
 
-NORMAL_INSTALL = :
-PRE_INSTALL = :
-POST_INSTALL = :
-NORMAL_UNINSTALL = :
-PRE_UNINSTALL = :
-POST_UNINSTALL = :
+top_builddir	= .
 
-PACKAGE = @PACKAGE@
-VERSION = @VERSION@
-CC = @CC@
-CFLAGS_DEBUG = @CFLAGS_DEBUG@
-CFLAGS_DEFAULT = @CFLAGS_DEFAULT@
-CFLAGS_OPTIMIZE = @CFLAGS_OPTIMIZE@
-CLEANFILES = @CLEANFILES@
-EXEEXT = @EXEEXT@
-LDFLAGS_DEBUG = @LDFLAGS_DEBUG@
-LDFLAGS_DEFAULT = @LDFLAGS_DEFAULT@
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+INSTALL_DATA	= @INSTALL_DATA@
+INSTALL_SCRIPT	= @INSTALL_SCRIPT@
+
+PACKAGE		= @PACKAGE@
+VERSION		= @VERSION@
+CC		= @CC@
+CFLAGS_DEBUG	= @CFLAGS_DEBUG@
+CFLAGS_DEFAULT	= @CFLAGS_DEFAULT@
+CFLAGS_OPTIMIZE	= @CFLAGS_OPTIMIZE@
+CLEANFILES	= @CLEANFILES@
+EXEEXT		= @EXEEXT@
+LDFLAGS_DEBUG	= @LDFLAGS_DEBUG@
+LDFLAGS_DEFAULT	= @LDFLAGS_DEFAULT@
 LDFLAGS_OPTIMIZE = @LDFLAGS_OPTIMIZE@
-MAKE_LIB = @MAKE_LIB@
-MAKE_SHARED_LIB = @MAKE_SHARED_LIB@
-MAKE_STATIC_LIB = @MAKE_STATIC_LIB@
-RANLIB = @RANLIB@
-SHLIB_CFLAGS = @SHLIB_CFLAGS@
-SHLIB_LD = @SHLIB_LD@
-SHLIB_LDFLAGS = @SHLIB_LDFLAGS@
-SHLIB_LD_LIBS = @SHLIB_LD_LIBS@
-STLIB_LD = @STLIB_LD@
-TCL_BIN_DIR = @TCL_BIN_DIR@
-TCL_DEFS = @TCL_DEFS@
-TCL_EXTRA_CFLAGS = @TCL_EXTRA_CFLAGS@
-TCL_LD_FLAGS = @TCL_LD_FLAGS@
-TCL_LIBS = @TCL_LIBS@
-TCL_SHLIB_LD_LIBS = @TCL_SHLIB_LD_LIBS@
-TCL_SRC_DIR = @TCL_SRC_DIR@
-TCL_DBGX = @TCL_DBGX@
-TCL_STUB_LIB_FILE = @TCL_STUB_LIB_FILE@
-TCL_STUB_LIB_SPEC = @TCL_STUB_LIB_SPEC@
-TCL_TOOL_DIR_NATIVE = @TCL_TOOL_DIR_NATIVE@
-TCL_TOP_DIR_NATIVE = @TCL_TOP_DIR_NATIVE@
-TCL_UNIX_DIR_NATIVE = @TCL_UNIX_DIR_NATIVE@
-TCL_WIN_DIR_NATIVE = @TCL_WIN_DIR_NATIVE@
-INCLUDE_DIR_NATIVE = @INCLUDE_DIR_NATIVE@
-TCL_BMAP_DIR_NATIVE = @TCL_BMAP_DIR_NATIVE@
-TCL_PLATFORM_DIR_NATIVE = @TCL_PLATFORM_DIR_NATIVE@
-TCL_GENERIC_DIR_NATIVE = @TCL_GENERIC_DIR_NATIVE@
-TCLSH_PROG = @TCLSH_PROG@
-SHARED_BUILD = @SHARED_BUILD@
+MAKE_LIB	= @MAKE_LIB@
+MAKE_SHARED_LIB	= @MAKE_SHARED_LIB@
+MAKE_STATIC_LIB	= @MAKE_STATIC_LIB@
+OBJEXT		= @OBJEXT@
+RANLIB		= @RANLIB@
+SHLIB_CFLAGS	= @SHLIB_CFLAGS@
+SHLIB_LD	= @SHLIB_LD@
+SHLIB_LDFLAGS	= @SHLIB_LDFLAGS@
+SHLIB_LD_LIBS	= @SHLIB_LD_LIBS@
+STLIB_LD	= @STLIB_LD@
+TCL_DEFS	= @TCL_DEFS@
+TCL_BIN_DIR	= @TCL_BIN_DIR@
+TCL_SRC_DIR	= @TCL_SRC_DIR@
+# This is necessary for packages that use private Tcl headers
+#TCL_TOP_DIR_NATIVE	= @TCL_TOP_DIR_NATIVE@
+# Not used, but retained for reference of what libs Tcl required
+TCL_LIBS	= @TCL_LIBS@
 
-AUTOCONF = autoconf
+#========================================================================
+# TCLLIBPATH seeds the auto_path in Tcl's init.tcl so we can test our
+# package without installing.  The other environment variables allow us
+# to test against an uninstalled Tcl.  Add special env vars that you
+# require for testing here (like TCLX_LIBRARY).
+#========================================================================
 
-LDFLAGS = $(LDFLAGS_DEFAULT)
+EXTRA_PATH	= $(top_builddir):$(TCL_BIN_DIR)
+TCLSH_ENV	= TCL_LIBRARY=`@CYGPATH@ $(TCL_SRC_DIR)/library` \
+		  LD_LIBRARY_PATH="$(EXTRA_PATH):$(LD_LIBRARY_PATH)" \
+		  LIBPATH="$(EXTRA_PATH):${LIBPATH}" \
+		  SHLIB_PATH="$(EXTRA_PATH):${SHLIB_PATH}" \
+		  PATH="$(EXTRA_PATH):$(PATH)" \
+		  TCLLIBPATH="$(top_builddir)"
+TCLSH_PROG	= @TCLSH_PROG@
+TCLSH		= $(TCLSH_ENV) $(TCLSH_PROG)
+SHARED_BUILD	= @SHARED_BUILD@
 
-INCLUDES = @TCL_INCLUDES@ 
+INCLUDES	= @TCL_INCLUDES@
 
-EXTRA_CFLAGS = $(TCL_DEFS) $(PROTO_FLAGS) $(SECURITY_FLAGS) $(MEM_DEBUG_FLAGS) $(KEYSYM_FLAGS) $(NO_DEPRECATED_FLAGS) $(TCL_EXTRA_CFLAGS)
+EXTRA_CFLAGS	= $(MEM_DEBUG_FLAGS) @EXTRA_CFLAGS@
 
-DEFS = @DEFS@ $(EXTRA_CFLAGS)
+DEFS		= $(TCL_DEFS) @DEFS@ $(EXTRA_CFLAGS)
 
-ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-CONFIGDIR = $(top_srcdir)
-mkinstalldirs = $(SHELL) $(CONFIGDIR)/mkinstalldirs
-CONFIG_CLEAN_FILES = mkIndex.tcl
+CONFIG_CLEAN_FILES = Makefile
 
-CPPFLAGS = @CPPFLAGS@
-LIBS = @LIBS@
-AR = ar
+CPPFLAGS	= @CPPFLAGS@
+LIBS		= @LIBS@
+AR		= ar
 ## need to include the tcl source dir here for tclPort.h
-CFLAGS = @CFLAGS@ -I@TCL_SRC_DIR@/generic
-COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) 
-CCLD = $(CC)
-LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
+CFLAGS		= @CFLAGS@ -I`@CYGPATH@ $(TCL_SRC_DIR)/generic`
+COMPILE		= $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 
 #========================================================================
 # Start of user-definable TARGETS section
@@ -209,6 +169,11 @@ all: binaries libraries doc
 binaries: $(BINARIES)
 
 libraries:
+	@list='$(RUNTIME_SOURCES)'; for p in $$list; do \
+	  if test -f $(srcdir)/library/$$p; then \
+	    $(INSTALL_DATA) $(srcdir)/library/$$p $(top_builddir)/$$p; \
+	  fi; \
+	done
 
 doc:
 	@echo "If you have documentation to create, place the commands to"
@@ -220,10 +185,6 @@ doc:
 install: all install-binaries install-libraries install-doc
 
 install-binaries: binaries install-lib-binaries install-bin-binaries
-	$(TCLSH_PROG) mkIndex.tcl $(vfs_LIB_FILE)
-	if test "x$(SHARED_BUILD)" = "x1"; then \
-	    $(TCLSH_PROG) mkIndex.tcl $(vfs_LIB_FILE); \
-	fi
 
 #========================================================================
 # This rule installs platform-independent files, such as header files.
@@ -237,65 +198,62 @@ install-libraries: libraries
 #========================================================================
 
 install-doc: doc
-	$(mkinstalldirs) $(mandir)/man1
-	$(mkinstalldirs) $(mandir)/man3
-	$(mkinstalldirs) $(mandir)/mann
-	@echo "Installing documentation in $(mandir)"
+	@mkdir -p $(DESTDIR)$(mandir)/man1
+	@mkdir -p $(DESTDIR)$(mandir)/man3
+	@mkdir -p $(DESTDIR)$(mandir)/mann
+	@echo "Installing documentation in $(DESTDIR)$(mandir)"
 	@for i in $(srcdir)/doc/*.n; \
 	    do \
 	    echo "Installing $$i"; \
-	    rm -f $(mandir)/mann/$$i; \
-	    $(INSTALL_DATA) $$i $(mandir)/mann ; \
-	    done
+	    rm -f $(DESTDIR)$(mandir)/mann/`basename $$i`; \
+	    $(INSTALL_DATA) $$i $(DESTDIR)$(mandir)/mann ; \
+	done
 
 test: binaries libraries
-	( echo \
-	  pkg_mkIndex . $(vfs_LIB_FILE) \;\
-	  exit; ) | \
-	$(TCLSH_PROG)
-	TCL_LIBRARY=$(TCL_LIBRARY_DIR) \
-	LD_LIBRARY_PATH=$(BUILD_DIR):$(TCL_BIN_DIR):$(LD_LIBRARY_PATH) \
-	TCLLIBPATH=. \
-	PATH="$(BUILD_DIR)":"$(TCL_BIN_DIR)":"$(PATH)" \
-	$(TCLSH_PROG) `@CYGPATH@ $(srcdir)/tests/all.tcl` $(TCLTESTARGS)
+	$(TCLSH) `@CYGPATH@ $(srcdir)/tests/all.tcl` $(TESTFLAGS)
+
+shell: binaries libraries
+	@$(TCLSH) $(SCRIPT)
+
+gdb:
+	$(TCLSH_ENV) gdb $(TCLSH_PROG) $(SCRIPT)
 
 depend:
 
 #========================================================================
-# Enumerate the names of the object files included in this package.
-# These objects are created and linked into the final library.  In
-# most cases these object files will correspond to the source files
-# above.
+# $($(PACKAGE)_LIB_FILE) should be listed as part of the BINARIES variable
+# mentioned above.  That will ensure that this target is built when you
+# run "make binaries".
 #
-# $(vfs_LIB_FILE) should be listed as part of the BINARIES variable
-# at the top of the Makefile.  That will ensure that this target is built
-# when you run "make binaries".
-#
-# You shouldn't need to modify this target, except to change the package
-# name from "VFS" to your package's name.
+# The $($(PACKAGE)_OBJECTS) objects are created and linked into the final
+# library.  In most cases these object files will correspond to the
+# source files above.
 #========================================================================
 
-$(vfs_LIB_FILE): $(vfs_OBJECTS)
-	-rm -f $(vfs_LIB_FILE)
-	@MAKE_LIB@
-	$(RANLIB) $(vfs_LIB_FILE)
+$($(PACKAGE)_LIB_FILE): $($(PACKAGE)_OBJECTS)
+	-rm -f $($(PACKAGE)_LIB_FILE)
+	${MAKE_LIB}
+	$(RANLIB) $($(PACKAGE)_LIB_FILE)
 
 #========================================================================
 # We need to enumerate the list of .c to .o lines here.
-# Unfortunately, there does not seem to be any other way to do this
-# in a Makefile-independent way.  We can't use VPATH because it picks up
-# object files that may be located in the source directory.
 #
 # In the following lines, $(srcdir) refers to the toplevel directory
 # containing your extension.  If your sources are in a subdirectory,
 # you will have to modify the paths to reflect this:
 #
-# VFS.$(OBJEXT): $(srcdir)/src/win/VFS.c
-# 	$(COMPILE) -c `@CYGPATH@ $(srcdir)/src/win/VFS.c` -o $@
+# sample.$(OBJEXT): $(srcdir)/generic/sample.c
+# 	$(COMPILE) -c `@CYGPATH@ $(srcdir)/generic/sample.c` -o $@
+#
+# Setting the VPATH variable to a list of paths will cause the makefile
+# to look into these paths when resolving .c to .obj dependencies.
+# As necessary, add $(srcdir):$(srcdir)/compat:....
 #========================================================================
 
-generic/vfs.$(OBJEXT): $(srcdir)/generic/vfs.c
-	$(COMPILE) -c `@CYGPATH@ $(srcdir)/generic/vfs.c` -o $@
+VPATH = $(srcdir)/generic:$(srcdir)/unix:$(srcdir)/win
+
+.c.$(OBJEXT):
+	$(COMPILE) -c `@CYGPATH@ $<` -o $@
 
 #========================================================================
 # End of user-definable section
@@ -308,15 +266,16 @@ generic/vfs.$(OBJEXT): $(srcdir)/generic/vfs.c
 
 clean:  
 	-test -z "$(BINARIES)" || rm -f $(BINARIES)
-	-rm -f *.o core *.core
-	-rm -f *.$(OBJEXT)
+	-rm -f *.$(OBJEXT) core *.core
 	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
+	list='$(RUNTIME_SOURCES)'; for p in $$list; do \
+	  rm -f $$p; \
+	done
 
 distclean: clean
 	-rm -f *.tab.c
-	-rm -f Makefile $(CONFIG_CLEAN_FILES)
-	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
-	-rm -f config.status
+	-rm -f $(CONFIG_CLEAN_FILES)
+	-rm -f config.cache config.log config.status
 
 #========================================================================
 # Install binary object libraries.  On Windows this includes both .dll and
@@ -330,29 +289,29 @@ distclean: clean
 # You should not have to modify this target.
 #========================================================================
 
-install-lib-binaries: installdirs
+install-lib-binaries:
+	@mkdir -p $(DESTDIR)$(pkglibdir)
 	@list='$(lib_BINARIES)'; for p in $$list; do \
 	  if test -f $$p; then \
+	    echo " $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkglibdir)/$$p"; \
+	    $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkglibdir)/$$p; \
+	    echo " $(RANLIB) $(DESTDIR)$(pkglibdir)/$$p"; \
+	    $(RANLIB) $(DESTDIR)$(pkglibdir)/$$p; \
 	    ext=`echo $$p|sed -e "s/.*\.//"`; \
 	    if test "x$$ext" = "xdll"; then \
-	        echo " $(INSTALL_DATA) $$p $(DESTDIR)$(bindir)/$$p"; \
-	        $(INSTALL_DATA) $$p $(DESTDIR)$(bindir)/$$p; \
 		lib=`basename $$p|sed -e 's/.[^.]*$$//'`.lib; \
 		if test -f $$lib; then \
-		    echo " $(INSTALL_DATA) $$lib $(DESTDIR)$(libdir)/$$lib"; \
-	            $(INSTALL_DATA) $$lib $(DESTDIR)$(libdir)/$$lib; \
+		    echo " $(INSTALL_DATA) $$lib $(DESTDIR)$(pkglibdir)/$$lib"; \
+	            $(INSTALL_DATA) $$lib $(DESTDIR)$(pkglibdir)/$$lib; \
 		fi; \
-	    else \
-		echo " $(INSTALL_DATA) $$p $(DESTDIR)$(libdir)/$$p"; \
-	        $(INSTALL_DATA) $$p $(DESTDIR)$(libdir)/$$p; \
 	    fi; \
-	  else :; fi; \
+	  fi; \
 	done
-	@list='$(lib_BINARIES)'; for p in $$list; do \
-	  if test -f $$p; then \
-	    echo " $(RANLIB) $(DESTDIR)$(libdir)/$$p"; \
-	    $(RANLIB) $(DESTDIR)$(libdir)/$$p; \
-	  else :; fi; \
+	@list='$(RUNTIME_SOURCES)'; for p in $$list; do \
+	  if test -f $(srcdir)/library/$$p; then \
+	    echo " Install $$p $(DESTDIR)$(pkglibdir)/$$p"; \
+	    $(INSTALL_DATA) $(srcdir)/library/$$p $(DESTDIR)$(pkglibdir)/$$p; \
+	  fi; \
 	done
 
 #========================================================================
@@ -361,33 +320,33 @@ install-lib-binaries: installdirs
 # You should not have to modify this target.
 #========================================================================
 
-install-bin-binaries: installdirs
+install-bin-binaries:
+	@mkdir -p $(DESTDIR)$(bindir)
 	@list='$(bin_BINARIES)'; for p in $$list; do \
 	  if test -f $$p; then \
-	    echo " $(INSTALL_DATA) $$p $(DESTDIR)$(bindir)/$$p"; \
-	    $(INSTALL_DATA) $$p $(DESTDIR)$(bindir)/$$p; \
-	  else :; fi; \
+	    echo " $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p"; \
+	    $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
+	  fi; \
 	done
 
-.SUFFIXES: .c .o .obj
+.SUFFIXES: .c .$(OBJEXT)
 
 Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
 uninstall-binaries:
-	@$(NORMAL_UNINSTALL)
-	list='$(BINARIES)'; for p in $$list; do \
-	  rm -f $(DESTDIR)$(libdir)/$$p; \
+	list='$(lib_BINARIES)'; for p in $$list; do \
+	  rm -f $(DESTDIR)$(pkglibdir)/$$p; \
+	done
+	list='$(RUNTIME_SOURCES)'; for p in $$list; do \
+	  rm -f $(DESTDIR)$(pkglibdir)/$$p; \
+	done
+	list='$(bin_BINARIES)'; for p in $$list; do \
+	  rm -f $(DESTDIR)$(bindir)/$$p; \
 	done
 
-installdirs:
-	$(mkinstalldirs)  $(DESTDIR)$(libdir)
-	$(mkinstalldirs)  $(DESTDIR)$(bindir)
-	$(mkinstalldirs)  $(DESTDIR)$(pkglibdir)
-
-.PHONY: all binaries clean depend distclean doc install installdirs \
-libraries test
+.PHONY: all binaries clean depend distclean doc install libraries test
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
