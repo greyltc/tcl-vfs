@@ -1,3 +1,13 @@
+2003-05-16  Vince Darley <vincentdarley@sourceforge.net>
+
+	* library/tkvfs.tcl: added 'tk' widget hierarchy vfs.  Use:
+	     package require vfs::tk
+	     vfs::tk::Mount .frame.a.b foo
+	     cd foo
+	     ...
+	  to examine.
+	* library/pkgIndex.tcl(.in): added new package.
+	
 2003-05-15  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* library/pkgIndex.tcl.in: use vfs::dll var directly
