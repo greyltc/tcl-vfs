@@ -1,3 +1,11 @@
+2003-10-21  Jean-Claude Wippler  <jcw@equi4.com>
+
+	* starkit.tcl: add starkit::mode variable, which remembers the
+	return value of starkit::startup (suggestion by Andreas Kupries)
+	* pkgIndex.tcl: bumped starkit version from 1.2 to 1.3
+
+	* ChangeLog: cleaned up a few tab-vs-space indentations
+
 2003-10-17  Vince Darley <vincentdarley@sourceforge.net>
 
 	* generic/vfs.c: removed some compiler warnings on OS X.
@@ -49,7 +57,7 @@
 	* tests/vfsZip.test:
 	* tests/vfsTar.test: added some new tests for recently fixed
         bugs.
-        * library/tarvfs.tcl: fix to bug when closing an empty archive.
+	* library/tarvfs.tcl: fix to bug when closing an empty archive.
 
         Also updated package to version 1.2.1 since a variety of bugs
         have been fixed since the 1.2 release
@@ -209,9 +217,9 @@
 2003-02-18  Vince Darley <vincentdarley@sourceforge.net>
 
 	* generic/vfs.c:
-        * library/*.tcl: clean up of posix error handling.
+	* library/*.tcl: clean up of posix error handling.
 
-        * doc/vfs.n: added some more documentation.
+	* doc/vfs.n: added some more documentation.
 	
 2003-02-18  Vince Darley <vincentdarley@sourceforge.net>
 
@@ -338,7 +346,7 @@
 	* DESCRIPTION.txt:
 	* make55.tcl: new files for TIP55 compliance. (Steve Cassidy)
 
-        * tests/*:
+	* tests/*:
 	* doc/tcllib.n: updated tests and docs for the above 'package'
 	information.
 
@@ -566,7 +574,7 @@
 	* doc/vfslib.n: some documentation on the 'library' code.
 	
 2001-10-29  Vince Darley <vincentdarley@sourceforge.net>
-        * win/makefile.vc: installation is better.
+	* win/makefile.vc: installation is better.
 	* library/vfsUrl.tcl: improved urltype mounting.  The following
 	will now work in all cases:
 	% vfs::urltype::Mount ftp

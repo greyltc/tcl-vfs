@@ -1,7 +1,7 @@
 # Starkit support, see http://www.equi4.com/starkit/
 # by Jean-Claude Wippler, July 2002
 
-package provide starkit 1.2
+package provide starkit 1.3
 
 # Starkit scripts can launched in a number of ways:
 #   - wrapped or unwrapped
@@ -26,6 +26,12 @@ if {![info exists auto_index(lassign)] && [info commands lassign] eq ""} {
 }
 
 namespace eval starkit {
+    # these variables are defined after the call to starkit::startup
+    # they are special in that a second call will not alter them
+    # (as needed when a starkit sources others for more packages)
+    variable topdir	;# root directory (while the starkit is mounted)
+    variable mode 	;# startup mode (starkit, sourced, etc)
+
     # called from the header of a starkit
     proc header {driver args} {
 	if {[catch {
@@ -41,15 +47,19 @@ namespace eval starkit {
     }
 
     # called from the startup script of a starkit to init topdir and auto_path
+    # 2003/10/21, added in 1.3: remember startup mode in starkit::mode
+    proc startup {} {
+	if {![info exists starkit::mode]} { variable mode }
+	set mode [_startup]
+    }
+
     # returns how the script was launched: starkit, starpack, unwrapped, or
     # sourced (2003: also tclhttpd, plugin, or service)
-    proc startup {} {
+    proc _startup {} {
 	global argv0
 
 	# 2003/02/11: new behavior, if starkit::topdir exists, don't disturb it
-	if {![info exists starkit::topdir]} {
-	  variable topdir ;# the root directory (while the starkit is mounted)
-	}
+	if {![info exists starkit::topdir]} { variable topdir }
 
 	set script [file normalize [info script]]
 	set topdir [file dirname $script]
