@@ -1100,13 +1100,30 @@ VfsAccess(pathPtr, mode)
     }
 }
 
+static Tcl_Obj*
+VfsGetMode(int mode) {
+    Tcl_Obj *ret = Tcl_NewObj();
+    if (mode & O_RDONLY) {
+        Tcl_AppendToObj(ret, "r", 1);
+    } else if (mode & O_WRONLY || mode & O_RDWR) {
+	if (mode & O_TRUNC) {
+	    Tcl_AppendToObj(ret, "w", 1);
+	} else {
+	    Tcl_AppendToObj(ret, "a", 1);
+	}
+	if (mode & O_RDWR) {
+	    Tcl_AppendToObj(ret, "+", 1);
+	}
+    }
+    return ret;
+}
+
 static Tcl_Channel
-VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
+VfsOpenFileChannel(cmdInterp, pathPtr, mode, permissions)
     Tcl_Interp *cmdInterp;              /* Interpreter for error reporting;
 					 * can be NULL. */
     Tcl_Obj *pathPtr;                   /* Name of file to open. */
-    CONST char *modeString;             /* A list of POSIX open modes or
-					 * a string such as "rw". */
+    int mode;             		/* POSIX open mode. */
     int permissions;                    /* If the open involves creating a
 					 * file, with what modes to create
 					 * it? */
@@ -1123,7 +1140,7 @@ VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
 	return NULL;
     }
 
-    Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewStringObj(modeString,-1));
+    Tcl_ListObjAppendElement(interp, mountCmd, VfsGetMode(mode));
     Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewIntObj(permissions));
     Tcl_SaveResult(interp, &savedResult);
     /* Now we execute this mount point's callback. */

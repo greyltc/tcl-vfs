@@ -1,3 +1,8 @@
+2002-07-08  Vince Darley <vincentdarley@sourceforge.net>
+	* generic/vfs.c: update for latest cvs head.
+	* win/makefile.vc: compilation into Release and Debug
+	directories as appropriate.
+	
 2002-06-22  Jean-Claude Wippler <jcw@equi4.com>
 	* mac/pkgIndex_mac.tcl:
 	* library/pkgIndex.tcl:

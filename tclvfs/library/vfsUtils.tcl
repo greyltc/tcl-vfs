@@ -199,6 +199,22 @@ proc vfs::matchFiles {types} {
 }
 
 proc vfs::modeToString {mode} {
+    # Turn a POSIX open 'mode' set of flags into a more readable
+    # string 'r', 'w', 'w+', 'a', etc.
+    set res ""
+    if {$mode & 1} {
+	append res "r"
+    } elseif {$mode & 2} {
+	if {$mode & 16} {
+	    append res "w"
+	} else {
+	    append res "a"
+	}
+    }
+    if {$mode & 4} {
+	append res "+"
+    }
+    set res
 }
 
 # These lists are used to convert attribute indices into the string equivalent.

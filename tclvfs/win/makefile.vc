@@ -13,7 +13,7 @@ VFS_VERSION = 1.0
 DLL_VERSION = 10
 
 # comment the following line to compile with symbols
-NODEBUG=0
+NODEBUG=1
 
 !IF "$(NODEBUG)" == "1"
 DEBUGDEFINES =
@@ -36,7 +36,11 @@ PROJECT = vfs$(DLL_VERSION)$(DBGX)
 # note that the tcl  vclibs should have been unpacked in $(TCL)\lib !!
 
 ROOT    = ..
-WINDIR		= $(ROOT)\win
+!IF "$(NODEBUG)" == "1"
+WINDIR		 = $(ROOT)\win\Release
+!ELSE
+WINDIR		 = $(ROOT)\win\Debug
+!ENDIF
 GENERICDIR	= $(ROOT)\generic
 LIBDIR          = $(ROOT)\library
 TOOLS32		= C:\Progra~1\devstudio\vc
@@ -127,6 +131,11 @@ PATH=$(COMMON32)/bin;$(TOOLS32)\bin;$(PATH)
 cc32    = $(TOOLS32)\bin\cl -I$(TOOLS32)\include
 CP      = copy
 RM      = del
+!if "$(OS)" == "Windows_NT"
+RMDIR	= rmdir /S /Q
+!else
+RMDIR	= deltree /Y
+!endif
 
 INCLUDES = \
     -I../../tcl8.4/generic  \
@@ -145,7 +154,10 @@ DLLOBJS = \
 
 # Targets
 
-all: $(PROJECT).dll
+all: setup $(PROJECT).dll
+
+setup:
+	-@md $(WINDIR)
 
 install:	$(PROJECT).dll
 	-@md $(INSTALLDIR)
@@ -169,6 +181,7 @@ $(WINDIR)\vfs.obj: $(GENERICDIR)\vfs.c
 
 clean:
 	-$(RM) $(WINDIR)\*.obj
+	-$(RMDIR) $(WINDIR)
 	-$(RM) $(PROJECT).dll
 	-$(RM) $(PROJECT).lib
 	-$(RM) $(PROJECT).exp

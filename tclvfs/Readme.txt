@@ -10,13 +10,6 @@ This is an implementation of a 'vfs' extension (and a 'vfs' package,
 including a small library of Tcl code).  The goal of this extension
 is to expose Tcl 8.4's new filesystem C API to the Tcl level.
 
-Since 8.4 is still in alpha, the APIs on which this extension depends may of
-course change.  If that happens, it will of course require changes to this
-extension, until the point at which 8.4 goes final, when only
-backwards-compatible changes should occur.  Currently it requires a
-version of Tcl 8.4a5 or newer (from March 30th 2002) --- if it compiles
-without warning, you should be fine.
-
 Using this extension, the editor Alphatk can actually auto-mount, view and
 edit (but not save, since they're read-only) the contents of .zip files
 directly (see <http://www.santafe.edu/~vince/Alphatk.html>), and you can
