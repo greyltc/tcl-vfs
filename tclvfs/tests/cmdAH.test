@@ -1098,10 +1098,10 @@ catch {
     makeDirectory dir.file
     makeFile 12345 [file join dir.file gorp.file]
 }
-test cmdAH-19.4 {Tcl_FileObjCmd: exists} {
+test cmdAH-19.4 {Tcl_FileObjCmd: exists} {fsIsWritable} {
     file exists gorp.file
 } 1
-test cmdAH-19.5 {Tcl_FileObjCmd: exists} {
+test cmdAH-19.5 {Tcl_FileObjCmd: exists} {fsIsWritable} {
     file exists [file join dir.file gorp.file]
 } 1
 
@@ -1155,12 +1155,12 @@ test cmdAH-19.11 {Tcl_FileObjCmd: exists} {unixOnly notRoot} {
 
 catch {testsetplatform $platform}
 file delete gorp.file
-makeFile "Test string" gorp.file
+catch {makeFile "Test string" gorp.file}
 catch {exec chmod 765 gorp.file}
 
 # atime
 
-set file [makeFile "data" touch.me]
+catch {set file [makeFile "data" touch.me]}
 
 test cmdAH-20.1 {Tcl_FileObjCmd: atime} {
     list [catch {file atime a b c} msg] $msg
@@ -1282,7 +1282,7 @@ test cmdAH-23.10 {Tcl_FileObjCmd: mkdir} {
 
 # mtime 
 
-set file [makeFile "data" touch.me]
+catch {set file [makeFile "data" touch.me]}
 
 test cmdAH-24.1 {Tcl_FileObjCmd: mtime} {
     list [catch {file mtime a b c} msg] $msg
@@ -1390,7 +1390,7 @@ test cmdAH-27.3 {Tcl_FileObjCmd: size} {
 # stat
 
 catch {testsetplatform $platform}
-makeFile "Test string" gorp.file
+catch {makeFile "Test string" gorp.file}
 catch {exec chmod 765 gorp.file}
 
 test cmdAH-28.1 {Tcl_FileObjCmd: stat} {
@@ -1549,6 +1549,8 @@ test cmdAH-31.3 {Tcl_FileObjCmd: channels, globbing} {
 test cmdAH-31.4 {Tcl_FileObjCmd: channels, globbing} {
     lsort [file channels std*]
 } [lsort {stdout stderr stdin}]
+
+set newFileId ""
 
 test cmdAH-31.5.0 {Tcl_FileObjCmd: channels} {fsIsWritable} {
     catch {set newFileId [open gorp.file w]}
