@@ -42,6 +42,9 @@ static int Vfs_RemoveVolume _ANSI_ARGS_((Tcl_Obj*));
  * NULL if there are none.  To improve Tcl's efficiency,
  * when there are no volumes, we keep this NULL rather
  * than as an empty list.
+ * 
+ * We keep a refCount on this object whenever it is
+ * non-NULL.
  */
 static Tcl_Obj *vfsVolumes = NULL;
 
@@ -1182,6 +1185,7 @@ Vfs_RemoveVolume(volume)
 		if (Tcl_IsShared(vfsVolumes)) {
 		    Tcl_Obj *oldVols = vfsVolumes;
 		    vfsVolumes = Tcl_DuplicateObj(oldVols);
+		    Tcl_IncrRefCount(vfsVolumes);
 		    Tcl_DecrRefCount(oldVols);
 		}
 		/* Remove the element */
