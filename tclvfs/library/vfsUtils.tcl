@@ -1,3 +1,6 @@
+# vfsUtils.tcl --
+#
+# $Id$
 
 package require Tcl 8.4
 package require vfs
@@ -12,19 +15,19 @@ namespace eval ::vfs {
 # This can be overridden to use a different memchan implementation
 proc ::vfs::memchan {args} {
     ::package require Memchan
-    uplevel 1 ::memchan $args
+    uplevel 1 [list ::memchan] $args
 }
 
 # This can be overridden to use a different crc implementation
 proc ::vfs::crc {args} {
     ::package require Trf
-    uplevel 1 ::crc $args
+    uplevel 1 [list ::crc] $args
 }
 
 # This can be overridden to use a different zip implementation
 proc ::vfs::zip {args} {
     ::package require Trf
-    uplevel 1 ::zip $args
+    uplevel 1 [list ::zip] $args
 }
 
 proc ::vfs::autoMountExtension {ext cmd {pkg ""}} {
@@ -85,9 +88,9 @@ proc ::vfs::urlMount {url args} {
 	    set mounted($url) 1
 	    return
 	}
-	error "Unknown url type '$urltype'"
+	return -code error "Unknown url type '$urltype'"
     }
-    error "Couldn't parse url $url"
+    return -code error "Couldn't parse url $url"
 }
 
 proc ::vfs::fileUrlMount {url args} {
@@ -106,7 +109,6 @@ proc ::vfs::auto {filename args} {
     variable extMounts
     
     set np {}
-
     set split [::file split $filename]
     
     foreach ele $split {
@@ -153,32 +155,17 @@ proc vfs::matchCorrectTypes {types filelist {inDir ""}} {
 	    return [list]
 	}
 	set newres [list]
+	set subcmd [expr {$file ? "isfile" : "isdirectory"}]
 	if {[string length $inDir]} {
-	    if {$file} {
-		foreach r $filelist {
-		    if {[::file isfile [file join $inDir $r]]} {
-			lappend newres $r
-		    }
-		}
-	    } else {
-		foreach r $filelist {
-		    if {[::file isdirectory [file join $inDir $r]]} {
-			lappend newres $r
-		    }
+	    foreach r $filelist {
+		if {[::file $subcmd [file join $inDir $r]]} {
+		    lappend newres $r
 		}
 	    }
 	} else {
-	    if {$file} {
-		foreach r $filelist {
-		    if {[::file isfile $r]} {
-			lappend newres $r
-		    }
-		}
-	    } else {
-		foreach r $filelist {
-		    if {[::file isdirectory $r]} {
-			lappend newres $r
-		    }
+	    foreach r $filelist {
+		if {[::file $subcmd $r]} {
+		    lappend newres $r
 		}
 	    }
 	}
@@ -279,26 +266,18 @@ proc vfs::attributesSet {root stem index val} {
     set attribute [indexToAttribute $index]
     #::vfs::log "$attribute"
     switch -- $attribute {
-	"-owner" {
-	    return
-	}
-	"-group" {
-	    return
-	}
-	"-archive" {
-	    return
-	}
-	"-hidden" {
-	    return
-	}
+	"-owner"   -
+	"-group"   -
+	"-archive" -
+	"-hidden"  -
 	"-permissions" {
 	    return
 	}
 	"-longname" {
-	    error "no such luck"
+	    return -code error "no such luck"
 	}
 	"-vfs" {
-	    error "read-only"
+	    return -code error "read-only"
 	}
     }
 }
