@@ -1,7 +1,8 @@
 2002-05-13  Vince Darley <vincentdarley@sourceforge.net>
 	* library/webdavvfs.tcl: v. early implementation of a webdav
 	vfs.  (Note: this and the 'http' vfs need lots of work --
-	please help out!).
+	please help out!).  This requires the '2.6' version of the http
+	package which is distributed with tclvfs.
 	
 2002-05-13  Vince Darley <vincentdarley@sourceforge.net>
 	* library/mk4vfs.tcl: newer version from tclkit.

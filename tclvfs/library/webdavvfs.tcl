@@ -1,11 +1,13 @@
 
 package require vfs 1.0
-package require http
+package require http 2.6
 # part of tcllib
 package require base64
 
-# This works for very basic operations (cd, open, file stat, but not 'glob').
+# This works for very basic operations.
 # It has been put together, so far, largely by trial and error!
+# What it really needs is to be filled in with proper xml support,
+# using the tclxml package.
 
 namespace eval vfs::webdav {}
 
@@ -39,7 +41,7 @@ proc vfs::webdav::Mount {dirurl local} {
     
     set dirurl "http://$host/$path"
     
-    set extraHeadersList "Authorization {Basic [base64::encode ${user}:${pass}]}"
+    set extraHeadersList [list Authorization {Basic [base64::encode ${user}:${pass}]}]
 
     set token [::http::geturl $dirurl -headers $extraHeadersList -validate 1]
     http::cleanup $token
@@ -86,22 +88,20 @@ proc vfs::webdav::stat {dirurl extraHeadersList name} {
     # This is a bit of a hack.  We really want to do a 'PROPFIND'
     # request with depth 0, I believe.  I don't think Tcl's http
     # package supports that.
-    set token [::http::geturl $dirurl$name -headers $extraHeadersList]
+    set token [::http::geturl $dirurl$name -method PROPFIND \
+      -headers [concat $extraHeadersList [list depth 0]]
     upvar #0 $token state
 
-    if {![regexp " (OK|Moved Permanently)$" $state(http)]} {
+    if {![regexp " OK$" $state(http)]} {
 	::vfs::log "No good: $state(http)"
 	::http::cleanup $token
 	error "Not found"
     }
     
-    if {[regexp "Moved Permanently$" $state(http)]} {
-	regexp {<A HREF="([^"]+)">here</A>} $state(body) -> here
-	if {[string index $here end] == "/"} {
-	    set type directory
-	}
-    }
-    if {![info exists type]} {
+    regexp {<D:prop>(.*)</D:prop>} [::http::data $token] -> properties
+    if {[regexp {<D:resourcetype><D:collection/>} $properties]} {
+	set type directory
+    } else {
 	set type file
     }
     
@@ -168,37 +168,76 @@ proc vfs::webdav::open {dirurl extraHeadersList name mode permissions} {
 }
 
 proc vfs::webdav::matchindirectory {dirurl extraHeadersList path actualpath pattern type} {
-    ::vfs::log "matchindirectory $path $pattern $type"
+    ::vfs::log "matchindirectory $dirurl $path $pattern $type"
     set res [list]
 
-    puts stderr "The 'PROPFIND' method not implemented.  Please help!"
-    
     if {[string length $pattern]} {
 	# need to match all files in a given remote http site.
-	
+	set token [::http::geturl $dirurl$path -method PROPFIND \
+	  -headers [concat $extraHeadersList [list depth 1]]]
+	upvar #0 $token state
+	#parray state
+
+	set body [::http::data $token]
+	::http::cleanup $token
+	::vfs::log $body
+	while {1} {
+	    if {![regexp "(<D:response.*</D:response>)(.*)" $body -> item body]} {
+		# No more files
+		break
+	    }
+	    if {![regexp "<D:href>(.*)</D:href>" $item -> name]} {
+		continue
+	    }
+	    # Get tail of name (don't use 'file tail' since it isn't a file).
+	    regexp {[^/]+$} $name name
+	    
+	    if {[string match $pattern $name]} {
+		eval lappend res [_matchtypes $item $actualpath $type]
+	    }
+	}
     } else {
 	# single file
-	if {![catch {access $dirurl $path}]} {
-	    lappend res $path
-	}
+	set token [::http::geturl $dirurl$path -method PROPFIND \
+	  -headers [concat $extraHeadersList [list depth 0]]]
+	
+	set body [::http::data $token]
+	::http::cleanup $token
+	::vfs::log $body
+	
+	eval lappend res [_matchtypes $body $actualpath $type]
     }
     
     return $res
 }
 
+# Helper function
+proc vfs::webdav::_matchtypes {item actualpath type} {
+    if {[regexp {<D:resourcetype><D:collection/>} $item]} {
+	if {![::vfs::matchDirectories $type]} {
+	    return ""
+	}
+    } else {
+	if {![::vfs::matchFiles $type]} {
+	    return ""
+	}
+    }
+    return [list $actualpath]
+}
+
 proc vfs::webdav::createdirectory {dirurl extraHeadersList name} {
     ::vfs::log "createdirectory $name"
-    error "read-only"
+    error "write access not implemented"
 }
 
 proc vfs::webdav::removedirectory {dirurl extraHeadersList name} {
     ::vfs::log "removedirectory $name"
-    error "read-only"
+    error "write access not implemented"
 }
 
 proc vfs::webdav::deletefile {dirurl extraHeadersList name} {
     ::vfs::log "deletefile $name"
-    error "read-only"
+    error "write access not implemented"
 }
 
 proc vfs::webdav::fileattributes {dirurl extraHeadersList path args} {
@@ -216,12 +255,12 @@ proc vfs::webdav::fileattributes {dirurl extraHeadersList path args} {
 	    # set value
 	    set index [lindex $args 0]
 	    set val [lindex $args 1]
-	    error "read-only"
+	    error "write access not implemented"
 	}
     }
 }
 
 proc vfs::webdav::utime {dirurl extraHeadersList path actime mtime} {
-    error "Can't set utime"
+    error "write access not implemented"
 }
 
