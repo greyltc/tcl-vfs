@@ -72,7 +72,11 @@ TCL_DECLARE_MUTEX(vfsVolumesMutex)
  * 
  * We retain a refCount on the 'mountCmd' object, but there is no need
  * for us to register our interpreter reference, since we will be
- * made invalid when the interpreter disappears.
+ * made invalid when the interpreter disappears.  Also, Tcl_Objs of
+ * "path" type which use one of these structures as part of their
+ * internal representation also do not need to add to any refCounts,
+ * because if this object disappears, all internal representations will
+ * be made invalid.
  */
 
 typedef struct Vfs_InterpCmd {
@@ -95,7 +99,10 @@ typedef struct Vfs_InterpCmd {
  * path internal representations are therefore discarded.  Therefore we
  * don't have to worry about vfs files containing stale VfsNativeRep
  * structures (but it also means we mustn't touch the fsCmd field
- * of one of these structures if the interpreter has gone).
+ * of one of these structures if the interpreter has gone).  This
+ * means when we free one of these structures, we just free the
+ * memory allocated, and ignore the fsCmd pointer (which may or may
+ * not point to valid memory).
  */
 
 typedef struct VfsNativeRep {
