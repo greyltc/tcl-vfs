@@ -340,7 +340,7 @@ Vfs_Init(interp)
         return TCL_ERROR;
     }
     
-    if (Tcl_PkgProvide(interp, "vfs", "1.3.0") == TCL_ERROR) {
+    if (Tcl_PkgProvide(interp, "vfs", PACKAGE_VERSION) == TCL_ERROR) {
         return TCL_ERROR;
     }
 
