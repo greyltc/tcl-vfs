@@ -1,9 +1,16 @@
+2001-08-13  Vince Darley <vincentdarley@sourceforge.net>
+	* ftp vfs works reasonably well now; try:
+	% package require vfs
+	% vfs::ftp::Mount ftp://ftp.ucsd.edu/pub/alpha/ local
+	% cd local ; cd tcl ; source vfsTest.tcl
+	
 2001-08-10  Vince Darley <vincentdarley@sourceforge.net>
 	* added a man page vfs.n
 	* added 'utime' to various vfs
 	* included mk4tcl vfs implementation which works
 	* added some support files so this library can be
 	  used more easily with TclKit.
+	* memory leak in file attributes get fixed.
 
 2001-05-09  Vince Darley <vincentdarley@sourceforge.net>
 	* initial distribution, zip vfs works
