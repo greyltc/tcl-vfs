@@ -1,11 +1,19 @@
+2004-05-19  Jean-Claude Wippler  <jcw@equi4.com>
+
+	* starkit.tcl: added a patch from Bryan Schofield to properly
+	resolve all symbolic links so starkit::startup detection works.
+	* pkgIndex.tcl: bumped starkit version from 1.3 to 1.3.1
+
+	* ChangeLog: cleaned up a few tab-vs-space indentations
+
 2004-04-18  Daniel Steffen <das@users.sourceforge.net>
 
-        * generic/vfs.c: continue to #include tclPort.h, otherwise
+	* generic/vfs.c: continue to #include tclPort.h, otherwise
         compilation breaks against tcl 8.4.x.
 
 2004-04-01  Vince Darley <vincentdarley@sourceforge.net>
 
-        * generic/vfs.c: added #include tclInt.h given recent Tcl
+	* generic/vfs.c: added #include tclInt.h given recent Tcl
         changes which broke compilation.
 
         Fix to privately reported vfs bug with 'glob -type d -dir .  *'
