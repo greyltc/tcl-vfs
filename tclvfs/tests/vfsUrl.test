@@ -16,6 +16,10 @@ if {[lsearch [namespace children] ::tcltest] == -1} {
 }
 
 package require vfs
+if {![auto_load ::vfs::urltype::Mount]} {
+    lappend auto_path [file join [file dirname \
+      [file dirname [file normalize [info script]]]] library]
+}
 
 test vfsUrl-1.1 {mount} {
     vfs::urltype::Mount ftp
@@ -24,6 +28,16 @@ test vfsUrl-1.1 {mount} {
 test vfsUrl-1.2 {mount} {
     file exists ftp://ftp.scriptics.com
 } {1}
+
+test vfsUrl-1.2.1 {mounted volumes} {
+    set idx [lsearch -exact [file volumes] ftp://]
+    if {$idx < 0} {
+	set res "No ftp:// volume!"
+    } else {
+	set res "New volume 'ftp://' mounted"
+    }
+    set res
+} {New volume 'ftp://' mounted}
 
 test vfsUrl-1.3 {mount} {
     file delete -force README.tclversions
@@ -55,5 +69,15 @@ test vfsUrl-1.4 {file copy with typo} {
 } {file doesn't exist}
 
 # cleanup
+catch {
+    if {[lsearch -exact "ftp://" [file volumes]] != -1} {
+	vfs::urltype::Unmount ftp
+    }
+    if {[lsearch -exact "http://" [file volumes]] != -1} {
+	vfs::urltype::Unmount http
+    }
+    
+}
+
 ::tcltest::cleanupTests
 return
