@@ -21,8 +21,14 @@
 .sp
 \fBvfs::filesystem\fR \fIunmount\fR
 .sp
+\fBvfs::accessMode\fR \fImode\fR
 .sp
-\fBvfs::foo \fIa b c\fR
+\fBvfs::matchDirectories\fR \fItypes\fR
+.sp
+\fBvfs::matchFiles\fR \fItypes\fR
+.sp
+\fBvfs::matchCorrectTypes\fR \fItypes\fR \fIfilelist\fR \fI?inDir?\fR
+.sp
 .BE
 .SH DESCRIPTION
 .PP
@@ -216,7 +222,8 @@ extension.
 .PP
 The Tcl 'Tcl_FSMatchInDirectory' function takes a variety of type
 information in a Tcl_GlobTypeData structure.  We currently only expose 
-the 'type' field from that structure.
+the 'type' field from that structure (so the 'permissions' and MacOS
+type/creator fields are ignored).
 .SH KEYWORDS
 vfs, filesystem, file
 
