@@ -7,6 +7,32 @@
 # Copyright 1997 Tom Poindexter.
 # Copyright 2001 Vince Darley.
 #
+
+!if !defined(MSDEVDIR) && !defined(MSVCDIR)
+MSG = ^
+You will need to run vcvars32.bat from Developer Studio, first, to setup^
+the environment.  Jump to this line to read the new instructions.
+!error $(MSG)
+!endif
+
+#------------------------------------------------------------------------------
+# HOW TO USE this makefile:
+#
+# 1)  It is now necessary to have MSVCDir set in the environment.  This is used
+#     as a check to see if vcvars32.bat had been run prior to running nmake or
+#     during the install of Microsoft Developer Studio, MSVCDir had been set
+#     globally and the PATH adjusted.  Either way is valid.
+#
+#     You'll need to run vcvars32.bat contained in the MsDev's vc(98)/bin
+#     directory to setup the proper environment, if needed, for your current
+#     setup.  This is a needed bootstrap requirement and allows the swapping of
+#     different environments to be easier.
+#
+# 2)  To use the Platform SDK (not expressly needed), run setenv.bat after
+#     vcvars32.bat according to the instructions for it.  This can also turn on
+#     the 64-bit compiler, if your SDK has it.
+#
+
 MACHINE		= IX86
 
 VFS_VERSION = 1.3.0
@@ -31,7 +57,7 @@ PROJECT = vfs$(DLL_VERSION)$(DBGX)
 # Project directories -- these may need to be customized for your site
 #
 # ROOT --       location of the example files.
-# TOOLS32 --    location of VC++ compiler installation.
+# MSVCDir --    location of VC++ compiler installation.
 # TCL --        location where Tcl is installed.
 # TCLLIB --     define the Tcl lib (with correct version)
 
@@ -45,16 +71,13 @@ WINDIR		 = $(ROOT)\win\Debug
 !ENDIF
 GENERICDIR	= $(ROOT)\generic
 LIBDIR          = $(ROOT)\library
-TOOLS32		= C:\Progra~1\devstudio\vc
-TOOLS32_rc	= C:\Progra~1\devstudio\sharedide
 
-cc32		= "$(TOOLS32)\bin\cl.exe"
-link32		= "$(TOOLS32)\bin\link.exe"
-libpath32	= /LIBPATH:"$(TOOLS32)\lib"
-lib32		= "$(TOOLS32)\bin\lib.exe"
+cc32		= $(CC)
+link32		= link
+libpath32	= /LIBPATH:"$(MSVCDir)\lib"
+lib32		= lib
 
-rc32		= "$(TOOLS32_rc)\bin\rc.exe"
-include32	= -I"$(TOOLS32)\include"
+include32	= -I"$(MSVCDir)\include"
 
 # point TCL and TCLLIB to your tcl distribution
 
@@ -128,9 +151,9 @@ VFSOBJS = \
 # Visual C++ tools
 #
 
-PATH=$(COMMON32)/bin;$(TOOLS32)\bin;$(PATH)
+PATH=$(COMMON32)/bin;$(MSVCDir)\bin;$(PATH)
 
-cc32    = $(TOOLS32)\bin\cl -I$(TOOLS32)\include
+cc32    = $(cc32) -I$(MSVCDir)\include
 CP      = copy
 RM      = del
 !if "$(OS)" == "Windows_NT"
@@ -142,7 +165,7 @@ RMDIR	= deltree /Y
 INCLUDES = \
     -I../../cvs-tcl/generic  \
     -I../../cvs-tcl/win  \
-    -I$(TOOLS32)/include	\
+    -I$(MSVCDir)/include	\
     -I../generic
 
 DEFINES = -nologo $(DEBUGDEFINES) -DUSE_TCL_STUBS \
