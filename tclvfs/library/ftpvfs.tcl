@@ -222,6 +222,9 @@ proc vfs::ftp::matchindirectory {fd path actualpath pattern type} {
 
 	foreach p $ftpList {
 	    foreach {name perms} [_parseListLine $p] {}
+	    if {![string match $pattern $name]} {
+		continue 
+	    } 
 	    if {[::vfs::matchDirectories $type]} {
 		if {[string index $perms 0] == "d"} {
 		    lappend res "$actualpath$name"
