@@ -37,6 +37,8 @@ proc ::vfs::unmount {mountpoint} {
     uplevel \#0 $_unmountCmd($norm) [list $norm]
 }
 
+::vfs::autoMountExtension "" ::vfs::mk4::Mount vfs
+::vfs::autoMountExtension .bin ::vfs::mk4::Mount vfs
 ::vfs::autoMountExtension .zip ::vfs::zip::Mount vfs
 ::vfs::autoMountUrl ftp ::vfs::ftp::Mount vfs
 ::vfs::autoMountUrl file ::vfs::fileUrlMount vfs

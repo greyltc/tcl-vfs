@@ -34,17 +34,34 @@ the code completely cleaned up and documented as the package evolves.
 
 -- Vince Darley, August 1st 2001
 
+Compile/build
+-------------
+
+There are the usual make/configure files present, as copied from
+'sampleextension' and suitably modified.  Apparently you may also need
+other things like 'tcl.m4', 'config.guess'.  Please copy them from
+wherever.  There is actually only one file to compile (generic/vfs.c) so if
+you find the need for TEA's dozens of 'helper' files a bit excessive, I
+agree!
+
+For windows, there is a VC++ makefile in the win directory ('nmake -f
+makefile.vc') should do the trick.
+
 Tests and installation
 ----------------------
 
-The 'tests' directory contains a partially modified version of some of
+The tests/vfs*.test files should all pass (provided you have an active
+internet connection).
+
+The 'tests' directory also contains a partially modified version of some of
 Tcl's core tests.  They are modified in that there is a new 'fsIsWritable'
-test constraint, which needs adding to several hundred tests (I've done
-some of that work).
+test constraint, which needs adding to several hundred tests (I've done some
+of that work).
 
 To install, you probably want to rename the directory 'library' to 'vfs1.0'
-and place it in your Tcl hierarchy, with the necessary shared library
-inside (improvements to makefiles to streamline this much appreciated)
+and place it in your Tcl hierarchy, with the necessary shared library inside
+(improvements to makefiles to streamline this much appreciated).  On Windows
+'nmake -f makefile.vc install' should do everything for you.
 
 Current implementation
 ----------------------
@@ -96,8 +113,8 @@ which means it isn't necessarily even particular well thought out, so if
 you wish to contribute a single line of code or a complete re-write, I'd be
 very happy!
 
-Limitations & Future thoughts
------------------------------
+Future thoughts
+---------------
 
 See:
 
@@ -108,12 +125,36 @@ http://www.atnf.csiro.au/~rgooch/linux/vfs.txt
 
 for some ideas.  It would be good to accumulate ideas on the limitations of
 the current VFS support so we can plan out what vfs 2.0 will look like (and
-what changes will be needed in Tcl's core to support it).  Obvious things
-which come to mind are asynchronicity: 'file copy' from a mounted remote
-site (ftp or http) is going to be very slow and simply block the
-application.  Commands like that should have new asynchronous versions which
-can be used when desired (for example, 'file copy from to -callback foo'
-would be one approach to handling this).
+what changes will be needed in Tcl's core to support it).  
+
+"Asynchronicity" -- Obvious things which come to mind are asynchronicity:
+'file copy' from a mounted remote site (ftp or http) is going to be very
+slow and simply block the application.  Commands like that should have new
+asynchronous versions which can be used when desired (for example, 'file
+copy from to -callback foo' would be one approach to handling this).
+
+"exec" -- this Tcl command effectively boils down to forking off a variety
+of processes and hooking their input/output/errors up appropriately.  Most
+of this code is quite generic, and ends up in 'TclpCreateProcess' for the
+actual forking and execution of another process (whose name is given by
+'argv[0]' in TclpCreateProcess).  Would it be possible to make a
+Tcl_FSCreateProcess which can pass the command on either to the native
+filesystem or to virtual filesystems?  The simpler answer is "yes", given
+that we can simply examine 'argv[0]' and see if it is it is a path in a
+virtual filesystem and then hand it off appropriately, but could a vfs
+actually implement anything sensible?  The kind of thing I'm thinking of is
+this: we mount an ftp site and would then like to execute various ftp
+commands directly.  Now, we could use 'ftp::Quote' (from the ftp package) to
+send commands directly, but why not 'exec' them?  If my ftp site is mounted
+at /tcl/ftppub, why couldn't "exec /tcl/ftppub FOO arg1 arg2" attempt a
+verbatim "FOO arg1 arg2" command on the ftp connection?  (Or would perhaps
+"exec /tcl/ftppub/FOO arg1 arg2" be the command?).  Similarly a Tcl
+'namespace' filesystem could use 'exec' to evaluate code in the relevant
+namespace (of course you could just use 'namespace eval' directly, but then
+you couldn't hook the code up to input/output pipes).
+
+Debugging virtual filesystems
+-----------------------------
 
 Bugs in Tcl vfs's are hard to track down, since error messages can't
 necessarily propagate to the toplevel (errors of course do propagate and

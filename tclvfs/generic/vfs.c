@@ -331,8 +331,12 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		return TCL_ERROR;
 	    }
 	    if (objc == 2) {
-		/* List all vfs paths */
-		Tcl_GlobalEval(interp, "array names ::vfs::mount");
+		/* 
+		 * List all vfs paths.  Put the command in a char
+		 * array so we know it is in writable memory.
+		 */
+		char listCmd[] = "array names ::vfs::mount";
+		Tcl_GlobalEval(interp, listCmd);
 	    } else {
 		path = Tcl_FSGetNormalizedPath(interp, objv[2]);
 		val = Tcl_GetVar2Ex(vfsInterp, mountVar, Tcl_GetString(path),
