@@ -375,25 +375,31 @@ proc zip::TOC {fd arr} {
 
 proc zip::open {path} {
     set fd [::open $path]
-    upvar #0 zip::$fd cb
-    upvar #0 zip::$fd.toc toc
+    
+    if {[catch {
+	upvar #0 zip::$fd cb
+	upvar #0 zip::$fd.toc toc
 
-    fconfigure $fd -translation binary ;#-buffering none
+	fconfigure $fd -translation binary ;#-buffering none
+	
+	zip::EndOfArchive $fd cb
 
-    zip::EndOfArchive $fd cb
+	seek $fd $cb(coff) start
 
-    seek $fd $cb(coff) start
-
-    set toc(_) 0; unset toc(_); #MakeArray
-
-    for { set i 0 } { $i < $cb(nitems) } { incr i } {
-	zip::TOC $fd sb
-
-	set sb(depth) [llength [file split $sb(name)]]
-
-	set name [string tolower $sb(name)]
-	set toc($name) [array get sb]
-	FAKEDIR toc [file dirname $name]
+	set toc(_) 0; unset toc(_); #MakeArray
+	
+	for { set i 0 } { $i < $cb(nitems) } { incr i } {
+	    zip::TOC $fd sb
+	    
+	    set sb(depth) [llength [file split $sb(name)]]
+	    
+	    set name [string tolower $sb(name)]
+	    set toc($name) [array get sb]
+	    FAKEDIR toc [file dirname $name]
+	}
+    } err]} {
+	close $fd
+	return -code error $err
     }
 
     return $fd

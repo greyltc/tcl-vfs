@@ -4,6 +4,9 @@
         fixes a variety of problems (e.g. recurisve 'file copy' in a 
         directory).  Thanks to msofer for the detailed bug report and
         test script.
+	* library/zipvfs.tcl:
+	* library/tarvfs.tcl: ensure archive channel is closed if an
+	error is encountered while trying to open it.
 	
 2003-07-03  Vince Darley <vincentdarley@sourceforge.net>
 

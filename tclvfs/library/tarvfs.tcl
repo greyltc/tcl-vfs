@@ -340,11 +340,18 @@ proc tar::TOC {fd arr toc} {
 
 proc tar::open {path} {
     set fd [::open $path]
-    upvar #0 tar::$fd.toc toc
-
-    fconfigure $fd -translation binary ;#-buffering none
-
-    tar::TOC $fd sb toc
+    
+    if {[catch {
+	upvar #0 tar::$fd.toc toc
+	
+	fconfigure $fd -translation binary ;#-buffering none
+	
+	tar::TOC $fd sb toc
+    } err]} {
+	close $fd
+	return -code error $err
+    }
+    
     return $fd
 }
 
