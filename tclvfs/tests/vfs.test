@@ -32,7 +32,7 @@ test vfs-1.1 {mount unmount} {
 
 vfs::filesystem mount foo bar
 
-test vfs-2.1 {mount unmount} {
+test vfs-2.1 {mount unmount in sub interp} {
     catch {interp delete a}
     catch {unset res}
     interp create a
@@ -40,6 +40,20 @@ test vfs-2.1 {mount unmount} {
     a eval {vfs::filesystem mount foo2 bar2}
     lappend res [vfs::filesystem info]
     a eval {vfs::filesystem unmount foo2}
+    interp delete a
+    lappend res [vfs::filesystem info]
+    set res
+} {{C:/Tcl-source/tclvfs/tests/foo2 C:/Tcl-source/tclvfs/tests/foo}\
+  C:/Tcl-source/tclvfs/tests/foo}
+
+test vfs-2.2 {mount, delete sub interp} {
+    catch {interp delete a}
+    catch {unset res}
+    interp create a
+    a eval {package require vfs}
+    a eval {vfs::filesystem mount foo2 bar2}
+    lappend res [vfs::filesystem info]
+    interp delete a
     lappend res [vfs::filesystem info]
     set res
 } {{C:/Tcl-source/tclvfs/tests/foo2 C:/Tcl-source/tclvfs/tests/foo}\
