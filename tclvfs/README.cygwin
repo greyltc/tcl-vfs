@@ -3,6 +3,9 @@ hopeless on Windows, and I do not recommend you wasting your time
 with it.  No-one seems to take any interest in fixing the millions
 of problems with TEA.
 
+And really, to compile a single file 'vfs.c' do we really need to have
+some 10 TEA files?
+
 There is a good old VC++ makefile in the 'win' directory, which seems to
 work.
 

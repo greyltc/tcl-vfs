@@ -187,11 +187,14 @@ static Tcl_Filesystem vfsFilesystem = {
     &VfsPathInFilesystem,
     &VfsDupInternalRep,
     &VfsFreeInternalRep,
-    /* No native to normalized */
+    /* No internal to normalized, since we don't create any
+     * pure 'internal' Tcl_Obj path representations */
     NULL,
-    /* No create native rep function */
+    /* No create native rep function, since we don't use it
+     * or 'Tcl_FSNewNativePath' */
     NULL,
-    /* normalize path isn't needed */
+    /* Normalize path isn't needed - we assume paths only have
+     * one representation */
     NULL,
     &VfsFilesystemPathType,
     &VfsFilesystemSeparator,
@@ -200,7 +203,7 @@ static Tcl_Filesystem vfsFilesystem = {
     &VfsOpenFileChannel,
     &VfsMatchInDirectory,
     &VfsUtime,
-    /* link is not important  */
+    /* We choose not to support symbolic links inside our vfs's */
     NULL,
     &VfsListVolumes,
     &VfsFileAttrStrings,
@@ -209,17 +212,17 @@ static Tcl_Filesystem vfsFilesystem = {
     &VfsCreateDirectory,
     &VfsRemoveDirectory, 
     &VfsDeleteFile,
+    /* No copy file - fallback will occur at Tcl level */
+    NULL,
+    /* No rename file - fallback will occur at Tcl level */
+    NULL,
+    /* No copy directory - fallback will occur at Tcl level */
+    NULL, 
     /* Use stat for lstat */
     NULL,
-    /* No copy file */
+    /* No load - fallback on core implementation */
     NULL,
-    /* No rename file */
-    NULL,
-    /* No copy directory */
-    NULL, 
-    /* No load */
-    NULL,
-    /* We don't need a getcwd or chdir */
+    /* We don't need a getcwd or chdir - fallback on Tcl's versions */
     NULL,
     NULL
 };

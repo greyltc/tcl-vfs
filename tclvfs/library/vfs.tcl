@@ -34,17 +34,18 @@ namespace eval ::vfs {
     catch {set temp $env(VFS_TEMP)}
     set temp [file join $temp tclkit]
     file mkdir $temp
+    set temp [file nativename $temp]
 
     # This is not right XXX need somewhere to unpack
     # indirect-dependant DLL's etc.
 
     global env tcl_platform
     if {$tcl_platform(platform) == "windows"} {
-	set env(PATH) "${vfs::temp}/bin;$env(PATH)"
+	set env(PATH) "${vfs::temp};$env(PATH)"
     } elseif {$tcl_platform(platform) == "unix"} {
-	set env(PATH) "${vfs::temp}/bin:$env(PATH)"
+	set env(PATH) "${vfs::temp}:$env(PATH)"
     } else {
-	set env(PATH) "${vfs::temp}/bin"
+	set env(PATH) "${vfs::temp}"
     }
     proc debug {tag body} {
 	set cnt [info cmdcount]

@@ -1,3 +1,8 @@
+2002-03-16  Vince Darley <vincentdarley@sourceforge.net>
+	* generic/vfs.c: updated for latest cvs head of Tcl 8.4a5.
+	* library/vfs.tcl: New version from jcw, with better handling
+	of env(PATH).
+
 2002-03-09  Vince Darley <vincentdarley@sourceforge.net>
 	* library/mk4vfs.tcl: updated version from Jean-Claude Wippler.
 
