@@ -1111,7 +1111,6 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 	    if test "$GCC" = "yes" ; then
 		SHLIB_LD="gcc -shared"
 		SHLIB_LD_LIBS='${LIBS}'
-		LD_SEARCH_FLAGS=''
 	    fi
 
 	    # Users may want PA-RISC 1.1/2.0 portable code - needs HP cc
@@ -1127,7 +1126,6 @@ dnl AC_CHECK_TOOL(AR, ar, :)
 			    do64bit_ok=yes
 			    SHLIB_LD="${CC} -shared"
 			    SHLIB_LD_LIBS='${LIBS}'
-			    LD_SEARCH_FLAGS=''
 			    ;;
 			*)
 			    AC_MSG_WARN("64bit mode not supported with GCC on $system")
@@ -3440,13 +3438,12 @@ AC_DEFUN(TEA_PROG_TCLSH, [
 	AC_MSG_CHECKING([for tclsh])
 
 	AC_CACHE_VAL(ac_cv_path_tclsh, [
-	if test "${TEA_PLATFORM}" = "windows" -a "$do64bit_ok" = "yes" \
-		-o "$doWince" != "no" ; then
-	    # A Windows cross-compile build - restrict target tclsh
+	search_path=`echo ${PATH} | sed -e 's/:/ /g'`
+	if test "${TEA_PLATFORM}" != "windows" -o \
+		\( "$do64bit_ok" = "no" -a "$doWince" = "no" \) ; then
+	    # Do not allow target tclsh in known cross-compile builds,
 	    # as we need one we can run on this system
-	    search_path=`echo ${PATH} | sed -e 's/:/ /g'`
-	else
-	    search_path=`echo ${TCL_BIN_DIR}:${TCL_BIN_DIR}/../bin:${exec_prefix}/bin:${prefix}/bin:${PATH} | sed -e 's/:/ /g'`
+	    search_path="${TCL_BIN_DIR} ${TCL_BIN_DIR}/../bin ${exec_prefix}/bin ${prefix}/bin ${search_path}"
 	fi
 	for dir in $search_path ; do
 	    for j in `ls -r $dir/tclsh[[8-9]]*${EXEEXT} 2> /dev/null` \
@@ -3493,13 +3490,12 @@ AC_DEFUN(TEA_PROG_WISH, [
 	AC_MSG_CHECKING([for wish])
 
 	AC_CACHE_VAL(ac_cv_path_wish, [
-	if test "${TEA_PLATFORM}" = "windows" -a "$do64bit_ok" = "yes" \
-		-o "$doWince" != "no" ; then
-	    # A Windows cross-compile build - restrict target tclsh
+	search_path=`echo ${PATH} | sed -e 's/:/ /g'`
+	if test "${TEA_PLATFORM}" != "windows" -o \
+		\( "$do64bit_ok" = "no" -a "$doWince" = "no" \) ; then
+	    # Do not allow target wish in known cross-compile builds,
 	    # as we need one we can run on this system
-	    search_path=`echo ${PATH} | sed -e 's/:/ /g'`
-	else
-	    search_path=`echo ${TK_BIN_DIR}:${TK_BIN_DIR}/../bin:${TCL_BIN_DIR}:${TCL_BIN_DIR}/../bin:${exec_prefix}/bin:${prefix}/bin:${PATH} | sed -e 's/:/ /g'`
+	    search_path="${TK_BIN_DIR} ${TK_BIN_DIR}/../bin ${TCL_BIN_DIR} ${TCL_BIN_DIR}/../bin ${exec_prefix}/bin ${prefix}/bin ${search_path}"
 	fi
 	for dir in $search_path ; do
 	    for j in `ls -r $dir/wish[[8-9]]*${EXEEXT} 2> /dev/null` \

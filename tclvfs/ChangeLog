@@ -1,3 +1,8 @@
+2005-03-18  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Makefile.in (AR): use @AR@
+	* configure, tclconfig/tcl.m4: TEA 3.2 patch update
+
 2005-02-14  Jean-Claude Wippler  <jcw@equi4.com>
 
 	* configure, configure.in, tclconfig/tcl.m4: update from sample
