@@ -22,7 +22,7 @@ proc vfs::zip::Mount {zipfile local} {
     return $fd
 }
 
-proc vfs::zip::Unmount {fd} {
+proc vfs::zip::Unmount {fd local} {
     vfs::filesystem unmount $local
     ::zip::_close $fd
 }
