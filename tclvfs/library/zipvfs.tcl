@@ -290,7 +290,7 @@ proc zip::Data {fd arr {varPtr ""} {verify 0}} {
 
     if { $sb(method) != 0 } {
 	if { [catch {
-	    set data [vfs::zlib decompress $data]
+	    set data [vfs::zip -mode decompress -nowrap 1 $data]
 	} err] } {
 	    ::vfs::log "$sb(name): inflate error: $err"
 	    binary scan $data H* x

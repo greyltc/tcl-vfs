@@ -21,7 +21,7 @@ proc ::vfs::zlib {args} {
     uplevel 1 ::zlib $args
 }
 
-# This can be overridden to use a different zlib implementation
+# This can be overridden to use a different zip implementation
 proc ::vfs::zip {args} {
     ::package require Trf
     uplevel 1 ::zip $args
