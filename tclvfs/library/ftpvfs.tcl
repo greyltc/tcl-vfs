@@ -138,8 +138,16 @@ proc vfs::ftp::open {fd name mode permissions} {
 proc vfs::ftp::_closing {fd name filed action} {
     seek $filed 0
     set contents [read $filed]
+    set trans [fconfigure $filed -translation]
+    if {$trans == "binary"} {
+	set oldType [::ftp::Type $fd]
+	::ftp::Type $fd binary
+    }
     if {![::ftp::$action $fd -data $contents $name]} {
 	error "Failed to write to $name"
+    }
+    if {[info exists oldType]} {
+	::ftp::Type $fd $oldType
     }
 }
 
