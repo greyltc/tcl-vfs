@@ -29,13 +29,15 @@ vfs_LIB_FILE	= @vfs_LIB_FILE@
 
 #========================================================================
 # RUNTIME_SOURCES identifies Tcl runtime files that are associated with
-# this package that need to be installed, if any.
+# this package that need to be installed, if any.  They are moved into
+# top_builddir/library and then installed.  pkgIndex.tcl is generated
+# through the configure script.
 #========================================================================
 
-RUNTIME_SOURCES	= pkgIndex.tcl ftpvfs.tcl httpvfs.tcl mk4vfs.tcl \
-		  starkit.tcl tclprocvfs.tcl testvfs.tcl \
-		  vfslib.tcl vfsUrl.tcl vfsUtils.tcl \
-		  webdavvfs.tcl zipvfs.tcl tclIndex
+RUNTIME_SOURCES	= ftpvfs.tcl httpvfs.tcl mk4vfs.tcl starkit.tcl \
+		  tarvfs.tcl tclIndex tclprocvfs.tcl testvfs.tcl \
+		  vfsUrl.tcl vfsUtils.tcl vfslib.tcl \
+		  webdavvfs.tcl zipvfs.tcl
 
 #========================================================================
 # This is a list of header files to be installed
@@ -136,7 +138,7 @@ EXTRA_CFLAGS	= $(MEM_DEBUG_FLAGS) @EXTRA_CFLAGS@
 
 DEFS		= $(TCL_DEFS) @DEFS@ $(EXTRA_CFLAGS)
 
-CONFIG_CLEAN_FILES = Makefile
+CONFIG_CLEAN_FILES = Makefile library/pkgIndex.tcl
 
 CPPFLAGS	= @CPPFLAGS@
 LIBS		= @LIBS@
@@ -169,9 +171,10 @@ all: binaries libraries doc
 binaries: $(BINARIES)
 
 libraries:
+	@mkdir -p $(top_builddir)/library/
 	@list='$(RUNTIME_SOURCES)'; for p in $$list; do \
 	  if test -f $(srcdir)/library/$$p; then \
-	    $(INSTALL_DATA) $(srcdir)/library/$$p $(top_builddir)/$$p; \
+	    $(INSTALL_DATA) $(srcdir)/library/$$p $(top_builddir)/library/$$p;\
 	  fi; \
 	done
 
@@ -264,12 +267,13 @@ VPATH = $(srcdir)/generic:$(srcdir)/unix:$(srcdir)/win
 # variable in configure.in
 #========================================================================
 
-clean:  
+clean:
+	-cd $(top_builddir)
 	-test -z "$(BINARIES)" || rm -f $(BINARIES)
 	-rm -f *.$(OBJEXT) core *.core
 	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 	list='$(RUNTIME_SOURCES)'; for p in $$list; do \
-	  rm -f $$p; \
+	  rm -f library/$$p; \
 	done
 
 distclean: clean
@@ -308,10 +312,9 @@ install-lib-binaries:
 	  fi; \
 	done
 	@echo "Installing runtime sources in $(DESTDIR)$(pkglibdir)/"
-	@list='$(RUNTIME_SOURCES)'; for p in $$list; do \
-	  if test -f $(srcdir)/library/$$p; then \
-	    $(INSTALL_DATA) $(srcdir)/library/$$p $(DESTDIR)$(pkglibdir)/$$p; \
-	  fi; \
+	@for i in $(top_builddir)/library/*; do \
+	    rm -f $(DESTDIR)$(pkglibdir)/`basename $$i`; \
+	    $(INSTALL_DATA) $$i $(DESTDIR)$(pkglibdir)/ ; \
 	done
 
 #========================================================================
@@ -331,7 +334,11 @@ install-bin-binaries:
 
 .SUFFIXES: .c .$(OBJEXT)
 
-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+library/pkgIndex.tcl: $(srcdir)/library/pkgIndex.tcl.in $(top_builddir)/config.status
+	cd $(top_builddir) \
+	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
+
+Makefile: library/pkgIndex.tcl $(srcdir)/Makefile.in $(top_builddir)/config.status
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
@@ -342,6 +349,7 @@ uninstall-binaries:
 	list='$(RUNTIME_SOURCES)'; for p in $$list; do \
 	  rm -f $(DESTDIR)$(pkglibdir)/$$p; \
 	done
+	rm -f $(DESTDIR)$(pkglibdir)/pkgIndex.tcl; \
 	list='$(bin_BINARIES)'; for p in $$list; do \
 	  rm -f $(DESTDIR)$(bindir)/$$p; \
 	done
