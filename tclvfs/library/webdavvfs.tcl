@@ -5,6 +5,7 @@ package require http
 package require base64
 
 # This works for very basic operations (cd, open, file stat, but not 'glob').
+# It has been put together, so far, largely by trial and error!
 
 namespace eval vfs::webdav {}
 
