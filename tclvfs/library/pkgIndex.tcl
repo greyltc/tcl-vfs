@@ -40,6 +40,4 @@ if {![file exists $file]} {
 package ifneeded vfs 1.0 [list load $file]
 unset file
 
-package ifneeded scripdoc 0.3 [list source [file join $dir scripdoc.tcl]]
 package ifneeded mk4vfs 1.0 [list source [file join $dir mk4vfs.tcl]]
-package ifneeded vfslib 0.1 [list source [file join $dir vfs.tcl]]

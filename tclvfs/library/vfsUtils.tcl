@@ -4,8 +4,8 @@ package require vfs
 
 namespace eval ::vfs {
     variable debug 0
-    if {[info exists env(VFS_DEBUG)]} {
-	set debug $env(VFS_DEBUG)
+    if {[info exists ::env(VFS_DEBUG)]} {
+	set debug $::env(VFS_DEBUG)
     }
 }
 
@@ -35,6 +35,7 @@ proc ::vfs::unmount {mountpoint} {
     variable _unmountCmd
     set norm [file normalize $mountpoint]
     uplevel \#0 $_unmountCmd($norm) [list $norm]
+    unset _unmountCmd($norm)
 }
 
 ::vfs::autoMountExtension "" ::vfs::mk4::Mount vfs

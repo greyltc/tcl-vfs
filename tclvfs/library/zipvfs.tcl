@@ -1,5 +1,7 @@
 
-package require vfs 1.0
+package require vfs
+package require pink
+package provide zipvfs 1.0
 
 # Using the vfs, memchan and Trf extensions, we ought to be able
 # to write a Tcl-only zip virtual filesystem.  What we have below
@@ -98,7 +100,6 @@ proc vfs::zip::open {zipfd name mode permissions} {
 	    
 	    ::zip::stat $zipfd $name sb
 
-	    package require Trf
 	    package require Memchan
 
 	    set nfd [memchan]
@@ -159,7 +160,6 @@ proc vfs::zip::utime {fd path actime mtime} {
     error ""
 }
 
-
 # Below copied from TclKit distribution
 
 #
@@ -179,7 +179,6 @@ proc vfs::zip::utime {fd path actime mtime} {
 #	archive by first fetching EndOfArchive, then
 #	just loading the TOC
 #
-package provide vfs.zip 0.5
 
 namespace eval zip {
     array set methods {
@@ -264,7 +263,8 @@ proc zip::Data {fd arr {varPtr ""} {verify 0}} {
 		sb(crc) sb(csize) sb(size) flen elen]
 
     if { ![string equal "PK\03\04" $hdr] } {
-	error "bad header: [hexdump $hdr]"
+	binary scan $hdr H* x
+	error "bad header: $x"
     }
     set sb(ver)		[u_short $sb(ver)]
     set sb(flags)	[u_short $sb(flags)]
@@ -293,15 +293,16 @@ proc zip::Data {fd arr {varPtr ""} {verify 0}} {
 
     if { $sb(method) != 0 } {
 	if { [catch {
-	    set data [zip -mode decompress -nowrap 1 $data]
+	    set data [zlib decompress $data]
 	} err] } {
 	    ::vfs::log "$sb(name): inflate error: $err"
-	    ::vfs::log [hexdump $data]
+	    binary scan $data H* x
+	    ::vfs::log $x
 	}
     }
     return
     if { $verify } {
-	set ncrc [pink zlib crc $data]
+	set ncrc [zlib crc32 $data]
 	if { $ncrc != $sb(crc) } {
 	    tclLog [format {%s: crc mismatch: expected 0x%x, got 0x%x} \
 		    $sb(name) $sb(crc) $ncrc]
@@ -348,7 +349,8 @@ proc zip::TOC {fd arr} {
       sb(atx) sb(ino)
 
     if { ![string equal "PK\01\02" $hdr] } {
-	error "bad central header: [hexdump $buf]"
+	binary scan $hdr H* x
+	error "bad central header: $x"
     }
 
     foreach v {vem ver flags method disk attr} {
