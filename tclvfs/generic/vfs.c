@@ -478,7 +478,7 @@ Vfs_AddMount(mountPoint, isVolume, interp, mountCmd)
 	return TCL_ERROR;
     }
     strRep = Tcl_GetStringFromObj(mountPoint, &len);
-    newMount->mountPoint = (char*) ckalloc(1+len);
+    newMount->mountPoint = (char*) ckalloc(1+(unsigned)len);
     newMount->mountLen = len;
     
     if (newMount->mountPoint == NULL) {
@@ -631,7 +631,7 @@ Vfs_FindMount(pathMount, mountLen)
     mountIter = listOfMounts;
     while (mountIter != NULL) {
 	if (mountIter->mountLen == mountLen && 
-	  !strncmp(mountIter->mountPoint, mountStr, mountLen)) {
+	  !strncmp(mountIter->mountPoint, mountStr, (size_t)mountLen)) {
 	    Vfs_InterpCmd *ret = &mountIter->interpCmd;
 	    Tcl_MutexUnlock(&vfsMountsMutex);
 	    return ret;
@@ -722,7 +722,6 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 
     switch ((enum options) index) {
 	case VFS_INTERNAL_ERROR: {
-	    int posixError = -1;
 	    if (objc > 3) {
 		Tcl_WrongNumArgs(interp, 2, objv, "?script?");
 		return TCL_ERROR;
@@ -737,11 +736,11 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 	    } else {
 		/* Set the script */
 		int len;
-		CONST char* str = Tcl_GetStringFromObj(objv[2],&len);
 		Tcl_MutexLock(&internalErrorMutex);
 		if (internalErrorScript != NULL) {
 		    Tcl_DecrRefCount(internalErrorScript);
 		}
+		Tcl_GetStringFromObj(objv[2], &len);
 		if (len == 0) {
 		    /* Clear our script */
 		    internalErrorScript = NULL;
@@ -1478,7 +1477,7 @@ VfsMatchInDirectory(
 	mountIter = listOfMounts;
 	while (mountIter != NULL) {
 	    if (mountIter->mountLen > (len+1) 
-		&& !strncmp(mountIter->mountPoint, prefix, len) 
+		&& !strncmp(mountIter->mountPoint, prefix, (size_t)len) 
 		&& mountIter->mountPoint[len] == '/'
 		&& strchr(mountIter->mountPoint+len+1, '/') == NULL
 		&& Tcl_StringCaseMatch(mountIter->mountPoint+len+1, 

@@ -1,3 +1,7 @@
+2003-10-17  Vince Darley <vincentdarley@sourceforge.net>
+
+	* generic/vfs.c: removed some compiler warnings on OS X.
+
 2003-10-13  Vince Darley <vincentdarley@sourceforge.net>
 
 	* generic/vfs.c: added support for TCL_GLOB_TYPE_MOUNT flag to
