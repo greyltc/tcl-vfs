@@ -1,3 +1,21 @@
+2003-10-13  Vince Darley <vincentdarley@sourceforge.net>
+
+	* generic/vfs.c: added support for TCL_FILESYSTEM_VERSION_2
+	which provides for more seamless boundaries between filesystems
+	(using VfsListMountsInDir), which allows for fixing Tcl's
+	[Bug 800106].  This means (with a suitable version of Tcl) that
+	'glob */*' across a filesystem boundary will now work correctly.
+	
+	The code should compile and load successfully with both Tcl 8.4
+	and a future version of Tcl where the newer code will be
+	operational.
+	
+	* library/pkgIndex.tcl(.in): 
+	* DESCRIPTION.txt:
+	* win/makefile.vc:
+	* configure.in: updated version to 1.3.0 reflecting the above
+	significant change.
+	
 2003-10-06  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* configure:        updated to autoconf 2.5
