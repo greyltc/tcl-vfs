@@ -1,3 +1,10 @@
+2003-02-21  Vince Darley <vincentdarley@sourceforge.net>
+
+	* generic/vfs.c: some small cleanup
+	* doc/vfs.n: better documentation for 'createdirectory'
+	* library/mk4vfs.tcl: better posix adherence.
+	* library/vfsUtils.tcl: typo fix.
+	
 2003-02-20  Vince Darley <vincentdarley@sourceforge.net>
 
 	* generic/vfs.c: completed use of internalerror and posix handling

@@ -280,9 +280,11 @@ static void            Vfs_RegisterWithInterp _ANSI_ARGS_((Tcl_Interp*));
 static VfsNativeRep*   VfsGetNativePath(Tcl_Obj* pathObjPtr);
 static Tcl_CloseProc   VfsCloseProc;
 static void            VfsExitProc(ClientData clientData);
-static Tcl_Obj*	       VfsFullyNormalizePath(Tcl_Interp *interp, Tcl_Obj *pathPtr);
+static Tcl_Obj*	       VfsFullyNormalizePath(Tcl_Interp *interp, 
+				             Tcl_Obj *pathPtr);
 static Tcl_Obj*        VfsBuildCommandForPath(Tcl_Interp **iRef, 
 			          CONST char* cmd, Tcl_Obj * pathPtr);
+static void            VfsInternalError(Tcl_Interp* interp);
 
 /* 
  * Hard-code platform dependencies.  We do not need to worry 
