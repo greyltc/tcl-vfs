@@ -1440,6 +1440,17 @@ VfsCloseProc(ClientData clientData) {
      * the Tcl code to use the channel's string-name).
      */
     Tcl_RegisterChannel(interp, chan);
+
+    if (!(Tcl_GetChannelMode(chan) & TCL_READABLE)) {
+	/* 
+	 * We need to make this channel readable, since tclvfs
+	 * documents that close callbacks are allowed to read
+	 * from the channels we create.
+	 */
+	
+	/* Currently if we reach here we have a bug */
+    }
+    
     returnVal = Tcl_EvalObjEx(interp, channelRet->closeCallback, 
 		  TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
     if (returnVal != TCL_OK) {
