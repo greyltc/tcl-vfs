@@ -281,7 +281,7 @@ static void            Vfs_RegisterWithInterp _ANSI_ARGS_((Tcl_Interp*));
 
 /* Some private helper procedures */
 
-static VfsNativeRep*   VfsGetNativePath(Tcl_Obj* pathObjPtr);
+static VfsNativeRep*   VfsGetNativePath(Tcl_Obj* pathPtr);
 static Tcl_CloseProc   VfsCloseProc;
 static void            VfsExitProc(ClientData clientData);
 static Tcl_Obj*	       VfsFullyNormalizePath(Tcl_Interp *interp, 
@@ -1048,8 +1048,8 @@ VfsPathInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
  * path object, or NULL if no such representation exists.
  */
 static VfsNativeRep* 
-VfsGetNativePath(Tcl_Obj* pathObjPtr) {
-    return (VfsNativeRep*) Tcl_FSGetInternalRep(pathObjPtr, &vfsFilesystem);
+VfsGetNativePath(Tcl_Obj* pathPtr) {
+    return (VfsNativeRep*) Tcl_FSGetInternalRep(pathPtr, &vfsFilesystem);
 }
 
 static void 
@@ -1083,7 +1083,7 @@ VfsFilesystemPathType(Tcl_Obj *pathPtr) {
 }
 
 static Tcl_Obj*
-VfsFilesystemSeparator(Tcl_Obj* pathObjPtr) {
+VfsFilesystemSeparator(Tcl_Obj* pathPtr) {
     char sep=VFS_SEPARATOR;
     return Tcl_NewStringObj(&sep,1);
 }
