@@ -183,8 +183,8 @@ install-binaries: binaries install-lib-binaries install-bin-binaries
 install-libraries: libraries
 	@mkdir -p $(DESTDIR)$(includedir)
 	@echo "Installing header files in $(DESTDIR)$(includedir)"
-	@for i in $(PKG_HEADERS) ; do \
-	    echo "Installing $(srcdir)/$$i" ; \
+	@list='$(PKG_HEADERS)'; for i in $$list; do \
+	    echo "    $$i" ; \
 	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(includedir) ; \
 	done;
 
@@ -195,9 +195,9 @@ install-libraries: libraries
 
 install-doc: doc
 	@mkdir -p $(DESTDIR)$(mandir)/mann
-	@echo "Installing documentation in $(DESTDIR)$(mandir)"
-	@for i in $(srcdir)/doc/*.n; do \
-	    echo "Installing $(DESTDIR)$(mandir)/mann/`basename $$i`"; \
+	@echo "Installing documentation in $(DESTDIR)$(mandir)/mann"
+	@list='$(srcdir)/doc/*.n'; for i in $$list; do \
+	    echo "    `basename $$i`"; \
 	    rm -f $(DESTDIR)$(mandir)/mann/`basename $$i`; \
 	    $(INSTALL_DATA) $$i $(DESTDIR)$(mandir)/mann ; \
 	done
@@ -295,7 +295,7 @@ install-lib-binaries:
 	@mkdir -p $(DESTDIR)$(pkglibdir)
 	@list='$(lib_BINARIES)'; for p in $$list; do \
 	  if test -f $$p; then \
-	    echo " $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkglibdir)/$$p"; \
+	    echo "Installing $$p in $(DESTDIR)$(pkglibdir)"; \
 	    $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkglibdir)/$$p; \
 	    stub=`echo $$p|sed -e "s/.*\(stub\).*/\1/"`; \
 	    if test "x$$stub" = "xstub"; then \
@@ -309,21 +309,22 @@ install-lib-binaries:
 	    if test "x$$ext" = "xdll"; then \
 		lib=`basename $$p|sed -e 's/.[^.]*$$//'`.lib; \
 		if test -f $$lib; then \
-		    echo " $(INSTALL_DATA) $$lib $(DESTDIR)$(pkglibdir)/$$lib"; \
+		    echo "Install $$lib in $(DESTDIR)$(pkglibdir)"; \
 	            $(INSTALL_DATA) $$lib $(DESTDIR)$(pkglibdir)/$$lib; \
 		fi; \
 	    fi; \
 	  fi; \
 	done
+	@echo "Installing library files in $(DESTDIR)$(pkglibdir)";
 	@list='$(PKG_TCL_SOURCES)'; for p in $$list; do \
 	  if test -f $(srcdir)/library/$$p; then \
 	    destp=`basename $$p`; \
-	    echo " Install $$destp $(DESTDIR)$(pkglibdir)/$$destp"; \
+	    echo "    $$destp"; \
 	    $(INSTALL_DATA) $(srcdir)/library/$$p $(DESTDIR)$(pkglibdir)/$$destp; \
 	  fi; \
 	done
 	@if test "x$(SHARED_BUILD)" = "x1"; then \
-	    echo " Install pkgIndex.tcl $(DESTDIR)$(pkglibdir)"; \
+	    echo "    pkgIndex.tcl"; \
 	    $(INSTALL_DATA) pkgIndex.tcl $(DESTDIR)$(pkglibdir); \
 	fi
 
@@ -337,7 +338,7 @@ install-bin-binaries:
 	@mkdir -p $(DESTDIR)$(bindir)
 	@list='$(bin_BINARIES)'; for p in $$list; do \
 	  if test -f $$p; then \
-	    echo " $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p"; \
+	    echo "Installing $$p in $(DESTDIR)$(bindir)"; \
 	    $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
 	  fi; \
 	done
