@@ -13,7 +13,9 @@ is to expose Tcl 8.4's new filesystem C API to the Tcl level.
 Since 8.4 is still in alpha, the APIs on which this extension depends may of
 course change (although this isn't too likely).  If that happens, it will of
 course require changes to this extension, until the point at which 8.4 goes
-final, when only backwards-compatible changes should occur.
+final, when only backwards-compatible changes should occur.  Currently it
+requires a version of Tcl from September 5th 2001 or newer (if it compiles 
+without warning, you should be fine).
 
 Using this extension, the editor Alphatk can actually auto-mount, view and
 edit (but not save, since they're read-only) the contents of .zip files
@@ -60,6 +62,23 @@ the archive itself.  The result of this is that Tcl will then see the
 archive as a directory, rather than a file.  Otherwise you might wish
 to create a dummy file/directory called 'local' before mounting.
 
+C versus Tcl
+------------
+
+It may be worth writing a vfs for commonly used formats like 'zip' in C. 
+This would make it easier to create single-file executables because with
+this extension we have a bootstrap problem: to mount the executable
+(assuming it has a .zip archive appended to it) we need to have
+'vfs::zip::Mount' and related procedures loaded, but this means that those 
+procedures would have to be stored in the executable outside the zip
+archive, wasting space.
+
+Note: Richard Hipp has written 'zvfs' which uses the older, less-complete
+vfs support in Tcl 8.3.  It is GNU-licensed, which makes distributing binary
+versions a little more complex.  Also Prowrap contains a similar zip-vfs
+implementation using the same old APIs (it is BSD-licensed).  Either of 
+these can probably be modified to work with the new APIs quite easily.
+
 Limitations
 -----------
 
@@ -78,8 +97,10 @@ Future thoughts
 
 See:
 
-http://www.ximian.com/tech/gnome-vfs.php3
+http://developer.gnome.org/doc/API/gnome-vfs/
+http://www.appwatch.com/lists/gnome-announce/2001-May/000267.html
 http://www.lh.com/~oleg/ftp/HTTP-VFS.html
+http://www.atnf.csiro.au/~rgooch/linux/vfs.txt
 
 for some ideas.  It would be good to accumulate ideas on the limitations of
 the current VFS support so we can plan out what vfs 2.0 will look like (and
