@@ -6,7 +6,7 @@
  *	virtual file system support, and therefore allows 
  *	vfs's to be implemented in Tcl.
  *	
- * Copyright (c) Vince Darley.
+ * Copyright (c) 2001 Vince Darley.
  * 
  * See the file "license.terms" for information on usage and redistribution
  * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
@@ -33,12 +33,18 @@
 EXTERN int Vfs_Init _ANSI_ARGS_((Tcl_Interp*));
 
 /*
- * Native representation for a path in a Tcl vfs.
+ * Structure used for the native representation of a path in a Tcl vfs.
+ * To fully specify a file, the string representation is also required.
  */
 
 typedef struct VfsNativeRep {
-    int splitPosition;
-    Tcl_Obj* fsCmd;
+    int splitPosition;    /* The index into the string representation
+                           * of the file which indicates where the 
+                           * vfs filesystem is mounted.
+                           */
+    Tcl_Obj* fsCmd;       /* The Tcl command string which should be
+                           * used to perform all filesystem actions
+                           * on this file. */
 } VfsNativeRep;
 
 /*
@@ -46,12 +52,24 @@ typedef struct VfsNativeRep {
  * a channel that we can properly clean up all resources
  * when the channel is closed.  This is required when using
  * 'open' on things inside the vfs.
+ * 
+ * When the channel in question is begin closed, we will
+ * temporarily register the channel with the given interpreter,
+ * evaluate the closeCallBack, and then detach the channel
+ * from the interpreter and return (allowing Tcl to continue
+ * closing the channel as normal).
+ * 
+ * Nothing in the callback can prevent the channel from
+ * being closed.
  */
 
 typedef struct VfsChannelCleanupInfo {
-    Tcl_Channel channel;
-    Tcl_Obj* closeCallback;
-    Tcl_Interp* interp;
+    Tcl_Channel channel;    /* The channel which needs cleaning up */
+    Tcl_Obj* closeCallback; /* The Tcl command string to evaluate
+                             * when the channel is closing, which will
+                             * carry out any cleanup that is necessary. */
+    Tcl_Interp* interp;     /* The interpreter in which to evaluate the
+                             * cleanup operation. */
 } VfsChannelCleanupInfo;
 
 
@@ -64,7 +82,7 @@ static int		 VfsFilesystemObjCmd _ANSI_ARGS_((ClientData dummy,
 			    Tcl_Obj *CONST objv[]));
 
 /* 
- * Now we define the filesystem
+ * Now we define the virtual filesystem callbacks
  */
 
 static Tcl_FSStatProc VfsStat;
@@ -201,9 +219,8 @@ Vfs_Init(interp)
  * VfsFilesystemObjCmd --
  *
  *	This procedure implements the "vfs::filesystem" command.  It is
- *	used to (un)register the vfs filesystem, and to mount/unmount
- *	particular interfaces to new filesystems, or to query for
- *	what is mounted where.
+ *	used to mount/unmount particular interfaces to new filesystems,
+ *	or to query for what is mounted where.
  *
  * Results:
  *	A standard Tcl result.
@@ -386,6 +403,10 @@ VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
     return TCL_OK;
 }
 
+/* 
+ * Simple helper function to extract the native vfs representation of a
+ * path object, or NULL if no such representation exists.
+ */
 VfsNativeRep* 
 VfsGetNativePath(Tcl_Obj* pathObjPtr) {
     return (VfsNativeRep*) Tcl_FSGetInternalRep(pathObjPtr, &vfsFilesystem);
@@ -615,8 +636,8 @@ VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
 					 * it? */
 {
     Tcl_Channel chan = NULL;
-    VfsChannelCleanupInfo *channelRet = NULL;
     Tcl_Obj *mountCmd = NULL;
+    Tcl_Obj *closeCallback = NULL;
     Tcl_SavedResult savedResult;
     int returnVal;
     Tcl_Interp* interp;
@@ -647,23 +668,16 @@ VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
 	    returnVal = TCL_ERROR;
 	} else {
 	    Tcl_Obj *element;
-	    Tcl_Channel theChannel = NULL;
 	    Tcl_ListObjIndex(interp, resultObj, 0, &element);
-	    theChannel = Tcl_GetChannel(interp, Tcl_GetString(element), 0);
+	    chan = Tcl_GetChannel(interp, Tcl_GetString(element), 0);
 	    
-	    if (theChannel == NULL) {
+	    if (chan == NULL) {
 	        returnVal == TCL_ERROR;
 	    } else {
-		channelRet = (VfsChannelCleanupInfo*) 
-				ckalloc(sizeof(VfsChannelCleanupInfo));
-	        channelRet->channel = theChannel;
-		channelRet->interp = interp;
 		if (reslen == 2) {
 		    Tcl_ListObjIndex(interp, resultObj, 1, &element);
-		    channelRet->closeCallback = element;
-		    Tcl_IncrRefCount(channelRet->closeCallback);
-		} else {
-		    channelRet->closeCallback = NULL;
+		    closeCallback = element;
+		    Tcl_IncrRefCount(closeCallback);
 		}
 	    }
 	}
@@ -701,22 +715,25 @@ VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
 
     Tcl_DecrRefCount(mountCmd);
 
-    if (channelRet != NULL) {
+    if (chan != NULL) {
 	/*
-	 * This is a pain.  We got the Channel from some Tcl code.
-	 * This means it was registered with the interpreter.  But we
-	 * want a pristine channel which hasn't been registered with
-	 * anyone.  We use Tcl_DetachChannel to do this for us.
+	 * We got the Channel from some Tcl code.  This means it was
+	 * registered with the interpreter.  But we want a pristine
+	 * channel which hasn't been registered with anyone.  We use
+	 * Tcl_DetachChannel to do this for us.  We must use the
+	 * correct interpreter.
 	 */
-	chan = channelRet->channel;
-	/* We must use the correct interpreter */
 	Tcl_DetachChannel(interp, chan);
 	
-	if (channelRet->closeCallback != NULL) {
-	    Tcl_CreateCloseHandler(chan, &VfsCloseProc, (ClientData)channelRet);
+	if (closeCallback != NULL) {
+	    VfsChannelCleanupInfo *channelRet = NULL;
+	    channelRet = (VfsChannelCleanupInfo*) 
+			    ckalloc(sizeof(VfsChannelCleanupInfo));
+	    channelRet->channel = chan;
+	    channelRet->interp = interp;
+	    channelRet->closeCallback = closeCallback;
 	    /* The channelRet structure will be freed in the callback */
-	} else {
-	    ckfree((char*)channelRet);
+	    Tcl_CreateCloseHandler(chan, &VfsCloseProc, (ClientData)channelRet);
 	}
     }
     return chan;
@@ -726,6 +743,15 @@ VfsOpenFileChannel(cmdInterp, pathPtr, modeString, permissions)
  * IMPORTANT: This procedure must *not* modify the interpreter's result
  * this leads to the objResultPtr being corrupted (somehow), and curious
  * crashes in the future (which are very hard to debug ;-).
+ * 
+ * This is particularly important since we are evaluating arbitrary
+ * Tcl code in the callback.
+ * 
+ * Also note we are relying on the close-callback to occur just before
+ * the channel is about to be properly closed, but after all output
+ * has been flushed.  That way we can, in the callback, read in the
+ * entire contents of the channel and, say, compress it for storage
+ * into a tclkit or zip archive.
  */
 void 
 VfsCloseProc(ClientData clientData) {
@@ -799,11 +825,14 @@ VfsMatchInDirectory(
 
     if (vfsResultPtr != NULL) {
 	if (returnVal == TCL_OK) {
+	    Tcl_IncrRefCount(vfsResultPtr);
 	    Tcl_ListObjAppendList(cmdInterp, returnPtr, vfsResultPtr);
+	    Tcl_DecrRefCount(vfsResultPtr);
 	} else {
 	    Tcl_SetObjResult(cmdInterp, vfsResultPtr);
 	}
     }
+    
     return returnVal;
 }
 
@@ -888,6 +917,7 @@ VfsRemoveDirectory(
 	/* Assume there was a problem with the directory being non-empty */
         if (errorPtr != NULL) {
             *errorPtr = pathPtr;
+	    Tcl_IncrRefCount(*errorPtr);
         }
 	Tcl_SetErrno(EEXIST);
     }
@@ -956,7 +986,10 @@ VfsFileAttrsGet(cmdInterp, index, pathPtr, objPtrRef)
     
     if (returnVal != -1) {
 	if (returnVal == TCL_OK) {
-	    Tcl_IncrRefCount(*objPtrRef);
+	    /* 
+	     * Our caller expects a ref count of zero in
+	     * the returned object pointer.
+	     */
 	} else {
 	    /* Leave error message in correct interp */
 	    Tcl_SetObjResult(cmdInterp, *objPtrRef);

@@ -94,33 +94,36 @@ Note that most filesystem operations will only require the
 \fIrelative\fR argument to work correctly, but the other arguments are
 actually required for correct operation of some subcommands.
 .PP
-The actual commands are as follows:
+The actual commands are as follows (where \fIr-r-a\fR represents the
+standard argument triplet of \fIroot\fR, \fIrelative\fR and
+\fIactualpath\fR):
 .TP
-\fI...\fR \fIaccess\fR \fIr-r-a\fR \fImode\fR
+\fIcommand\fR \fIaccess\fR \fIr-r-a\fR \fImode\fR
 Return 1 or throw an error depending on whether the given access mode (which 
 is an integer) is compatible with the file.
 .TP
-\fI...\fR \fIcreatedirectory\fR \fIr-r-a\fR
+\fIcommand\fR \fIcreatedirectory\fR \fIr-r-a\fR
 Create a directory with the given name.
 .TP
-\fI...\fR \fIdeletefile\fR \fIr-r-a\fR
+\fIcommand\fR \fIdeletefile\fR \fIr-r-a\fR
 Delete the given file.
 .TP
-\fI...\fR \fIfileattributes\fR \fIr-r-a\fR \fI?index?\fR \fI?value?\fR
+\fIcommand\fR \fIfileattributes\fR \fIr-r-a\fR \fI?index?\fR \fI?value?\fR
 If neither index nor value is given, then return a list of all
-acceptable attribute values.  If \fIindex\fR is given, but no value,
-then retrieve the value of the \fIindex\fR'th attribute for the given 
+acceptable attribute names.  If \fIindex\fR is given, but no value,
+then retrieve the value of the \fIindex\fR'th attribute (counting in
+order over the list returned when no argument is given) for the given 
 file.  If a value is also given then set the \fIindex\fR'th attribute of
 the given file to that value.
 .TP
-\fI...\fR \fImatchindirectory\fR \fIr-r-a\fR \fIpattern\fR \fItypes\fR
+\fIcommand\fR \fImatchindirectory\fR \fIr-r-a\fR \fIpattern\fR \fItypes\fR
 Return the list of files or directories in the given path (which is
 always the name of an existing directory), which match the \fIpattern\fR
 and are compatible with the \fItypes\fR given.  It is very important
 that the command correctly handle \fItypes\fR requests for directories
 only (and files only).
 .TP
-\fI...\fR \fIopen\fR \fIr-r-a\fR \fImode\fR \fIpermissions\fR
+\fIcommand\fR \fIopen\fR \fIr-r-a\fR \fImode\fR \fIpermissions\fR
 For this command, \fImode\fR is a list of POSIX open modes or a 
 string such as "rw".  If the open involves creating a file, then 
 \fIpermissions\fR dictates what modes to create it with.  If the
@@ -131,10 +134,10 @@ The second item, if given, is a Tcl-callback to be used when the
 channel is closed, so that the vfs can clean up as appropriate.
 If the open operation was not successful, an error should be thrown.
 .TP
-\fI...\fR \fIremovedirectory\fR \fIr-r-a\fR
+\fIcommand\fR \fIremovedirectory\fR \fIr-r-a\fR
 Delete the given directory.
 .TP
-\fI...\fR \fIstat\fR \fIr-r-a\fR
+\fIcommand\fR \fIstat\fR \fIr-r-a\fR
 Return a list of even length containing field-name and value pairs for
 the contents of a stat structure.  The order is not important.  
 The option names are dev (long), ino (long), mode (int), nlink (long),
@@ -144,7 +147,7 @@ type of each argument is given in brackets.  The procedure should
 therefore return with something like \fIreturn [list dev 0 type file 
 mtime 1234 ...]\fR.
 .TP
-\fI...\fR \fIutime\fR \fIr-r-a\fR \fIactime\fR \fImtime\fR
+\fIcommand\fR \fIutime\fR \fIr-r-a\fR \fIactime\fR \fImtime\fR
 Set the access and modification times of the given file (these are
 read with 'stat').
 
