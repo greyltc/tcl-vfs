@@ -672,7 +672,7 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 {
     int index;
 
-    static char *optionStrings[] = {
+    static CONST char *optionStrings[] = {
 	"info", "mount", "unmount",
 	NULL
     };
@@ -1708,7 +1708,7 @@ VfsBuildCommandForPath(Tcl_Interp **iRef, CONST char* cmd, Tcl_Obj *pathPtr) {
     } else {
 	Tcl_ListObjAppendElement(NULL, mountCmd, 
 		Tcl_NewStringObj(normedString,splitPosition));
-	if (normedString[splitPosition] != VFS_SEPARATOR) {
+	if ((normedString[splitPosition] != VFS_SEPARATOR) || (VFS_SEPARATOR ==':')) {
 	    /* This will occur if we mount 'ftp://' */
 	    splitPosition--;
 	}
