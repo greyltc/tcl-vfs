@@ -24,7 +24,7 @@ proc vfs::webdav::Mount {dirurl local} {
     }
     
     if {![regexp {(([^:]*)(:([^@]*))?@)?([^/]*)(/(.*/)?([^/]*))?$} $rest \
-      junk junk user junk pass host junk path file]} {
+	    junk junk user junk pass host junk path file]} {
 	return -code error "Sorry I didn't understand\
 	  the url address \"$dirurl\""
     }
@@ -41,7 +41,8 @@ proc vfs::webdav::Mount {dirurl local} {
     
     set dirurl "http://$host/$path"
     
-    set extraHeadersList [list Authorization [list Basic [base64::encode ${user}:${pass}]]]
+    set extraHeadersList [list Authorization \
+	    [list Basic [base64::encode ${user}:${pass}]]]
 
     set token [::http::geturl $dirurl -headers $extraHeadersList -validate 1]
     http::cleanup $token
@@ -52,7 +53,8 @@ proc vfs::webdav::Mount {dirurl local} {
 	vfs::unmount $dirurl
     }
     ::vfs::log "http $host, $path mounted at $local"
-    vfs::filesystem mount $local [list vfs::webdav::handler $dirurl $extraHeadersList $path]
+    vfs::filesystem mount $local [list vfs::webdav::handler \
+	    $dirurl $extraHeadersList $path]
     # Register command to unmount
     vfs::RegisterMount $local [list ::vfs::webdav::Unmount $dirurl]
     return $dirurl
