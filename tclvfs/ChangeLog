@@ -1,9 +1,15 @@
+2001-08-29  Vince Darley <vincentdarley@sourceforge.net>
+	* can now mount root volumes which end in separator
+	characters (such as 'ftp://').  The code handles path
+	separation in such cases.  This means the 'urltype'
+	vfs now works (the 8-22 changes below didn't quite
+	complete the job).
+	This requires the latest 8.4a4 release from cvs.
+	
 2001-08-22  Vince Darley <vincentdarley@sourceforge.net>
 	* added ability to treat entire urls as file paths, so
 	we can mount 'ftp://' as a root volume and examine its
-	contents.  This requires a patch to Tcl 8.4a4 which
-	is currently available from the Tcl project (see the
-	'fs update' patch/bug).
+	contents.  This requires the latest 8.4a4 release from cvs.
 	
 2001-08-13  Vince Darley <vincentdarley@sourceforge.net>
 	* ftp vfs works reasonably well now; try:

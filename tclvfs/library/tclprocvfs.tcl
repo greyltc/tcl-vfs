@@ -7,22 +7,22 @@ package require vfs 1.0
 # procedures with the same name as a namespace, which are hidden in
 # a filesystem representation.
 
-namespace eval vfs::tclproc {}
+namespace eval vfs::ns {}
 
-proc vfs::tclproc::Mount {ns local} {
+proc vfs::ns::Mount {ns local} {
     if {![namespace exists ::$ns]} {
 	error "No such namespace"
     }
-    ::vfs::log "tclproc $ns mounted at $local"
-    vfs::filesystem mount $local [list vfs::tclproc::handler $ns]
-    vfs::RegisterMount $local [list vfs::tclproc::Unmount]
+    ::vfs::log "ns $ns mounted at $local"
+    vfs::filesystem mount $local [list vfs::ns::handler $ns]
+    vfs::RegisterMount $local [list vfs::ns::Unmount]
 }
 
-proc vfs::tclproc::Unmount {local} {
+proc vfs::ns::Unmount {local} {
     vfs::filesystem unmount $local
 }
 
-proc vfs::tclproc::handler {ns cmd root relative actualpath args} {
+proc vfs::ns::handler {ns cmd root relative actualpath args} {
     regsub -all / $relative :: relative
     if {$cmd == "matchindirectory"} {
 	eval [list $cmd $ns $relative $actualpath] $args
@@ -32,9 +32,9 @@ proc vfs::tclproc::handler {ns cmd root relative actualpath args} {
 }
 
 # If we implement the commands below, we will have a perfect
-# virtual file system for remote tclproc sites.
+# virtual file system for namespaces.
 
-proc vfs::tclproc::stat {ns name} {
+proc vfs::ns::stat {ns name} {
     ::vfs::log "stat $name"
     if {[namespace exists ::${ns}::${name}]} {
 	return [list type directory size 0 mode 0777 \
@@ -47,7 +47,7 @@ proc vfs::tclproc::stat {ns name} {
     }
 }
 
-proc vfs::tclproc::access {ns name mode} {
+proc vfs::ns::access {ns name mode} {
     ::vfs::log "access $name $mode"
     if {[namespace exists ::${ns}::${name}]} {
 	return 1
@@ -61,7 +61,7 @@ proc vfs::tclproc::access {ns name mode} {
     }
 }
 
-proc vfs::tclproc::exists {ns name} {
+proc vfs::ns::exists {ns name} {
     if {[namespace exists ::${ns}::${name}]} {
 	return 1
     } elseif {[llength [info procs ::${ns}::${name}]]} {
@@ -71,7 +71,7 @@ proc vfs::tclproc::exists {ns name} {
     }
 }
 
-proc vfs::tclproc::open {ns name mode permissions} {
+proc vfs::ns::open {ns name mode permissions} {
     ::vfs::log "open $name $mode $permissions"
     # return a list of two elements:
     # 1. first element is the Tcl channel name which has been opened
@@ -95,7 +95,7 @@ proc vfs::tclproc::open {ns name mode permissions} {
     }
 }
 
-proc vfs::tclproc::_generate {p} {
+proc vfs::ns::_generate {p} {
     lappend a proc $p
     set argslist [list]
     foreach arg [info args $p] {
@@ -108,7 +108,7 @@ proc vfs::tclproc::_generate {p} {
     lappend a $argslist [info body $p]
 }
 
-proc vfs::tclproc::matchindirectory {ns path actualpath pattern type} {
+proc vfs::ns::matchindirectory {ns path actualpath pattern type} {
     ::vfs::log "matchindirectory $path $actualpath $pattern $type"
     set res [list]
 
@@ -131,22 +131,22 @@ proc vfs::tclproc::matchindirectory {ns path actualpath pattern type} {
     return $realres
 }
 
-proc vfs::tclproc::createdirectory {ns name} {
+proc vfs::ns::createdirectory {ns name} {
     ::vfs::log "createdirectory $name"
     namespace eval ::${ns}::${name} {}
 }
 
-proc vfs::tclproc::removedirectory {ns name} {
+proc vfs::ns::removedirectory {ns name} {
     ::vfs::log "removedirectory $name"
     namespace delete ::${ns}::${name}
 }
 
-proc vfs::tclproc::deletefile {ns name} {
+proc vfs::ns::deletefile {ns name} {
     ::vfs::log "deletefile $name"
     rename ::${ns}::${name} {}
 }
 
-proc vfs::tclproc::fileattributes {ns name args} {
+proc vfs::ns::fileattributes {ns name args} {
     ::vfs::log "fileattributes $args"
     switch -- [llength $args] {
 	0 {
@@ -181,7 +181,7 @@ proc vfs::tclproc::fileattributes {ns name args} {
     }
 }
 
-proc vfs::tclproc::utime {what name actime mtime} {
+proc vfs::ns::utime {what name actime mtime} {
     ::vfs::log "utime $name"
     error ""
 }

@@ -333,6 +333,7 @@ int
 VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
     Tcl_Obj *normedObj;
     int len, splitPosition;
+    char remember;
     char *normed;
     Tcl_Interp* interp;
     VfsNativeRep *nativeRep;
@@ -379,10 +380,31 @@ VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
 	       && (normed[--splitPosition] != VFS_SEPARATOR)) {
 	    /* Do nothing */
 	}
+	/* 
+	 * We now know that normed[splitPosition] is a separator.
+	 * However, we might have mounted a root filesystem with a
+	 * strange name (for example 'ftp://')
+	 */
+	if ((splitPosition > 0) && (splitPosition != len)) {
+	    remember = normed[splitPosition + 1];
+	    normed[splitPosition+1] = '\0';
+	    mountCmd = Tcl_GetVar2Ex(interp, "vfs::mount", normed,
+				     TCL_GLOBAL_ONLY);
+				     
+	    if (mountCmd != NULL) {
+		splitPosition++;
+		break;
+	    }
+	    normed[splitPosition+1] = remember;
+	}
+	
+	/* Otherwise continue as before */
+	
 	/* Terminate the string there */
 	if (splitPosition == 0) {
 	    break;
 	}
+	remember = VFS_SEPARATOR;
 	normed[splitPosition] = 0;
     }
     
@@ -394,7 +416,7 @@ VfsInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
 	return -1;
     }
     if (splitPosition != len) {
-	normed[splitPosition] = VFS_SEPARATOR;
+	normed[splitPosition] = remember;
     }
     nativeRep = (VfsNativeRep*) ckalloc(sizeof(VfsNativeRep));
     nativeRep->splitPosition = splitPosition;
@@ -1143,6 +1165,10 @@ VfsCommand(Tcl_Interp* interp, CONST char* cmd, Tcl_Obj * pathPtr) {
     } else {
 	Tcl_ListObjAppendElement(interp, mountCmd, 
 		Tcl_NewStringObj(normedString,splitPosition));
+	if (normedString[splitPosition] != VFS_SEPARATOR) {
+	    /* This will occur if we mount 'ftp://' */
+	    splitPosition--;
+	}
 	Tcl_ListObjAppendElement(interp, mountCmd, 
 		Tcl_NewStringObj(normedString+splitPosition+1,
 				 len-splitPosition-1));

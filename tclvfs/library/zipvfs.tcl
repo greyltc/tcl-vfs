@@ -2,7 +2,8 @@
 package require vfs 1.0
 
 # Using the vfs, memchan and Trf extensions, we ought to be able
-# to write a Tcl-only zip virtual filesystem.
+# to write a Tcl-only zip virtual filesystem.  What we have below
+# is basically that.
 
 namespace eval vfs::zip {}
 

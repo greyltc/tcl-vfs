@@ -8,7 +8,7 @@ Introduction
 
 This is an implementation of a 'vfs' extension (and a 'vfs' package,
 including a small library of Tcl code).  The goal of this extension
-is to expose Tcl 8.4a3's new filesystem C API to the Tcl level.
+is to expose Tcl 8.4's new filesystem C API to the Tcl level.
 
 Since 8.4 is still in alpha, the APIs on which this extension depends may of
 course change (although this isn't too likely).  If that happens, it will of
@@ -44,13 +44,14 @@ which involves opening files.
 The vfs's currently available are:
 
 --------+-----------------------------------------------------------------
-vfs     |  mount command                       
+vfs     |  example mount command                       
 --------+-----------------------------------------------------------------
 zip     |  vfs::zip::Mount my.zip local
 ftp     |  vfs::ftp::Mount ftp://user:pass@ftp.foo.com/dir/name/ local
 mk4     |  vfs::mk4::Mount myMk4database local
 test    |  vfs::test::Mount ...
-tclproc |  vfs::tclproc::Mount ::tcl local
+ns      |  vfs::ns::Mount ::tcl local
+urltype |  vfs::urltype::Mount ftp
 --------+-----------------------------------------------------------------
 
 For file-systems which make use of a local file (e.g. mounting zip or mk4
@@ -62,20 +63,16 @@ to create a dummy file/directory called 'local' before mounting.
 Limitations
 -----------
 
-We can't currently mount a file protocol.  For example it would be nice to 
-tell Tcl that we understand 'ftp://' as meaning an absolute path to be
-handled by our ftp-vfs system.  Then we could so something like
+None yet.
 
-    file copy ftp://ftp.foo.com/pub/readme.txt ~/readme.txt
+Helping!
+--------
 
-and our ftp-vfs system can deal with it.  This is really a limitation in
-Tcl's current understanding of file paths (and not any problem in this
-extension per se).
+Any help is much appreciated!  The current code has very much _evolved_
+which means it isn't necessarily even particular well thought out, so if
+you wish to contribute a single line of code or a complete re-write, I'd be
+very happy!
 
-Of course what we can do is mount any specific ftp address to somewhere in 
-the filesystem.  For example, we can mount 'ftp://ftp.foo.com/ to
-/ftp.foo.com/ and proceed from there.
-    
 Future thoughts
 ---------------
 
@@ -90,5 +87,8 @@ what changes will be needed in Tcl's core to support it).  Obvious things
 which come to mind are asynchronicity: 'file copy' from a mounted remote
 site (ftp or http) is going to be very slow and simply block the
 application.  Commands like that should have new asynchronous versions which
-can be used when desired (e.g. 'file copy from to -callback foo').
+can be used when desired (for example, 'file copy from to -callback foo'
+would be one approach to handling this).
 
+Bugs in Tcl vfs's are hard to track down, since error messages can't
+necessarily propagate to the toplevel.  Could add a debugging command.
