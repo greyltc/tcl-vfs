@@ -56,7 +56,10 @@ namespace eval vfs::mk4 {
 	::mk4vfs::_umount $db
     }
 
-
+    proc state {} {
+	return "translucent"
+    }
+    
     proc handler {db cmd root relative actualpath args} {
 	#puts stderr "handler: $db - $cmd - $root - $relative - $actualpath - $args"
 	if {$cmd == "matchindirectory"} {
