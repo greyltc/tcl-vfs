@@ -12,6 +12,7 @@
 # 16oct02 jcw	1.6	fixed periodic commit once a change is made
 
 package provide mk4vfs 1.6
+package provide vfs::mk4 1.6
 package require Mk4tcl
 package require vfs
 
@@ -45,7 +46,8 @@ namespace eval vfs::mk4 {
     }
 
     proc handler {db cmd root relative actualpath args} {
-	#puts stderr "handler: $db - $cmd - $root - $relative - $actualpath - $args"
+	#puts stderr "handler: $db - $cmd - $root - $relative\
+	#- $actualpath - $args"
 	if {$cmd == "matchindirectory"} {
 	    eval [list $cmd $db $relative $actualpath] $args
 	} elseif {$cmd == "fileattributes"} {
@@ -288,7 +290,7 @@ namespace eval mk4vfs {
     proc umount {local} {
 	foreach {db path} [mk::file open] {
 	    if {[string equal $local $path]} {
-		uplevel ::vfs::mk4::Unmount $db $local
+		uplevel 1 [list ::vfs::mk4::Unmount $db $local]
 		return
 	    }
 	}

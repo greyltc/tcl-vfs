@@ -1,4 +1,6 @@
 
+package provide vfs::ns 0.5
+
 package require vfs 1.0
 
 # Thanks to jcw for the idea here.  This is a 'file system' which

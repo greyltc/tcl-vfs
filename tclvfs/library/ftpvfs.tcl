@@ -1,4 +1,6 @@
 
+package provide vfs::ftp 1.0
+
 package require vfs 1.0
 package require ftp
 

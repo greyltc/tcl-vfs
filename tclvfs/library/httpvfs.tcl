@@ -1,4 +1,6 @@
 
+package provide vfs::http 0.5
+
 package require vfs 1.0
 package require http
 
@@ -129,7 +131,7 @@ proc vfs::http::matchindirectory {dirurl path actualpath pattern type} {
 	
     } else {
 	# single file
-	if {![catch {access $dirurl $path}]} {
+	if {![catch {access $dirurl $path 0}]} {
 	    lappend res $path
 	}
     }

@@ -1,4 +1,6 @@
 
+package provide vfs::zip 1.0
+
 package require vfs
 package provide zipvfs 1.0
 

@@ -1,3 +1,28 @@
+2003-01-28  Vince Darley <vincentdarley@sourceforge.net>
+	* library/*.tcl: add 'package provide vfs::<name>' to the
+	virtual filesystems.  These are the current versions:
+	
+	package ifneeded vfs::ftp 1.0 
+	package ifneeded vfs::http 0.5
+	package ifneeded vfs::mk4 1.6 
+	package ifneeded vfs::ns 0.5 
+	package ifneeded vfs::tar 0.9
+	package ifneeded vfs::test 1.0
+	package ifneeded vfs::urltype 1.0
+	package ifneeded vfs::webdav 0.1
+	package ifneeded vfs::zip 1.0 
+	
+        I've used '0.1' to indicate a very preliminary version, 0.5 for
+	something which has had some work, 0.9 for nearly complete and
+	1.0 or newer for something which is well used.
+	
+        There is no need to do 'package require vfs', simply do a package
+	require of the particular vfs implementation you want from the
+	above list.
+	
+	* DESCRIPTION.txt:
+	* make55.tcl: new files for TIP55 compliance. (Steve Cassidy)
+	
 2003-01-16  Vince Darley <vincentdarley@sourceforge.net>
 	* library/tarvfs.tcl: 
 	* library/zipvfs.tcl: ::close .zip or .tar file when unmounting

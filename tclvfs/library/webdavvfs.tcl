@@ -1,4 +1,6 @@
 
+package provide vfs::webdav 0.1
+
 package require vfs 1.0
 package require http 2.6
 # part of tcllib

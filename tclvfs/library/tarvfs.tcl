@@ -15,7 +15,7 @@
 ################################################################################
 
 package require vfs
-package provide tarvfs 0.1
+package provide vfs::tar 0.9
 
 # Using the vfs, memchan and Trf extensions, we're able
 # to write a Tcl-only tar filesystem.  

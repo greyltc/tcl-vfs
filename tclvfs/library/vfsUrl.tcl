@@ -14,6 +14,9 @@
 # 
 # % file copy ftp://ftp.ucsd.edu/pub/alpha/Readme .
 
+package provide vfs::urltype 1.0
+package require vfs
+
 namespace eval ::vfs::urltype {}
 
 proc vfs::urltype::Mount {type} {
@@ -41,8 +44,10 @@ proc vfs::urltype::handler {type cmd root relative actualpath args} {
 	# Find the highest level path so we can mount it:
 	set pathSplit [file split [file join $root $relative]]
 	set newRoot [eval [list file join] [lrange $pathSplit 0 1]]
-	# Mount it.
 	::vfs::log [list $newRoot $pathSplit]
+	# Get the package we will need
+	::package require vfs::${type}
+	# Mount it.
 	::vfs::${type}::Mount $newRoot $newRoot
 	# Now we want to find out the right handler
 	set typeHandler [::vfs::filesystem info $newRoot]

@@ -1,4 +1,6 @@
 
+package provide vfs::test 1.0
+
 package require vfs 1.0
 
 namespace eval vfs::test {}
