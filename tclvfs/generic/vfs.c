@@ -46,13 +46,6 @@ EXTERN int Vfs_Init _ANSI_ARGS_((Tcl_Interp*));
 static void Vfs_AddVolume    _ANSI_ARGS_((Tcl_Obj*));
 static int  Vfs_RemoveVolume _ANSI_ARGS_((Tcl_Obj*));
 
-/* So we can compile against Tcl 8.4 and Tcl 8.5 or newer */
-#ifndef TCL_FILESYSTEM_VERSION_2
-#define TCL_FILESYSTEM_VERSION_2	((Tcl_FSVersion) 0x2)
-typedef Tcl_Obj* (Tcl_FSListMountsProc) _ANSI_ARGS_((Tcl_Obj *pathPtr));
-#define VFS_COMPILE_WITH_84
-#endif
-
 /* 
  * Stores the list of volumes registered with the vfs (and therefore
  * also registered with Tcl).  It is maintained as a valid Tcl list at
@@ -200,7 +193,6 @@ static Tcl_FSFilesystemSeparatorProc VfsFilesystemSeparator;
 static Tcl_FSFreeInternalRepProc VfsFreeInternalRep;
 static Tcl_FSDupInternalRepProc VfsDupInternalRep;
 static Tcl_FSListVolumesProc VfsListVolumes;
-static Tcl_FSListMountsProc VfsListMountsInDir;
 
 static Tcl_Filesystem vfsFilesystem = {
     "tclvfs",
@@ -227,11 +219,7 @@ static Tcl_Filesystem vfsFilesystem = {
     &VfsUtime,
     /* We choose not to support symbolic links inside our vfs's */
     NULL,
-#ifdef VFS_COMPILE_WITH_84
     &VfsListVolumes,
-#else
-    &VfsListMountsInDir,
-#endif
     &VfsFileAttrStrings,
     &VfsFileAttrsGet,
     &VfsFileAttrsSet,
@@ -332,30 +320,11 @@ int
 Vfs_Init(interp)
     Tcl_Interp *interp;		/* Interpreter for application. */
 {
-    if (Tcl_InitStubs(interp, "8.5", 0) == NULL) {
-	if (Tcl_InitStubs(interp, "8.4", 0) == NULL) {
-	    return TCL_ERROR;
-	}
-	if (Tcl_PkgRequire(interp, "Tcl", "8.4", 0) == NULL) {
-	    return TCL_ERROR;
-	}
-	vfsFilesystem.version = TCL_FILESYSTEM_VERSION_1;
-#ifdef VFS_COMPILE_WITH_84
-	vfsFilesystem.listVolumesProc = &VfsListVolumes;
-#else
-	vfsFilesystem.listMountsProc = (Tcl_FSListMountsProc*)&VfsListVolumes;
-#endif
-    } else {
-	if (Tcl_PkgRequire(interp, "Tcl", "8.5", 0) == NULL) {
-	    return TCL_ERROR;
-	}
-	vfsFilesystem.version = TCL_FILESYSTEM_VERSION_2;
-#ifdef VFS_COMPILE_WITH_84
-	vfsFilesystem.listVolumesProc = 
-          (Tcl_FSListVolumesProc*)&VfsListMountsInDir;
-#else
-	vfsFilesystem.listMountsProc = &VfsListMountsInDir;
-#endif
+    if (Tcl_InitStubs(interp, "8.4", 0) == NULL) {
+	return TCL_ERROR;
+    }
+    if (Tcl_PkgRequire(interp, "Tcl", "8.4", 0) == NULL) {
+	return TCL_ERROR;
     }
     
     /* 
@@ -1492,50 +1461,77 @@ VfsMatchInDirectory(
     Tcl_GlobTypeData *types)	/* Object containing list of acceptable types.
 				 * May be NULL. */
 {
-    Tcl_Obj *mountCmd = NULL;
-    Tcl_SavedResult savedResult;
-    int returnVal;
-    Tcl_Interp* interp;
-    int type = 0;
-    Tcl_Obj *vfsResultPtr = NULL;
-    
-    mountCmd = VfsBuildCommandForPath(&interp, "matchindirectory", dirPtr);
-    if (mountCmd == NULL) {
-	return -1;
-    }
+    if ((types != NULL) && (types->type & TCL_GLOB_TYPE_MOUNT)) {
+	VfsMount *mountIter;
+	int len;
+	CONST char *prefix;
 
-    if (types != NULL) {
-	type = types->type;
-    }
+	prefix = Tcl_GetStringFromObj(Tcl_FSGetNormalizedPath(NULL, dirPtr), 
+				      &len);
+	Tcl_MutexLock(&vfsMountsMutex);
 
-    if (pattern == NULL) {
-	Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewObj());
-    } else {
-	Tcl_ListObjAppendElement(interp, mountCmd, 
-				 Tcl_NewStringObj(pattern,-1));
-    }
-    Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewIntObj(type));
-    Tcl_SaveResult(interp, &savedResult);
-    /* Now we execute this mount point's callback. */
-    returnVal = Tcl_EvalObjEx(interp, mountCmd, 
-			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
-    if (returnVal != -1) {
-	vfsResultPtr = Tcl_DuplicateObj(Tcl_GetObjResult(interp));
-    }
-    Tcl_RestoreResult(interp, &savedResult);
-    Tcl_DecrRefCount(mountCmd);
-
-    if (vfsResultPtr != NULL) {
-	if (returnVal == TCL_OK) {
-	    Tcl_IncrRefCount(vfsResultPtr);
-	    Tcl_ListObjAppendList(cmdInterp, returnPtr, vfsResultPtr);
-	    Tcl_DecrRefCount(vfsResultPtr);
-	} else {
-	    Tcl_SetObjResult(cmdInterp, vfsResultPtr);
+	/* Build list of mounts */
+	mountIter = listOfMounts;
+	while (mountIter != NULL) {
+	    if (mountIter->mountLen > (len+1) 
+		&& !strncmp(mountIter->mountPoint, prefix, len) 
+		&& mountIter->mountPoint[len] == '/'
+		&& strchr(mountIter->mountPoint+len+1, '/') == NULL
+		&& Tcl_StringCaseMatch(mountIter->mountPoint+len+1, 
+				       pattern, 0)) {
+		Tcl_Obj* mount = Tcl_NewStringObj(mountIter->mountPoint, 
+						  mountIter->mountLen);
+		Tcl_ListObjAppendElement(NULL, returnPtr, mount);
+	    }
+	    mountIter = mountIter->nextMount;
 	}
+	Tcl_MutexUnlock(&vfsMountsMutex);
+	return TCL_OK;
+    } else {
+	Tcl_Obj *mountCmd = NULL;
+	Tcl_SavedResult savedResult;
+	int returnVal;
+	Tcl_Interp* interp;
+	int type = 0;
+	Tcl_Obj *vfsResultPtr = NULL;
+	
+	mountCmd = VfsBuildCommandForPath(&interp, "matchindirectory", dirPtr);
+	if (mountCmd == NULL) {
+	    return -1;
+	}
+
+	if (types != NULL) {
+	    type = types->type;
+	}
+
+	if (pattern == NULL) {
+	    Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewObj());
+	} else {
+	    Tcl_ListObjAppendElement(interp, mountCmd, 
+				     Tcl_NewStringObj(pattern,-1));
+	}
+	Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewIntObj(type));
+	Tcl_SaveResult(interp, &savedResult);
+	/* Now we execute this mount point's callback. */
+	returnVal = Tcl_EvalObjEx(interp, mountCmd, 
+				  TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
+	if (returnVal != -1) {
+	    vfsResultPtr = Tcl_DuplicateObj(Tcl_GetObjResult(interp));
+	}
+	Tcl_RestoreResult(interp, &savedResult);
+	Tcl_DecrRefCount(mountCmd);
+
+	if (vfsResultPtr != NULL) {
+	    if (returnVal == TCL_OK) {
+		Tcl_IncrRefCount(vfsResultPtr);
+		Tcl_ListObjAppendList(cmdInterp, returnPtr, vfsResultPtr);
+		Tcl_DecrRefCount(vfsResultPtr);
+	    } else {
+		Tcl_SetObjResult(cmdInterp, vfsResultPtr);
+	    }
+	}
+	return returnVal;
     }
-    
-    return returnVal;
 }
 
 static int
@@ -1789,51 +1785,6 @@ VfsUtime(pathPtr, tval)
     Tcl_DecrRefCount(mountCmd);
 
     return returnVal;
-}
-
-static Tcl_Obj*
-VfsListMountsInDir(Tcl_Obj *pathPtr)
-{
-    if (pathPtr == NULL) {
-	Tcl_Obj *retVal;
-	
-	Tcl_MutexLock(&vfsVolumesMutex);
-	if (vfsVolumes != NULL) {
-	    Tcl_IncrRefCount(vfsVolumes);
-	    retVal = vfsVolumes;
-	} else {
-	    retVal = NULL;
-	}
-	Tcl_MutexUnlock(&vfsVolumesMutex);
-    
-	return retVal;
-    } else {
-	VfsMount *mountIter;
-	int len;
-	CONST char *prefix;
-	Tcl_Obj *res = Tcl_NewObj();
-
-	prefix = Tcl_GetStringFromObj(Tcl_FSGetNormalizedPath(NULL, pathPtr), 
-				      &len);
-				  
-	Tcl_MutexLock(&vfsMountsMutex);
-
-	/* Build list of mounts */
-	mountIter = listOfMounts;
-	while (mountIter != NULL) {
-	    if (mountIter->mountLen > (len+1) 
-		&& !strncmp(mountIter->mountPoint, prefix, len) 
-		&& mountIter->mountPoint[len] == '/'
-		&& strchr(mountIter->mountPoint+len+1, '/') == NULL) {
-		Tcl_Obj* mount = Tcl_NewStringObj(mountIter->mountPoint, 
-						  mountIter->mountLen);
-		Tcl_ListObjAppendElement(NULL, res, mount);
-	    }
-	    mountIter = mountIter->nextMount;
-	}
-	Tcl_MutexUnlock(&vfsMountsMutex);
-	return res;
-    }
 }
 
 static Tcl_Obj*

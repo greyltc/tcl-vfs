@@ -1,20 +1,19 @@
 2003-10-13  Vince Darley <vincentdarley@sourceforge.net>
 
-	* generic/vfs.c: added support for TCL_FILESYSTEM_VERSION_2
-	which provides for more seamless boundaries between filesystems
-	(using VfsListMountsInDir), which allows for fixing Tcl's
-	[Bug 800106].  This means (with a suitable version of Tcl) that
-	'glob */*' across a filesystem boundary will now work correctly.
+	* generic/vfs.c: added support for TCL_GLOB_TYPE_MOUNT flag to
+	the MatchInDirectory proc, which provides for more seamless
+	boundaries between filesystems which allows for fixing Tcl's [Bug
+	800106].  This means (with a suitable version of Tcl) that 'glob
+	*/*' across a filesystem boundary will now work correctly.
 	
-	The code should compile and load successfully with both Tcl 8.4
-	and a future version of Tcl where the newer code will be
-	operational.
+	The code should work fine with Tcl 8.4 and 8.5, although with
+	8.4.4 the mount list will never be queried.
 	
 	* library/pkgIndex.tcl(.in): 
 	* DESCRIPTION.txt:
 	* win/makefile.vc:
 	* configure.in: updated version to 1.3.0 reflecting the above
-	significant change.
+	significant improvement.
 	
 2003-10-06  Jeff Hobbs  <jeffh@ActiveState.com>
 
