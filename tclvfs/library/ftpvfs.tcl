@@ -74,7 +74,6 @@ proc vfs::ftp::stat {fd name} {
 	return [list type directory mtime 0 size 0 mode 0777 ino -1 \
 	  depth 0 name "" dev -1 uid -1 gid -1 nlink 1]
     }
-    
     # get information on the type of this file
     set ftpInfo [_findFtpInfo $fd $name]
     if {$ftpInfo == ""} { error "Couldn't find file info" }
@@ -88,7 +87,8 @@ proc vfs::ftp::stat {fd name} {
 	set mtime [ftp::ModTime $fd $name]
     }
     lappend res dev -1 uid -1 gid -1 nlink 1 depth 0 \
-      atime $mtime ctime $mtime mtime $mtime mode 0777
+      atime $mtime ctime $mtime mtime $mtime mode 0777 \
+      size [ftp::FileSize $fd $name]
     return $res
 }
 
@@ -168,15 +168,19 @@ proc vfs::ftp::_findFtpInfo {fd name} {
     ::vfs::log "findFtpInfo $fd $name"
     set ftpList [ftp::List $fd [file dirname $name]]
     foreach p $ftpList {
-	foreach {pname perms} [_parseListLine $p] {}
+	foreach {pname other} [_parseListLine $p] {}
 	if {$pname == [file tail $name]} {
-	    return [list $perms]
+	    return $other
 	}
     }
     return ""
 }
 
-# Currently returns a list of name and permissions
+# Currently returns a list of name and a list of other
+# information.  The other information is currently a 
+# list of:
+# () permissions
+# () size
 proc vfs::ftp::_parseListLine {line} {
     # Check for filenames with spaces
     if {[regexp {([^ ]|[^0-9] )+$} $line name]} {
@@ -188,12 +192,14 @@ proc vfs::ftp::_parseListLine {line} {
     }
     regsub -all "\[ \t\]+" $line " " line
     set items [split $line " "]
-    
+
     if {![info exists name]} {set name [lindex $items end]}
+    lappend other [lindex $items 0]
+    if {[string is integer [lindex $items 4]]} {
+	lappend other [lindex $items 4]
+    }
     
-    set perms [lindex $items 0]
-    
-    return [list $name $perms]
+    return [list $name $other]
 }
 
 proc vfs::ftp::matchindirectory {fd path actualpath pattern type} {
