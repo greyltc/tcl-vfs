@@ -117,7 +117,7 @@ namespace eval vfs::mk4 {
 	array get sb
     }
 
-    proc vfs::mk4::access {db name mode} {
+    proc access {db name mode} {
 	if {$mode & 2} {
 	    if {$::mk4vfs::v::mode($db) == "readonly"} {
 		return -code error [vfs::filesystem posixerror $::vfs::posix(EROFS)]
