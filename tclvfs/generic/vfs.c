@@ -21,6 +21,7 @@
 
 #include <tcl.h>
 /* Required to access the 'stat' structure fields */
+#include "tclInt.h"
 #include "tclPort.h"
 
 /*
@@ -1471,6 +1472,14 @@ VfsMatchInDirectory(
 
 	prefix = Tcl_GetStringFromObj(Tcl_FSGetNormalizedPath(NULL, dirPtr), 
 				      &len);
+	if (prefix[len-1] == '/') {
+	    /* 
+	     * It's a root directory; we must subtract one for
+	     * our comparisons below
+	     */
+	    len--;
+	}
+
 	Tcl_MutexLock(&vfsMountsMutex);
 
 	/* Build list of mounts */
