@@ -328,19 +328,20 @@ proc zip::Data {fd arr {varPtr ""} {verify 0}} {
 proc zip::EndOfArchive {fd arr} {
     upvar 1 $arr cb
 
-    seek $fd -22 end
-    set pos [tell $fd]
-    set hdr [read $fd 22]
+    seek $fd -512 end
+    set hdr [read $fd 512]
+    set pos [string first "PK\05\06" $hdr]
+    if {$pos == -1} {
+	error "no header found"
+    }
+    set hdr [string range $hdr [expr $pos + 4] [expr $pos + 21]]
+    set pos [expr [tell $fd] + $pos - 512]
 
-    binary scan $hdr A4ssssiis xhdr \
+    binary scan $hdr ssssiis \
 	cb(ndisk) cb(cdisk) \
 	cb(nitems) cb(ntotal) \
 	cb(csize) cb(coff) \
-	cb(comment) 
-
-    if { ![string equal "PK\05\06" $xhdr]} {
-	error "bad header"
-    }
+	cb(comment)
 
     set cb(ndisk)	[u_short $cb(ndisk)]
     set cb(nitems)	[u_short $cb(nitems)]

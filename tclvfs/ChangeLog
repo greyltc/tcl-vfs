@@ -1,3 +1,8 @@
+2004-06-29  Vince Darley <vincentdarley@sourceforge.net>
+
+	* library/zipvfs.tcl: fix to bug finding zip header (reported on
+	Tcl'ers wiki).
+
 2004-06-09  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Makefile.in: corrected targets that use 'for' over what may be
