@@ -801,6 +801,39 @@ VfsFullyNormalizePath(Tcl_Interp *interp, Tcl_Obj *pathPtr) {
 	if (path == NULL) {
 	    break;
 	}
+	if (Tcl_FSGetPathType(path) != TCL_PATH_ABSOLUTE) {
+	    /* 
+	     * This is more complex, we need to find the path
+	     * relative to the original file, effectively:
+	     * 
+	     *  file join [file dirname $pathPtr] $path
+	     *  
+	     * or 
+	     * 
+	     *  file join $pathPtr .. $path
+	     *  
+	     * So...
+	     */
+	    Tcl_Obj *dotdotPtr, *joinedPtr;
+	    Tcl_Obj *joinElements[2];
+	    
+	    dotdotPtr = Tcl_NewStringObj("..",2);
+	    Tcl_IncrRefCount(dotdotPtr);
+	    
+	    joinElements[0] = dotdotPtr;
+	    joinElements[1] = path;
+
+	    joinedPtr = Tcl_FSJoinToPath(pathPtr, 2, joinElements);
+	    
+	    if (joinedPtr != NULL) {
+		Tcl_IncrRefCount(joinedPtr);
+		Tcl_DecrRefCount(path);
+		path = joinedPtr;
+	    } else {
+		/* We failed, and our action is undefined */
+	    }
+	    Tcl_DecrRefCount(dotdotPtr);
+	}
 	Tcl_DecrRefCount(pathPtr);
 	pathPtr = path;
 	counter++;

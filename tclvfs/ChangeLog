@@ -1,4 +1,10 @@
-2003-01-28  Vince Darley <vincentdarley@sourceforge.net>
+2003-02-04  Vince Darley <vincentdarley@sourceforge.net>
+
+	* generic/vfs.c: fixed version of VfsFullyNormalizePath,
+	should resolve some problems with symlinks. Tcl really needs
+	a 'file normalized -full' and equivalent C api.
+	
+2003-02-04  Vince Darley <vincentdarley@sourceforge.net>
 
 	* tests/*.test: cleanup
 	
