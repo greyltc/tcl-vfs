@@ -1,3 +1,7 @@
+2002-05-29  Jean-Claude Wippler <jcw@equi4.com>
+	* Makefile.in: moved the definition of $(OBJEXT) up so the
+	definition of vfs_OBJECTS works with more make's
+
 2002-05-13  Vince Darley <vincentdarley@sourceforge.net>
 	* library/webdavvfs.tcl: v. early implementation of a webdav
 	vfs.  (Note: this and the 'http' vfs need lots of work --

@@ -42,6 +42,9 @@ SOURCES = $(vfs_SOURCES)
 #
 #========================================================================
 
+# Don't change: moved here so the next definition works with more make's
+OBJEXT = @OBJEXT@
+
 vfs_OBJECTS =  generic/vfs.$(OBJEXT)
 OBJECTS = $(vfs_OBJECTS)
 
@@ -131,7 +134,6 @@ LDFLAGS_OPTIMIZE = @LDFLAGS_OPTIMIZE@
 MAKE_LIB = @MAKE_LIB@
 MAKE_SHARED_LIB = @MAKE_SHARED_LIB@
 MAKE_STATIC_LIB = @MAKE_STATIC_LIB@
-OBJEXT = @OBJEXT@
 RANLIB = @RANLIB@
 SHLIB_CFLAGS = @SHLIB_CFLAGS@
 SHLIB_LD = @SHLIB_LD@
