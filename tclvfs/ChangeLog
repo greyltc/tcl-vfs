@@ -1,5 +1,7 @@
 2001-11-08  Vince Darley <vincentdarley@sourceforge.net>
-	* generic/vfs.c: made code thread-safe.
+	* generic/vfs.c: made code thread-safe.  Disallow
+	safe interpreters from using vfs code since they can then
+	mess with the filesystem across all interpreters.
 
 2001-11-07  Vince Darley <vincentdarley@sourceforge.net>
 	* generic/vfs.c: all mount information is now stored in a
