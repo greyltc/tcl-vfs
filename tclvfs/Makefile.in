@@ -172,9 +172,11 @@ binaries: $(BINARIES)
 
 libraries:
 	@mkdir -p $(top_builddir)/library/
-	@list='$(RUNTIME_SOURCES)'; for p in $$list; do \
-            $(INSTALL_DATA) $(srcdir)/library/$$p $(top_builddir)/library/$$p;\
-	done
+	@if test "$(srcdir)" != "$(top_builddir)"; then \
+	    list='$(RUNTIME_SOURCES)'; for p in $$list; do \
+                $(INSTALL_DATA) $(srcdir)/library/$$p $(top_builddir)/library/$$p;\
+	    done; \
+	fi
 
 doc:
 
@@ -264,9 +266,11 @@ clean:
 	-test -z "$(BINARIES)" || rm -f $(BINARIES)
 	-rm -f *.$(OBJEXT) core *.core
 	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
-	list='$(RUNTIME_SOURCES)'; for p in $$list; do \
-            rm -f library/$$p; \
-	done
+	if test "$(srcdir)" != "$(top_builddir)"; then \
+	    list='$(RUNTIME_SOURCES)'; for p in $$list; do \
+		rm -f library/$$p; \
+	    done; \
+	fi
 
 distclean: clean
 	-rm -f *.tab.c
