@@ -1713,14 +1713,20 @@ VfsFileAttrsGet(cmdInterp, index, pathPtr, objPtrRef)
 	     */
 	} else {
 	    /* Leave error message in correct interp */
-	    Tcl_SetObjResult(cmdInterp, *objPtrRef);
+	    if (cmdInterp != NULL) {
+		Tcl_SetObjResult(cmdInterp, *objPtrRef);
+	    } else {
+		Tcl_DecrRefCount(*objPtrRef);
+	    }
 	    *objPtrRef = NULL;
 	}
     } else {
-	Tcl_ResetResult(cmdInterp);
-	Tcl_AppendResult(cmdInterp, "couldn't read attributes for \"", 
-			 Tcl_GetString(pathPtr), "\": ",
-			 Tcl_PosixError(cmdInterp), (char *) NULL);
+	if (cmdInterp != NULL) {
+	    Tcl_ResetResult(cmdInterp);
+	    Tcl_AppendResult(cmdInterp, "couldn't read attributes for \"", 
+			     Tcl_GetString(pathPtr), "\": ",
+			     Tcl_PosixError(cmdInterp), (char *) NULL);
+	}
     }
     
     return returnVal;
@@ -1757,19 +1763,22 @@ VfsFileAttrsSet(cmdInterp, index, pathPtr, objPtr)
     Tcl_RestoreResult(interp, &savedResult);
     Tcl_DecrRefCount(mountCmd);
     
-    if (returnVal == -1) {
-	Tcl_ResetResult(cmdInterp);
-	Tcl_AppendResult(cmdInterp, "couldn't set attributes for \"", 
-			 Tcl_GetString(pathPtr), "\": ",
-			 Tcl_PosixError(cmdInterp), (char *) NULL);
+    if (cmdInterp != NULL) {
+	if (returnVal == -1) {
+	    Tcl_ResetResult(cmdInterp);
+	    Tcl_AppendResult(cmdInterp, "couldn't set attributes for \"", 
+			     Tcl_GetString(pathPtr), "\": ",
+			     Tcl_PosixError(cmdInterp), (char *) NULL);
+	} else if (errorPtr != NULL) {
+	    /* 
+	     * Leave error message in correct interp, errorPtr was
+	     * duplicated above, in case of threading issues.
+	     */
+	    Tcl_SetObjResult(cmdInterp, errorPtr);
+	}
     } else if (errorPtr != NULL) {
-	/* 
-	 * Leave error message in correct interp, errorPtr was
-	 * duplicated above, in case of threading issues.
-	 */
-	Tcl_SetObjResult(cmdInterp, errorPtr);
+	Tcl_DecrRefCount(errorPtr);
     }
-    
     return returnVal;
 }
 

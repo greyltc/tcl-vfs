@@ -1,3 +1,8 @@
+2004-09-13  Vince Darley <vincentdarley@sourceforge.net>
+
+	* generic/vfs.c: fix to crash if TclVfsAttr(Set|Get) are called
+	with a NULL interp for error reporting. [Bug 1022202]
+
 2004-08-05  Andreas Kupries  <andreask@activestate.com>
 
 	* library/zipvfs.tcl (Data): Fixed [SF Tclvfs Bug 1003591]. This
