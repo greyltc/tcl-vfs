@@ -39,7 +39,7 @@ test vfsUrl-1.1 {mount} {
 } {Mounted at "ftp://"}
 
 test vfsUrl-1.2 {mount} {
-    file exists ftp://ftp.scriptics.com
+    file exists ftp://ftp.tcl.tk
 } {1}
 
 test vfsUrl-1.3 {mounted volumes} {
@@ -54,7 +54,7 @@ test vfsUrl-1.3 {mounted volumes} {
 
 test vfsUrl-2.1 {auto-mount ftp and copy file} {vfsWritable} {
     file delete -force README.tclversions
-    file copy ftp://ftp.scriptics.com/pub/tcl/README.tclversions $vfsTestDir
+    file copy ftp://ftp.tcl.tk/pub/tcl/README.tclversions $vfsTestDir
     set to [file join $vfsTestDir README.tclversions]
     if {[file exists $to]} {
 	if {[file size $to] < 800} {
@@ -70,7 +70,7 @@ test vfsUrl-2.1 {auto-mount ftp and copy file} {vfsWritable} {
 } {ok}
 
 test vfsUrl-2.2 {auto-mount bad ftp} {
-    catch {file copy ftp://ftp.scriptxxics.com/pub/tcl/README.tclversions $vfsTestDir}
+    catch {file copy ftp://invalid.name.dom/pub/tcl/README.tclversions $vfsTestDir}
     set to [file join $vfsTestDir README.tclversions]
     if {[file exists $to]} {
 	set res "file shouldn't exist!"

@@ -16,8 +16,8 @@ package require vfs::http
  
 puts "Adding ftp:// volume..."
 vfs::urltype::Mount ftp
-set listing [glob -dir ftp://ftp.scriptics.com/pub *]
-puts "ftp.scriptics.com/pub listing"
+set listing [glob -dir ftp://ftp.tcl.tk/pub *]
+puts "ftp.tcl.tk/pub listing"
 puts "$listing"
 puts "----"
 puts "(file volumes is '[file volumes]')"
