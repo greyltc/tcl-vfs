@@ -30,6 +30,8 @@ proc makeAndMountZipArchive {} {
     
     package require vfs::zip
     set mount [vfs::zip::Mount tests.zip tests.zip]
+    #puts "[pwd] ; $::auto_path, [glob *]"
+    pwd
     cd tests.zip
     return [list vfs::zip::Unmount $mount tests.zip]
 }
