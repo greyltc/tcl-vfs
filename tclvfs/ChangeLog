@@ -4,6 +4,8 @@
 	* library/*.tcl: added missing 'recursive' flag to most
         .tcl 'removedirectory' implementations.
 	
+	* library/mk4vfs.tcl: added catch around 'after cancel'
+	
 2003-02-21  Vince Darley <vincentdarley@sourceforge.net>
 
 	* generic/vfs.c: some small cleanup
