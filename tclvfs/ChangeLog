@@ -1,3 +1,7 @@
+2001-10-31  Vince Darley <vincentdarley@sourceforge.net>
+	* examples/simpleExamples.tcl: a demo
+	* doc/vfslib.n: some documentation on the 'library' code.
+	
 2001-10-29  Vince Darley <vincentdarley@sourceforge.net>
         * win/makefile.vc: installation is better.
 	* library/vfsUrl.tcl: improved urltype mounting.  The following

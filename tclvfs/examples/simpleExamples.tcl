@@ -1,3 +1,8 @@
+#!/bin/sh
+#-*-tcl-*-
+# the next line restarts using wish \
+exec tclsh "$0" ${1+"$@"}
+
 catch {console show}
 
 puts "(pwd is '[pwd]', file volumes is '[file volumes]')"
