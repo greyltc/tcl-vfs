@@ -83,10 +83,9 @@ proc vfs::webdav::stat {dirurl extraHeadersList name} {
 	return $res
     }
     
-    ::vfs::log [list ::http::geturl $dirurl$name -headers $extraHeadersList]
     set token [::http::geturl $dirurl$name -headers $extraHeadersList]
-    ::vfs::log $token
     upvar #0 $token state
+
     if {![regexp " (OK|Moved Permanently)$" $state(http)]} {
 	::vfs::log "No good: $state(http)"
 	::http::cleanup $token
