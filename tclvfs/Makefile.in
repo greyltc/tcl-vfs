@@ -136,7 +136,7 @@ INCLUDES	= @TCL_INCLUDES@
 
 EXTRA_CFLAGS	= $(MEM_DEBUG_FLAGS) @EXTRA_CFLAGS@
 
-DEFS		= $(TCL_DEFS) @DEFS@ $(EXTRA_CFLAGS)
+DEFS		= @DEFS@ $(EXTRA_CFLAGS)
 
 CONFIG_CLEAN_FILES = Makefile library/pkgIndex.tcl
 
@@ -173,17 +173,10 @@ binaries: $(BINARIES)
 libraries:
 	@mkdir -p $(top_builddir)/library/
 	@list='$(RUNTIME_SOURCES)'; for p in $$list; do \
-	  if test -f $(srcdir)/library/$$p; then \
 	    $(INSTALL_DATA) $(srcdir)/library/$$p $(top_builddir)/library/$$p;\
-	  fi; \
 	done
 
 doc:
-	@echo "If you have documentation to create, place the commands to"
-	@echo "build the docs in the 'doc:' target.  For example:"
-	@echo ""
-	@echo "xml2nroff VFS.xml > VFS.n"
-	@echo "xml2html VFS.xml > VFS.html"
 
 install: all install-binaries install-libraries install-doc
 
@@ -205,9 +198,8 @@ install-doc: doc
 	@mkdir -p $(DESTDIR)$(mandir)/man3
 	@mkdir -p $(DESTDIR)$(mandir)/mann
 	@echo "Installing documentation in $(DESTDIR)$(mandir)"
-	@for i in $(srcdir)/doc/*.n; \
-	    do \
-	    echo "Installing $$i"; \
+	@for i in $(srcdir)/doc/*.n; do \
+	    echo "Installing $(DESTDIR)$(mandir)/mann/`basename $$i`"; \
 	    rm -f $(DESTDIR)$(mandir)/mann/`basename $$i`; \
 	    $(INSTALL_DATA) $$i $(DESTDIR)$(mandir)/mann ; \
 	done
@@ -312,10 +304,14 @@ install-lib-binaries:
 	  fi; \
 	done
 	@echo "Installing runtime sources in $(DESTDIR)$(pkglibdir)/"
-	@for i in $(top_builddir)/library/*; do \
-	    rm -f $(DESTDIR)$(pkglibdir)/`basename $$i`; \
-	    $(INSTALL_DATA) $$i $(DESTDIR)$(pkglibdir)/ ; \
+	@list='$(RUNTIME_SOURCES)'; for p in $$list; do \
+	  rm -f $(DESTDIR)$(pkglibdir)/`basename $$p`; \
+	  $(INSTALL_DATA) $(top_builddir)/library/$$p $(DESTDIR)$(pkglibdir)/;\
 	done
+	@if test "@SHARED_BUILD@" = "1"; then \
+	  echo "Installing pkgIndex.tcl in $(DESTDIR)$(pkglibdir)/"; \
+	  $(INSTALL_DATA) $(top_builddir)/library/pkgIndex.tcl $(DESTDIR)$(pkglibdir)/;\
+	fi
 
 #========================================================================
 # Install binary executables (e.g. .exe files)
