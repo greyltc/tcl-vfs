@@ -1,3 +1,6 @@
+2001-11-01  Vince Darley <vincentdarley@sourceforge.net>
+	* generic/vfs.c: 'vfs::mount' no longer a string-literal
+	
 2001-10-31  Vince Darley <vincentdarley@sourceforge.net>
 	* examples/simpleExamples.tcl: a demo
 	* doc/vfslib.n: some documentation on the 'library' code.
