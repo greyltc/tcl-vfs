@@ -318,10 +318,10 @@ proc zip::TOC {fd arr} {
     set buf [read $fd 46]
 
     binary scan $buf A4ssssssiiisssssii hdr \
-	    sb(vem) sb(ver) sb(flags) sb(method) time date \
-	    sb(crc) sb(csize) sb(size) \
-	    flen elen clen sb(disk) sb(attr) \
-	    sb(atx) sb(ino)
+      sb(vem) sb(ver) sb(flags) sb(method) time date \
+      sb(crc) sb(csize) sb(size) \
+      flen elen clen sb(disk) sb(attr) \
+      sb(atx) sb(ino)
 
     if { ![string equal "PK\01\02" $hdr] } {
 	error "bad central header: [hexdump $buf]"
@@ -458,114 +458,4 @@ proc zip::_close {fd} {
     variable $fd.toc
     unset $fd
     unset $fd.toc
-}
-#
-#
-return
-#
-# DEMO UNZIP -L PROGRAM
-#
-array set opts {
-    -datefmt	{%m-%d-%y  %H:%M}
-    -verbose	1
-    -extract	0
-    -debug	0
-}
-set file [lindex $argv 0]
-array set opts [lrange $argv 1 end]
-
-set fd [open $file]
-fconfigure $fd -translation binary ;#-buffering none
-
-if { !$opts(-extract) } {
-    if { !$opts(-verbose) } {
-	puts " Length    Date    Time    Name"
-	puts " ------    ----    ----    ----"
-    } else {
-	puts " Length  Method   Size  Ratio   Date    Time   CRC-32     Name"
-	puts " ------  ------   ----  -----   ----    ----   ------     ----"
-    }
-}
-
-zip::EndOfArchive $fd cb
-
-seek $fd $cb(coff) start
-
-set TOC {}
-for { set i 0 } { $i < $cb(nitems) } { incr i } {
-
-    zip::TOC $fd sb
-
-    lappend TOC $sb(name) $sb(ino)
-
-    if { $opts(-extract) } {
-	continue
-    }
-
-    if { !$opts(-verbose) } {
-	puts [format {%7d  %-16s  %s} $sb(size) \
-		[clock format $sb(mtime) -format $opts(-datefmt) -gmt 1] \
-		$sb(name)]
-    } else {
-	if { $sb(size) > 0 } {
-	    set cr [expr { 100 - 100 * $sb(csize) / double($sb(size)) }]
-	} else {
-	    set cr 0
-	}
-	puts [format {%7d  %6.6s %7d %3.0f%%  %s  %8.8x   %s} \
-		$sb(size) [lindex $::zip::methods($sb(method)) 0] \
-		$sb(csize) $cr \
-		[clock format $sb(mtime) -format $opts(-datefmt) -gmt 1] \
-		$sb(crc) $sb(name)]
-
-	if { $opts(-debug) } {
-	    set maj [expr { ($sb(vem) & 0xff)/10 }]
-	    set min [expr { ($sb(vem) & 0xff)%10 }]
-	    set sys [expr { $sb(vem) >> 8 }]
-	    puts "made by version $maj.$min on system type $sys -> $::zip::systems($sys)"
-
-	    set maj [expr { ($sb(ver) & 0xff)/10 }]
-	    set min [expr { ($sb(ver) & 0xff)%10 }]
-	    set sys [expr { $sb(ver) >> 8 }]
-	    puts "need version $maj.$min on system type $sys -> $::zip::systems($sys)"
-
-	    puts "file type is [expr { $sb(attr) == 1 ? "text" : "binary" }]"
-	    puts "file mode is $sb(mode)"
-
-	    set att [expr { $sb(atx) & 0xff }]
-	    set flgs {}
-	    foreach {k v} [array get ::zip::dosattrs] {
-		if { $k & $att } {
-		    lappend flgs $v
-		}
-	    }
-	    puts "dos file attrs = [join $flgs]"
-	}
-    }
-}
-#
-# This doesn't do anything right now except read each
-# entry and inflate the data and double-check the crc
-#
-
-if { $opts(-extract) } {
-    seek $fd $cb(base) start
-
-    foreach {name idx} $TOC {
-	#seek $fd $idx start
-
-	zip::Data $fd sb data
-
-	# The slowness of this code is actually Tcl's file i/o
-	# I  suspect there are levels of buffer duplication
-	# wasting cpu and memory cycles....
-	file mkdir [file dirname $sb(name)]
-
-	set nfd [open $sb(name) w]
-	fconfigure $nfd -translation binary -buffering none
-	puts -nonewline $nfd $data
-	close $nfd
-
-	puts "$sb(name): $sb(size) bytes"
-    }
 }
