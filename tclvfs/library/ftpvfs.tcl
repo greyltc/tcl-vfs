@@ -7,32 +7,32 @@ package require ftp
 namespace eval vfs::ftp {}
 
 proc vfs::ftp::Mount {dirurl local} {
+    set dirurl [string trim $dirurl]
     ::vfs::log "ftp-vfs: attempt to mount $dirurl at $local"
     if {[string index $dirurl end] != "/"} {
 	::vfs::log "ftp-vfs: adding missing directory delimiter to mount point"
 	append dirurl "/"
     }
     
-    if {![regexp {(ftp://)?(([^:]*)(:([^@]*))?@)?([^/]*)(/(.*/)?([^/]*))?$} \
-      $dirurl junk junk junk user junk pass host "" path file]} {
+    set urlRE {(?:ftp://)?(?:([^@:]*)(?::([^@]*))?@)?([^/:]+)(?::([0-9]*))?/(.*/)?$} 
+    if {![regexp $urlRE $dirurl - user pass host port path]} {
 	return -code error "Sorry I didn't understand\
 	  the url address \"$dirurl\""
-    }
-    
-    if {[string length $file]} {
-	return -code error "Can only mount directories, not\
-	  files (perhaps you need a trailing '/' - I understood\
-	  a path '$path' and file '$file')"
     }
     
     if {![string length $user]} {
 	set user anonymous
     }
     
-    set fd [::ftp::Open $host $user $pass -output ::vfs::log]
+    if {![string length $port]} {
+	set port 21
+    }
+    
+    set fd [::ftp::Open $host $user $pass -port $port -output ::vfs::log]
     if {$fd == -1} {
 	error "Mount failed"
     }
+    
     if {$path != ""} {
 	if {[catch {
 	    ::ftp::Cd $fd $path

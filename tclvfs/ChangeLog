@@ -1,5 +1,10 @@
 2003-06-16  Vince Darley <vincentdarley@sourceforge.net>
 
+	* library/ftpvfs.tcl: added support for ports other than 21,
+	patch from msofer -- thanks.
+	
+2003-06-16  Vince Darley <vincentdarley@sourceforge.net>
+
 	* library/ftpvfs.tcl: added '-output ::vfs::log' to ftp
         initialisation code to avoid messages being dumped to stderr
         when errors occur.
