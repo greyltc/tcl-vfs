@@ -7,30 +7,6 @@ namespace eval ::vfs {
     if {[info exists env(VFS_DEBUG)]} {
 	set debug $env(VFS_DEBUG)
     }
-    variable volumes ""
-}
-
-# This procedure is called by Tcl when we are registered.
-# The results of the procedure, as well as being listed
-# in 'file volumes' affect whether files are treated as
-# relative or absolute as well.
-proc ::vfs::listVolumes {} {
-    variable volumes
-    return $volumes
-}
-
-proc ::vfs::addVolume {vol} {
-    variable volumes
-    lappend volumes $vol
-}
-
-proc ::vfs::removeVolume {vol} {
-    variable volumes
-    set idx [lsearch -exact $volumes $vol]
-    if {$idx == -1} {
-	return -code error "No such volume \"$vol\""
-    }
-    set volumes [lreplace $volumes $idx $idx]
 }
 
 proc ::vfs::autoMountExtension {ext cmd {pkg ""}} {

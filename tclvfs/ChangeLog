@@ -1,3 +1,12 @@
+2001-09-27  Vince Darley <vincentdarley@sourceforge.net>
+	* library/mk4vfs.tcl: Update from Jean-Claude Wippler
+	* library/vfsUtils.tcl:
+	* generic/vfs.c: Moved 'list volumes' functionality
+	entirely into C from Tcl (faster and easier for tclkit
+	to make proper use of).  This required the addition
+	of a '-volume' flag to the mount/unmount commands, and
+	meant we can remove the 'mountschanged' subcommand.
+
 2001-09-07  Vince Darley <vincentdarley@sourceforge.net>
 	* generic/vfs.c: Fixed '==' error
 	* doc/vfs.n: Improved docs.

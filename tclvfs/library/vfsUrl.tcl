@@ -18,15 +18,13 @@ namespace eval ::vfs::urltype {}
 
 proc vfs::urltype::Mount {type} {
     set mountPoint [_typeToMount $type]
-    ::vfs::addVolume $mountPoint
-    ::vfs::filesystem mount $mountPoint [list vfs::urltype::handler $type]
+    ::vfs::filesystem mount -volume $mountPoint [list vfs::urltype::handler $type]
     return "Mounted at \"${mountPoint}\""
 }
 
 proc vfs::urltype::Unmount {type} {
     set mountPoint [_typeToMount $type]
-    ::vfs::filesystem unmount $mountPoint
-    ::vfs::removeVolume $mountPoint
+    ::vfs::filesystem unmount -volume $mountPoint
 }
 
 proc vfs::urltype::_typeToMount {type} {

@@ -32,6 +32,19 @@
 
 EXTERN int Vfs_Init _ANSI_ARGS_((Tcl_Interp*));
 
+static void Vfs_AddVolume _ANSI_ARGS_((Tcl_Obj*));
+static int Vfs_RemoveVolume _ANSI_ARGS_((Tcl_Obj*));
+
+/* 
+ * Stores the list of volumes registered with the vfs 
+ * (and therefore also registered with Tcl).  It is 
+ * maintained as a valid Tcl list at all times, or
+ * NULL if there are none.  To improve Tcl's efficiency,
+ * when there are no volumes, we keep this NULL rather
+ * than as an empty list.
+ */
+static Tcl_Obj *vfsVolumes = NULL;
+
 /*
  * Structure used for the native representation of a path in a Tcl vfs.
  * To fully specify a file, the string representation is also required.
@@ -241,11 +254,11 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
     int index;
 
     static char *optionStrings[] = {
-	"info", "mount", "unmount", "volumeschanged", 
+	"info", "mount", "unmount",
 	NULL
     };
     enum options {
-	VFS_INFO, VFS_MOUNT, VFS_UNMOUNT, VFS_VOLUMESCHANGED,
+	VFS_INFO, VFS_MOUNT, VFS_UNMOUNT,
     };
 
     if (objc < 2) {
@@ -260,9 +273,10 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
     switch ((enum options) index) {
 	case VFS_MOUNT: {
 	    Tcl_Obj * path;
+	    int i;
 	    Tcl_Interp* vfsInterp;
-	    if (objc != 4) {
-		Tcl_WrongNumArgs(interp, 1, objv, "mount path cmd");
+	    if (objc < 4 || objc > 5) {
+		Tcl_WrongNumArgs(interp, 1, objv, "mount ?-volume? path cmd");
 		return TCL_ERROR;
 	    }
 	    vfsInterp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
@@ -270,9 +284,22 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		Tcl_SetResult(interp, "vfs not registered", TCL_STATIC);
 		return TCL_ERROR;
 	    }
-	    path = Tcl_FSGetNormalizedPath(interp, objv[2]);
+	    if (objc == 5) {
+		char *option = Tcl_GetString(objv[2]);
+		if (strcmp("-volume", option)) {
+		    Tcl_AppendStringsToObj(Tcl_GetObjResult(interp),
+			    "bad option \"", option,
+			    "\": must be -volume", (char *) NULL);
+		    return TCL_ERROR;
+		}
+		i = 3;
+		Vfs_AddVolume(objv[i]);
+	    } else {
+		i = 2;
+	    }
+	    path = Tcl_FSGetNormalizedPath(interp, objv[i]);
 	    if (Tcl_SetVar2Ex(vfsInterp, "vfs::mount", 
-			      Tcl_GetString(path), objv[3], 
+			      Tcl_GetString(path), objv[i+1], 
 			      TCL_LEAVE_ERR_MSG | TCL_GLOBAL_ONLY) == NULL) {
 		return TCL_ERROR;
 	    }
@@ -310,9 +337,9 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 	case VFS_UNMOUNT: {
 	    Tcl_Obj * path;
 	    Tcl_Interp* vfsInterp;
-	    int res;
-	    if (objc != 3) {
-		Tcl_WrongNumArgs(interp, 2, objv, "path");
+	    int res, i;
+	    if (objc < 3 || objc > 4) {
+		Tcl_WrongNumArgs(interp, 2, objv, "?-volume? path");
 		return TCL_ERROR;
 	    }
 	    vfsInterp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
@@ -320,20 +347,28 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		Tcl_SetResult(interp, "vfs not registered", TCL_STATIC);
 		return TCL_ERROR;
 	    }
-	    path = Tcl_FSGetNormalizedPath(interp, objv[2]);
+	    if (objc == 4) {
+		char *option = Tcl_GetString(objv[2]);
+		if (strcmp("-volume", option)) {
+		    Tcl_AppendStringsToObj(Tcl_GetObjResult(interp),
+			    "bad option \"", option,
+			    "\": must be -volume", (char *) NULL);
+		    return TCL_ERROR;
+		}
+		i = 3;
+	    } else {
+		i = 2;
+	    }
+	    path = Tcl_FSGetNormalizedPath(interp, objv[i]);
 	    res = Tcl_UnsetVar2(vfsInterp, "vfs::mount", Tcl_GetString(path), 
 				TCL_LEAVE_ERR_MSG | TCL_GLOBAL_ONLY);
 	    if (res == TCL_OK) {
+		if (i == 3) {
+		    Vfs_RemoveVolume(objv[i]);
+		}
 		Tcl_FSMountsChanged(&vfsFilesystem);
 	    }
 	    return res;
-	}
-	case VFS_VOLUMESCHANGED: {
-	    if (objc > 2) {
-		Tcl_WrongNumArgs(interp, 2, objv, NULL);
-		return TCL_ERROR;
-	    }
-	    Tcl_FSMountsChanged(&vfsFilesystem);
 	}
     }
     return TCL_OK;
@@ -1107,22 +1142,54 @@ VfsUtime(pathPtr, tval)
 Tcl_Obj*
 VfsListVolumes(void)
 {
-    Tcl_Obj *resultPtr;
-    Tcl_SavedResult savedResult;
-    Tcl_Interp* interp;
-    
-    interp = (Tcl_Interp*) Tcl_FSData(&vfsFilesystem);
-    Tcl_SaveResult(interp, &savedResult);
-
-    /* List all vfs volumes */
-    if (Tcl_GlobalEval(interp, "::vfs::listVolumes") == TCL_OK) {
-	resultPtr = Tcl_DuplicateObj(Tcl_GetObjResult(interp));
-	Tcl_IncrRefCount(resultPtr);
+    if (vfsVolumes == NULL) {
+        return NULL;
     } else {
-	resultPtr = NULL;
+	Tcl_IncrRefCount(vfsVolumes);
+	return vfsVolumes;
     }
-    Tcl_RestoreResult(interp, &savedResult);
-    return resultPtr;
+}
+
+void
+Vfs_AddVolume(volume)
+    Tcl_Obj *volume;
+{
+    if (vfsVolumes == NULL) {
+        vfsVolumes = Tcl_NewObj();
+	Tcl_IncrRefCount(vfsVolumes);
+    }
+    Tcl_ListObjAppendElement(NULL, vfsVolumes, volume);
+}
+
+int
+Vfs_RemoveVolume(volume)
+    Tcl_Obj *volume;
+{
+    int i, len;
+    Tcl_ListObjLength(NULL, vfsVolumes, &len);
+    for (i = 0;i < len; i++) {
+	Tcl_Obj *vol;
+        Tcl_ListObjIndex(NULL, vfsVolumes, i, &vol);
+	if (!strcmp(Tcl_GetString(vol),Tcl_GetString(volume))) {
+	    /* It's in the list, at index i */
+	    if (len == 1) {
+		/* An optimization here */
+		Tcl_DecrRefCount(vfsVolumes);
+		vfsVolumes = NULL;
+	    } else {
+		/* Make ourselves the unique owner */
+		if (Tcl_IsShared(vfsVolumes)) {
+		    Tcl_Obj *oldVols = vfsVolumes;
+		    vfsVolumes = Tcl_DuplicateObj(oldVols);
+		    Tcl_DecrRefCount(oldVols);
+		}
+		/* Remove the element */
+		Tcl_ListObjReplace(NULL, vfsVolumes, i, 1, 0, NULL);
+		return TCL_OK;
+	    }
+	}
+    }
+    return TCL_ERROR;
 }
 
 
@@ -1192,5 +1259,9 @@ static
 void VfsExitProc(ClientData clientData)
 {
     Tcl_FSUnregister(&vfsFilesystem);
+    if (vfsVolumes != NULL) {
+        Tcl_DecrRefCount(vfsVolumes);
+	vfsVolumes = NULL;
+    }
 }
 

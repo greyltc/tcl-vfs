@@ -56,9 +56,9 @@
 	        
 	        switch -- $cmd {
 	            seek {
-	                switch $args {
-	                    1 { incr arg1 $_pos }
-	                    2 { incr arg1 [string length $_buf]}
+	                switch [lindex $args 1] {
+	                    1 - current { incr arg1 $_pos }
+	                    2 - end { incr arg1 [string length $_buf]}
 	                }
 	                return [set _pos $arg1]
 	            }
@@ -112,15 +112,9 @@ proc vfs::mk4::Mount {what local args} {
     return $db
 }
 
-namespace eval mk4vfs {}
-
-proc mk4vfs::mount {args} {
-    uplevel 1 [list ::vfs::mk4::mount] $args
-}
-
 proc vfs::mk4::Unmount {db local} {
     vfs::filesystem unmount $local
-    ::mk4vfs::umount $db
+    ::mk4vfs::_umount $db
 }
 
 proc vfs::mk4::handler {db cmd root relative actualpath args} {
@@ -164,7 +158,6 @@ proc vfs::mk4::stat {db name} {
     #::vfs::log [array get sb]
 
     # for new vfs:
-    set sb(dev) 0
     set sb(ino) 0
     array get sb
 }
@@ -172,7 +165,6 @@ proc vfs::mk4::stat {db name} {
 proc vfs::mk4::access {db name mode} {
     #::vfs::log "mk4-access $name $mode"
     # This needs implementing better.  
-    #tclLog "mk4vfs::driver $db access $name $mode"
     switch -- $mode {
 	0 {
 	    # exists
@@ -362,6 +354,10 @@ proc mk4vfs::init {db} {
     }
 }
 
+proc mk4vfs::mount {args} {
+    uplevel ::vfs::mk4::Mount $args
+}
+
 proc mk4vfs::_mount {path file args} {
     variable uid
     set db mk4vfs[incr uid]
@@ -388,8 +384,21 @@ proc mk4vfs::_commit {db} {
     mk::file commit $db
 }
 
-proc mk4vfs::umount {db} {
-    tclLog [list unmount $db]
+proc mk4vfs::umount {local} {
+    foreach {db path} [mk::file open] {
+      if {[string equal $local $path]} {
+	uplevel ::vfs::mk4::Unmount $db $local
+	return
+      }
+    }
+    tclLog "umount $local? [mk::file open]"
+}
+
+proc mk4vfs::_umount {db} {
+    after cancel [list mk4vfs::_commit $db]
+    variable cache
+    array unset cache $db.*
+    #tclLog [list unmount $db]
     mk::file close $db
 }
 
@@ -470,7 +479,6 @@ proc mk4vfs::stat {db path arr} {
     set sb(type)	$type
     set sb(view)	$view
     set sb(ino)		$cur
-    set sb(dev)		[list mk4vfs::driver $db]
 
     if { [string equal $type "directory"] } {
         set sb(atime)   0
@@ -500,161 +508,6 @@ proc mk4vfs::stat {db path arr} {
     #::vfs::log "added $path $n $cache($n)"
     #}
     #}
-}
-
-proc mk4vfs::driver {db option args} {
-    #tclLog "mk4vfs::driver $db $option $args"
-    switch -- $option {
-    lstat       {return [uplevel 1 [concat [list mk4vfs::stat $db] $args]]}
-    chdir       {return [lindex $args 0]}
-    access      {
-	# This needs implementing better.  The 'lindex $args 1' is
-	# the access mode we should be checking.
-	set mode [lindex $args 1]
-	#tclLog "mk4vfs::driver $db access [lindex $args 0] $mode"
-	switch -- $mode {
-	    0 {
-		# exists
-		if {![catch {stat $db [lindex $args 0] sb}]} {
-		    return
-		}
-	    }
-	    1 {
-		# executable
-		if {![catch {stat $db [lindex $args 0] sb}]} {
-		    return
-		}
-	    }
-	    2 {
-		# writable
-		if {![catch {stat $db [lindex $args 0] sb}]} {
-		    return
-		}
-	    }
-	    4 {
-		# readable
-		if {![catch {stat $db [lindex $args 0] sb}]} {
-		    return
-		}
-	    }
-	}
-	#tclLog "access bad"
-	error "bad file" 
-    }
-    removedirectory {
-	return [uplevel 1 [concat [list mk4vfs::delete $db] $args]]
-    }
-    atime       {
-	# Not implemented
-    }
-    mtime       -
-    delete      -
-    stat        -
-    getdir      -
-    mkdir       {return [uplevel 1 [concat [list mk4vfs::$option $db] $args]]}
-    
-    open        {
-            set file [lindex $args 0]
-            set mode [lindex $args 1]
-
-            switch -glob -- $mode {
-            {}  -
-            r   {
-                    stat $db $file sb
-                
-                    if { $sb(csize) != $sb(size) } {
-                        package require Trf
-                        package require memchan
-                        #tclLog "$file: decompressing on read"
-
-                        set fd [memchan]
-                        fconfigure $fd -translation binary
-                        set s [mk::get $sb(ino) contents]
-                        puts -nonewline $fd [zip -mode decompress $s]
-
-                        fconfigure $fd -translation auto
-                        seek $fd 0
-			return [list $fd [list _memchan_handler close $fd]]
-                    } elseif { $::mk4vfs::direct } {
-                        package require Trf
-                        package require memchan
-
-                        set fd [memchan]
-                        fconfigure $fd -translation binary
-                        puts -nonewline $fd [mk::get $sb(ino) contents]
-
-                        fconfigure $fd -translation auto
-                        seek $fd 0
-			return [list $fd [list _memchan_handler close $fd]]
-		    } else {
-			set fd [mk::channel $sb(ino) contents r]
-                    }
-		    return [list $fd]
-                }
-            a   {
-                    if { [catch {stat $db $file sb }] } {
-                        #tclLog "stat failed - creating $file"
-                        # Create file
-                        stat $db [file dirname $file] sb
-
-                        set cur [mk::row append $sb(ino).files name [file tail $file] size 0 date [clock seconds] ]
-                        set sb(ino) $cur
-
-                        if { [string match *z* $mode] || ${mk4vfs::compress} } {
-                            set sb(csize) -1    ;# HACK - force compression
-                        } else {
-                            set sb(csize) 0
-                        }
-                    }
-
-                    if { $sb(csize) != $sb(size) } {
-                        package require Trf
-                        package require memchan
-
-                        #tclLog "$file: compressing on append"
-                        append mode z
-                        set fd [memchan]
-
-                        fconfigure $fd -translation binary
-                        set s [mk::get $sb(ino) contents]
-                        puts -nonewline $fd [zip -mode decompress $s]
-                        fconfigure $fd -translation auto
-                    } else {
-			set fd [mk::channel $sb(ino) contents a]
-                    }
-                    return [list $fd [list mk4vfs::do_close $fd $mode $sb(ino)]]
-                }
-            w*  {
-                    if { [catch {stat $db $file sb }] } {
-                        #tclLog "stat failed - creating $file"
-                        # Create file
-                        stat $db [file dirname $file] sb
-                        set cur [mk::row append $sb(ino).files name [file tail $file] size 0 date [clock seconds] ]
-                        set sb(ino) $cur
-                    }
-                    if { [string match *z* $mode] || ${mk4vfs::compress} } {
-                        package require Trf
-                        package require memchan
-                        #tclLog "$file: compressing on write"
-                        ###zip -attach $fd -mode compress
-                        append mode z
-                        set fd [memchan]
-                    } else {
-	                    set fd [mk::channel $sb(ino) contents w]
-                    }
-                    return [list $fd [list mk4vfs::do_close $fd $mode $sb(ino)]]
-                }
-            default     {
-                    error "illegal access mode \"$mode\""
-                }
-            }
-        }
-    sync        {eval [list mk::file commit $db] [lrange $args 1 end]}
-    umount      {eval [list mk::file close $db] $args}
-    default     {
-            return -code error "bad option \"$option\": must be one of chdir, delete, getdir, load, lstat, mkdir, open, stat, sync, or umount"
-        }
-    }
 }
 
 proc mk4vfs::do_close {fd mode cur} {
@@ -692,6 +545,7 @@ proc mk4vfs::do_close {fd mode cur} {
     } err]} {
 	global errorInfo
 	tclLog "mk4vfs::do_close callback error: $err $errorInfo"
+###!!!	return -code error $err
     }
 }
 

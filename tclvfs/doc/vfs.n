@@ -21,8 +21,6 @@
 .sp
 \fBvfs::filesystem\fR \fIunmount\fR
 .sp
-\fBvfs::filesystem\fR \fImountschanged\fR
-.sp
 .sp
 \fBvfs::foo \fIa b c\fR
 .BE
@@ -52,28 +50,25 @@ control over this could be exposed to Tcl in the future).  However, the
 vfs package will at that stage not have any new filesystems mounted, so
 it will have little effect.
 .TP
-\fBvfs::filesystem\fR \fImount\fR \fIpath\fR \fIcommand\fR
+\fBvfs::filesystem\fR \fImount\fR \fI?-volume?\fR \fIpath\fR \fIcommand\fR
 To use a virtual filesystem, it must be 'mounted'.  Mounting involves
 declaring to the vfs package that any subdirectories of a given
 \fIpath\fR in the filesystem should be handled by the given \fIcommand\fR
-which should be a Tcl command or procedure.
+which should be a Tcl command or procedure.  If the \fI?-volume?\fR
+flag is given, the given mount point is also registered with Tcl as
+a new volume (like a new drive).
 .TP
-\fBvfs::filesystem\fR \fIunmount\fR \fIpath\fR 
+\fBvfs::filesystem\fR \fIunmount\fR \fI?-volume?\fR \fIpath\fR 
 This unmounts the virtual filesystem which was mounted at \fIpath\fR
 hence removing it from Tcl's filesystem, or throws an error if no
-filesystem was mounted there.
+filesystem was mounted there.  The \fI?-volume?\fR flag should be
+given if it was also given when the path was mounted.
 .TP
 \fBvfs::filesystem\fR \fIinfo\fR \fI?path?\fR
 If no arguments are given, this returns a list of all filesystems
 mounted.  If a path argument is given, then the \fIcommand\fR to be
 used for that path is returned, or an error is thrown if no vfs is
 mounted for that path.
-.TP
-\fBvfs::filesystem\fR \fImountschanged\fR
-There is generally no need to call this.  It is used by the library
-when the list of volumes changes, or when any kind of new mount point
-is added.  It ensures that Tcl's cached file representations are not
-out of date.
 .PP
 Currently mount information is stored by the extension in the
 vfs::mount array variable, but this should be considered private
