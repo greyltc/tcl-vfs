@@ -1,3 +1,11 @@
+2003-10-06  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* configure:        updated to autoconf 2.5
+	* tclconfig/tcl.m4: updated to latest TEA spec with WinCE support
+	and corrected defn of TCL_WIDE_INT_TYPE for compiling.
+
+	* Makefile.in: add CFLAGS_WARNING and pedantic quoting
+
 2003-09-28  Jean-Claude Wippler  <jcw@equi4.com>
 
 	* starkit.tcl: added "package" and "pload" procs, to simplify
