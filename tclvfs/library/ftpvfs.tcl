@@ -267,14 +267,20 @@ proc vfs::ftp::matchindirectory {fd path actualpath pattern type} {
 proc vfs::ftp::createdirectory {fd name} {
     ::vfs::log "createdirectory $name"
     if {![ftp::MkDir $fd $name]} {
-	error "failed"
+	# Can we be more specific here?
+	vfs::filesystem posixerror $::vfs::posix(EACCES)
     }
 }
 
 proc vfs::ftp::removedirectory {fd name recursive} {
     ::vfs::log "removedirectory $name $recursive"
     if {![ftp::RmDir $fd $name]} {
-	error "failed"
+	# Can we be more specific here?
+	if {$recursive} {
+	    vfs::filesystem posixerror $::vfs::posix(EACCES)
+	} else {
+	    vfs::filesystem posixerror $::vfs::posix(EACCES)
+	}
     }
 }
 
@@ -282,7 +288,7 @@ proc vfs::ftp::deletefile {fd name} {
     ::vfs::log "deletefile $name"
     if {![ftp::Delete $fd $name]} {
 	# Can we be more specific here?
-	error "failed"
+	vfs::filesystem posixerror $::vfs::posix(EACCES)
     }
 }
 
