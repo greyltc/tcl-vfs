@@ -112,6 +112,8 @@ proc vfs::mk4::Mount {what local args} {
     return $db
 }
 
+namespace eval mk4vfs {}
+
 proc mk4vfs::mount {args} {
     uplevel 1 [list ::vfs::mk4::mount] $args
 }
