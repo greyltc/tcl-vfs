@@ -101,6 +101,10 @@
         
 ###############################################################################
 
+package require Mk4tcl
+package require vfs
+package require vfslib
+
 namespace eval vfs::mk4 {}
 
 proc vfs::mk4::Mount {what local args} {
@@ -330,10 +334,6 @@ proc vfs::mk4::fileattributes {db root relative args} {
 	}
     }
 }
-
-package require Mk4tcl
-package require vfs
-package require vfslib
 
 package provide mk4vfs 1.0
 

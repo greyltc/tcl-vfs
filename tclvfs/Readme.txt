@@ -24,7 +24,7 @@ do things like:
 
     file copy ftp://ftp.foo.com/pub/readme.txt .
 
-With 'tkhtml' and this extension, writing a web-browser in Tcl should be 
+With 'Tkhtml' and this extension, writing a web-browser in Tcl should be 
 pretty trivial.
 
 None of the vfs's included are 100% complete or optimal yet, so if only for
@@ -116,7 +116,10 @@ can be used when desired (for example, 'file copy from to -callback foo'
 would be one approach to handling this).
 
 Bugs in Tcl vfs's are hard to track down, since error messages can't
-necessarily propagate to the toplevel.  Could add a debugging command. 
-Alternatively the 'reporting' filesystem in Tcl's test suite can be
-used to aid debugging.
+necessarily propagate to the toplevel (errors of course do propagate and
+result in a filesystem action failing, but informative error messages cannot
+usually be provided, since Tcl is only expecting one of the standard POSIX
+error codes).  We could add a debugging command to this extension so
+unexpected errors are logged somewhere.  Alternatively the 'reporting'
+filesystem in Tcl's test suite can be used to aid debugging.
 
