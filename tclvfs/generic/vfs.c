@@ -807,8 +807,6 @@ VfsPathInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
     normed = Tcl_GetStringFromObj(normedObj, &len);
     splitPosition = len;
 
-    if (len == 0) return -1;
-    
     /* 
      * Find the most specific mount point for this path.
      * Mount points are specified by unique strings, so
@@ -820,6 +818,18 @@ VfsPathInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
      * checking for valid mount points at each separator.
      */
     while (1) {
+	/* 
+	 * We need this test here both for an empty string being
+	 * passed in above, and so that if we are testing a unix
+	 * absolute path /foo/bar we will come around the loop
+	 * with splitPosition at 0 for the last test, and we
+	 * must return then.
+	 */
+	if (splitPosition == 0) {
+	    return -1;
+	}
+	
+	/* Is the path up to 'splitPosition' a valid moint point? */
 	interpCmd = Vfs_FindMount(normedObj, splitPosition);
 	if (interpCmd != NULL) break;
 
@@ -836,15 +846,18 @@ VfsPathInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
 	/* 
 	 * We now know that normed[splitPosition] is a separator.
 	 * However, we might have mounted a root filesystem with a
-	 * strange name (for example 'ftp://')
+	 * name (for example 'ftp://') which actually includes a
+	 * separator.  Therefore we test whether the path with
+	 * a separator is a mount point.
+	 * 
+	 * Since we must have decremented splitPosition at least once
+	 * already (above) 'splitPosition+1 <= len' so this won't
+	 * access invalid memory.
 	 */
-	if (splitPosition != len) {
-	    interpCmd = Vfs_FindMount(normedObj, splitPosition+1);
-				     
-	    if (interpCmd != NULL) {
-		splitPosition++;
-		break;
-	    }
+	interpCmd = Vfs_FindMount(normedObj, splitPosition+1);
+	if (interpCmd != NULL) {
+	    splitPosition++;
+	    break;
 	}
     }
     

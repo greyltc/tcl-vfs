@@ -1,3 +1,8 @@
+2001-12-02 Vince Darley <vincentdarley@sourceforge.net>
+	* generic/vfs.c: minor code cleanup and simplification. Fix
+	to problem with absolute paths on unix systems introduced in
+	recent changes.
+	
 2001-11-21 Vince Darley <vincentdarley@sourceforge.net>
 	* generic/vfs.c: added more comments to the code, and 
 	made mount point checking faster and simpler (we no longer
