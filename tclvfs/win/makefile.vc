@@ -149,9 +149,9 @@ all: $(PROJECT).dll
 
 install:	$(PROJECT).dll
 	-@md $(INSTALLDIR)
-	$(CP) $(PROJECT).dll $(INSTALLDIR)\$(PROJECT).dll
 	$(CP) $(LIBDIR)\*.tcl $(INSTALLDIR)
 	$(CP) $(LIBDIR)\tclIndex $(INSTALLDIR)
+	$(CP) $(PROJECT).dll $(INSTALLDIR)\$(PROJECT).dll
 
 $(PROJECT).dll: $(DLLOBJS)
 	$(link32) $(ldebug) $(dlllflags) $(TCLLIB) \

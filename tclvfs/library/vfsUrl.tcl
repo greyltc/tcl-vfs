@@ -36,13 +36,13 @@ proc vfs::urltype::_typeToMount {type} {
 }
 
 proc vfs::urltype::handler {type cmd root relative actualpath args} {
-    puts stderr [list urltype $type $cmd $root $relative $actualpath $args]
+    ::vfs::log [list urltype $type $cmd $root $relative $actualpath $args]
     if {[string length $relative]} {
 	# Find the highest level path so we can mount it:
 	set pathSplit [file split [file join $root $relative]]
 	set newRoot [eval [list file join] [lrange $pathSplit 0 1]]
 	# Mount it.
-	puts stderr [list $newRoot $pathSplit]
+	::vfs::log [list $newRoot $pathSplit]
 	::vfs::${type}::Mount $newRoot $newRoot
 	# Now we want to find out the right handler
 	set typeHandler [::vfs::filesystem info $newRoot]
@@ -52,8 +52,7 @@ proc vfs::urltype::handler {type cmd root relative actualpath args} {
 	if {[string index $newRelative 0] == "/"} {
 	    set newRelative [string range $newRelative 1 end]
 	}
-	
-	puts stderr [list $typeHandler $newRoot $newRelative]
+	::vfs::log [list $typeHandler $newRoot $newRelative]
 	eval $typeHandler [list $cmd $newRoot $newRelative $actualpath] $args
     } else {
 	if {$cmd == "matchindirectory"} {
