@@ -1,5 +1,5 @@
 Identifier: vfs
-Version: 1.2
+Version: 1.2.1
 Title: Interface to Virtual File Systems for Tcl 8.4
 Creator: Vince Darley
 Description: The goal of this extension is to expose Tcl 8.4's new

@@ -9,7 +9,7 @@
 #
 MACHINE		= IX86
 
-VFS_VERSION = 1.2
+VFS_VERSION = 1.2.1
 DLL_VERSION = 12
 
 # comment the following line to compile with symbols

@@ -333,7 +333,7 @@ Vfs_Init(interp)
     if (Tcl_IsSafe(interp)) {
         return TCL_ERROR;
     }
-    if (Tcl_PkgProvide(interp, "vfs", "1.2") == TCL_ERROR) {
+    if (Tcl_PkgProvide(interp, "vfs", "1.2.1") == TCL_ERROR) {
         return TCL_ERROR;
     }
 

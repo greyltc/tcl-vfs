@@ -3,7 +3,7 @@
 '\" 
 '\" 
 .so man.macros
-.TH vfs n 1.2 Vfs "Tcl-only Virtual File Systems"
+.TH vfs n 1.2.1 Vfs "Tcl-only Virtual File Systems"
 .BS
 '\" Note:  do not modify the .sh NAME line immediately below!
 .SH NAME
@@ -13,7 +13,7 @@
 .sp
 \fBpackage require Tcl 8.4\fR
 .sp
-\fBpackage require vfs ?1.2?\fR
+\fBpackage require vfs ?1.2.1?\fR
 .sp
 \fBvfs::filesystem\fR \fIinfo\fR
 .sp

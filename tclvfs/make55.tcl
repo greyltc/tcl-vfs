@@ -66,4 +66,4 @@ close $config
 parray files
 
 
-makepackage vfs1.0
+makepackage vfs1.2.1

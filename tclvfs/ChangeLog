@@ -1,3 +1,13 @@
+2003-07-15  Vince Darley <vincentdarley@sourceforge.net>
+
+	* tests/vfsZip.test:
+	* tests/vfsTar.test: added some new tests for recently fixed
+        bugs.
+        * library/tarvfs.tcl: fix to bug when closing an empty archive.
+
+        Also updated package to version 1.2.1 since a variety of bugs
+        have been fixed since the 1.2 release
+	
 2003-07-06  Vince Darley <vincentdarley@sourceforge.net>
 
 	* library/ftpvfs.tcl: fix to 'file stat' on a directory, which

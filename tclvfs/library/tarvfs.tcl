@@ -433,6 +433,6 @@ proc tar::getdir {fd path {pat *}} {
 
 proc tar::_close {fd} {
     variable $fd.toc
-    unset $fd.toc
+    unset -nocomplain $fd.toc
     ::close $fd
 }

@@ -17,3 +17,11 @@ if {[lsearch [namespace children] ::tcltest] == -1} {
 
 package require vfs::zip
 
+test vfsZip-1.1 {mount with error} {
+    set f [file join [temporaryDirectory] vfszip.zip]
+    close [open $f w]
+    set res [catch {vfs::zip::Mount $f localmount} err]
+    #lappend res $err
+    lappend res [catch {file delete $f}]
+    set res
+} {1 0}
