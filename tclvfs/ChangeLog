@@ -1,3 +1,9 @@
+2004-09-28  Vince Darley <vincentdarley@sourceforge.net>
+
+	* generic/vfs.c: despite lack of documentation on this point,
+	VfsMatchInDirectory should really allow a NULL interp, even in
+	error situations.
+
 2005-03-18  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Makefile.in (AR): use @AR@

@@ -1554,7 +1554,11 @@ VfsMatchInDirectory(
 		Tcl_ListObjAppendList(cmdInterp, returnPtr, vfsResultPtr);
 		Tcl_DecrRefCount(vfsResultPtr);
 	    } else {
-		Tcl_SetObjResult(cmdInterp, vfsResultPtr);
+		if (cmdInterp != NULL) {
+		    Tcl_SetObjResult(cmdInterp, vfsResultPtr);
+		} else {
+		    Tcl_DecrRefCount(vfsResultPtr);
+		}
 	    }
 	}
 	return returnVal;
