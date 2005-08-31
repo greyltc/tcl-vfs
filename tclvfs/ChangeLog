@@ -1,8 +1,8 @@
-2004-09-28  Vince Darley <vincentdarley@sourceforge.net>
+2005-08-31  Vince Darley <vincentdarley@sourceforge.net>
 
 	* generic/vfs.c: despite lack of documentation on this point,
 	VfsMatchInDirectory should really allow a NULL interp, even in
-	error situations.
+	error situations.  Tcl 8.5 now documents that this is allowed.
 
 2005-03-18  Jeff Hobbs  <jeffh@ActiveState.com>
 
