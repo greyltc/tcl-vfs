@@ -1,3 +1,9 @@
+2005-10-19  Jean-Claude Wippler  <jcw@equi4.com>
+
+	* library/mk4vfs.tcl: added fallback to new vfs::mkcl
+	* library/mkclvfs.tcl: new MK Compatible Lite driver
+	* pkgIndex.tcl.in, library/pkgIndex.tcl: adjusted
+
 2005-08-31  Vince Darley <vincentdarley@sourceforge.net>
 
 	* generic/vfs.c: despite lack of documentation on this point,

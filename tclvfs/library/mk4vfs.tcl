@@ -14,10 +14,10 @@
 # 01feb03 jcw	1.8	fix mounting a symlink, cleanup mount/unmount procs
 # 04feb03 jcw	1.8	whoops, restored vfs::mk4::Unmount logic
 # 17mar03 jcw	1.9	start with mode translucent or readwrite
+# 18oct05 jcw	1.10	add fallback to MK Compatible Lite driver (vfs::mkcl)
 
-package provide mk4vfs 1.9
-package provide vfs::mk4 1.9
-package require Mk4tcl
+package provide mk4vfs 1.10
+package provide vfs::mk4 1.10
 package require vfs
 
 # need this so init failure in interactive mode does not mess up errorInfo
@@ -38,6 +38,12 @@ if {![info exists auto_index(lassign)] && [info commands lassign] == ""} {
 
 namespace eval vfs::mk4 {
     proc Mount {mkfile local args} {
+        # 2005-10-19 switch to MK Compatible Lite driver if there is no Mk4tcl 
+	if {[catch { package require Mk4tcl }]} {
+	  package require vfs::mkcl
+	  return [eval [linsert $args 0 vfs::mkcl::Mount $mkfile $local]]
+	}
+
 	if {$mkfile != ""} {
 	  # dereference a symlink, otherwise mounting on it fails (why?)
 	  catch {
@@ -120,7 +126,7 @@ namespace eval vfs::mk4 {
 	::mk4vfs::stat $db $path sb
 	
 	if { $sb(type) == "file" } {
-	    ::mk::set $sb(ino) date $modtime
+	    mk::set $sb(ino) date $modtime
 	}
     }
 
