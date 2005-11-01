@@ -2,12 +2,12 @@
 # Rewritten from mk4vfs.tcl, orig by by Matt Newman and Jean-Claude Wippler 
 # $Id$
 
-package provide vfs::mkcl 1.0
+package provide vfs::mkcl 1.1
 package require vfs
-package require vlerq
+package require thrill
 
 namespace eval vfs::mkcl {
-  namespace import ::vlerq::*
+  namespace import ::thrill::*
 
   namespace eval v {
     variable seq 0  ;# used to generate a unique db handle
@@ -19,7 +19,7 @@ namespace eval vfs::mkcl {
 # public
   proc Mount {mkfile local args} {
     set db mkclvfs[incr v::seq]
-    set v::rootv($db) [view [vlerq::vopen $mkfile] get 0 dirs]
+    set v::rootv($db) [view [vopen $mkfile] get 0 dirs]
     set v::dname($db) [view $v::rootv($db) getcol 0]
     set v::prows($db) [view $v::rootv($db) getcol 1]
     ::vfs::filesystem mount $local [list ::vfs::mkcl::handler $db]

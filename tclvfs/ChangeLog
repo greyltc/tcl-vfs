@@ -1,3 +1,8 @@
+2005-11-01  Jean-Claude Wippler  <jcw@equi4.com>
+
+	* library/mkclvfs.tcl: renamed vlerq package to thrill
+	* pkgIndex.tcl.in, library/pkgIndex.tcl: bumped to 1.1
+
 2005-10-19  Jean-Claude Wippler  <jcw@equi4.com>
 
 	* library/mk4vfs.tcl: added fallback to new vfs::mkcl
