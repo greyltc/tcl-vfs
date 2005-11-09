@@ -1,7 +1,7 @@
 # Remnants of what used to be VFS init, this is TclKit-specific
 
 package require Tcl 8.4; # vfs is all new for 8.4
-package provide vfslib 1.3
+package provide vfslib 1.3.1
 
 namespace eval ::vfs {
 
