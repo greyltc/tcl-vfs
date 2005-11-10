@@ -1,3 +1,7 @@
+2005-11-10  Jean-Claude Wippler  <jcw@equi4.com>
+
+	* Makefile.in: added missing mkclvfs.tcl dependency
+
 2005-11-09  Andreas Kupries <andreask@activestate.com>
 
 	* library/vfslib.tcl:  Brought the version numbers of provide
