@@ -1,4 +1,4 @@
-2005-12-03  Jeff Hobbs  <jeffh@ActiveState.com>
+2006-01-22  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* tclconfig/tcl.m4, configure: update to TEA 3.4 interim
 
