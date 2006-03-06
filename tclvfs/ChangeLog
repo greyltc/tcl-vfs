@@ -1,3 +1,8 @@
+2006-02-27  Jean-Claude Wippler  <jcw@equi4.com>
+
+	* library/mkclvfs.tcl: Small optimization so a writable starkit
+	does not cause a real commit if no changes at all were made.
+
 2006-01-25  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* configure, configure.in: update to TEA 3.5

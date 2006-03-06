@@ -331,11 +331,8 @@ namespace eval mk4vfs {
 		{name:S parent:I {files {name:S size:I date:I contents:M}}}
 
 	if { [mk::view size $db.dirs] == 0 } {
-	    mk::row append $db.dirs name <root> parent 0
+	    mk::row append $db.dirs name <root> parent -1
 	}
-
-	# 2001-12-13: use parent -1 for root level!
-	mk::set $db.dirs!0 parent -1
     }
 
     proc _mount {{file ""} args} {
