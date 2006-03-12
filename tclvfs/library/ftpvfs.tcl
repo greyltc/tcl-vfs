@@ -4,7 +4,10 @@ package provide vfs::ftp 1.0
 package require vfs 1.0
 package require ftp
 
-namespace eval vfs::ftp {}
+namespace eval vfs::ftp {
+    # Number of milliseconds for which to cache listings
+    variable cacheListingsFor 1000
+}
 
 proc vfs::ftp::Mount {dirurl local} {
     set dirurl [string trim $dirurl]
@@ -182,7 +185,7 @@ proc vfs::ftp::_closing {fd name filed action} {
 
 proc vfs::ftp::_findFtpInfo {fd name} {
     ::vfs::log "findFtpInfo $fd $name"
-    set ftpList [ftp::List $fd [file dirname $name]]
+    set ftpList [cachedList $fd [file dirname $name]]
     foreach p $ftpList {
 	foreach {pname other} [_parseListLine $p] {}
 	if {$pname == [file tail $name]} {
@@ -190,6 +193,22 @@ proc vfs::ftp::_findFtpInfo {fd name} {
 	}
     }
     return ""
+}
+
+proc vfs::ftp::cachedList {fd dir} {
+    variable cacheList
+    variable cacheListingsFor
+    
+    # Caches response to prevent going back to the ftp server
+    # for common use cases: foreach {f} [glob *] { file stat $f s }
+    if {[info exists cacheList($dir)]} {
+	return $cacheList($dir)
+    }
+    set listing [ftp::List $fd $dir]
+
+    set cacheList($dir) $listing
+    after $cacheListingsFor [list unset -nocomplain ::vfs::ftp::cacheList($dir)]
+    return $listing
 }
 
 # Currently returns a list of name and a list of other
@@ -239,7 +258,7 @@ proc vfs::ftp::matchindirectory {fd path actualpath pattern type} {
 	}
     } else {
 	# matching all files in the given directory
-	set ftpList [ftp::List $fd $path]
+	set ftpList [cachedList $fd $path]
 	::vfs::log "ftpList: $ftpList"
 
 	foreach p $ftpList {

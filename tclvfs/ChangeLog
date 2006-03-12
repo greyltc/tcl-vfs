@@ -1,3 +1,8 @@
+2006-03-12  Vince Darley <vincentdarley@sourceforge.net>
+
+	* library/ftpvfs.tcl: provide caching of listings to improve
+	performance for many standard use cases.
+
 2006-02-27  Jean-Claude Wippler  <jcw@equi4.com>
 
 	* library/mkclvfs.tcl: Small optimization so a writable starkit
