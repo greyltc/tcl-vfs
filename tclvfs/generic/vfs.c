@@ -1393,8 +1393,23 @@ VfsOpenFileChannel(cmdInterp, pathPtr, mode, permissions)
 	 * Tcl_DetachChannel to do this for us.  We must use the
 	 * correct interpreter.
 	 */
+	if (Tcl_IsStandardChannel(chan)) {
+	    /*
+	     * If we have somehow ended up with a VFS channel being a std
+	     * channel, it is likely auto-inherited, which we need to reverse.
+	     * [Bug 1468291]
+	     */
+	    if (chan == Tcl_GetStdChannel(TCL_STDIN)) {
+		Tcl_SetStdChannel(NULL, TCL_STDIN);
+	    } else if (chan == Tcl_GetStdChannel(TCL_STDOUT)) {
+		Tcl_SetStdChannel(NULL, TCL_STDOUT);
+	    } else if (chan == Tcl_GetStdChannel(TCL_STDERR)) {
+		Tcl_SetStdChannel(NULL, TCL_STDERR);
+	    }
+	    Tcl_UnregisterChannel(NULL, chan);
+	}
 	Tcl_DetachChannel(interp, chan);
-	
+
 	if (closeCallback != NULL) {
 	    VfsChannelCleanupInfo *channelRet = NULL;
 	    channelRet = (VfsChannelCleanupInfo*) 
@@ -1439,7 +1454,9 @@ VfsCloseProc(ClientData clientData) {
      * callback will fail, so we register the channel (this allows
      * the Tcl code to use the channel's string-name).
      */
-    Tcl_RegisterChannel(interp, chan);
+    if (!Tcl_IsStandardChannel(chan)) {
+	Tcl_RegisterChannel(interp, chan);
+    }
 
     if (!(Tcl_GetChannelMode(chan) & TCL_READABLE)) {
 	/* 
@@ -1465,7 +1482,9 @@ VfsCloseProc(ClientData clientData) {
      * already being closed.  So, we do the same trick as above to
      * unregister it without cleanup.
      */
-    Tcl_DetachChannel(interp, chan);
+    if (!Tcl_IsStandardChannel(chan)) {
+	Tcl_DetachChannel(interp, chan);
+    }
 
     Tcl_RestoreResult(interp, &savedResult);
     ckfree((char*)channelRet);

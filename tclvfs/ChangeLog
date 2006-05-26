@@ -1,3 +1,8 @@
+2006-05-26  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* generic/vfs.c (VfsOpenFileChannel): handle closing channels that
+	were inherited as std channels. [Bug 1468291]
+
 2006-03-12  Vince Darley <vincentdarley@sourceforge.net>
 
 	* library/ftpvfs.tcl: provide caching of listings to improve
