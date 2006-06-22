@@ -1,18 +1,17 @@
 # mkclvfs.tcl -- Metakit Compatible Lite Virtual File System driver
 # Rewritten from mk4vfs.tcl, orig by by Matt Newman and Jean-Claude Wippler 
-# $Id$
 
 # 1.0	initial release
-# 1.1	view size renamed to count, vlerq package renamed to thrill
-# 1.2	replace view calls by vget (simpler and slightly faster)
+# 1.1	view size renamed to count
+# 1.2	replace view calls by vget (simpler and faster)
+# 1.3	modified to use the vlerq extension i.s.o. thrive
+# 1.4 minor cleanup
 
-package provide vfs::mkcl 1.2
+package provide vfs::mkcl 1.4
 package require vfs
-package require thrill
+package require vlerq
 
 namespace eval vfs::mkcl {
-  namespace import ::thrill::*
-
   namespace eval v {
     variable seq 0  ;# used to generate a unique db handle
     variable rootv  ;# maps handle to root view (well, actually "dirs")
@@ -23,9 +22,9 @@ namespace eval vfs::mkcl {
 # public
   proc Mount {mkfile local args} {
     set db mkclvfs[incr v::seq]
-    set v::rootv($db) [vget [vopen $mkfile] 0 dirs]
-    set v::dname($db) [vget $v::rootv($db) * 0]
-    set v::prows($db) [vget $v::rootv($db) * 1]
+    set v::rootv($db) [view $mkfile mapf | get 0 dirs]
+    set v::dname($db) [vget $v::rootv($db) * name]
+    set v::prows($db) [vget $v::rootv($db) * parent]
     ::vfs::filesystem mount $local [list ::vfs::mkcl::handler $db]
     ::vfs::RegisterMount $local [list ::vfs::mkcl::Unmount $db]
     return $db
@@ -54,26 +53,35 @@ namespace eval vfs::mkcl {
     foreach e $elems {
       set r ""
       foreach r [lsearch -exact -int -all $v::prows($db) $parent] {
-	if {$e eq [lindex $v::dname($db) $r]} {
-	  set parent $r
-	  incr remain -1
-	  break
-	}
+      	if {$e eq [lindex $v::dname($db) $r]} {
+      	  set parent $r
+      	  incr remain -1
+      	  break
+      	}
       }
       if {$parent != $r} {
-	if {$remain == 1} {
-	  set files [vget $dirs $parent 2]
-	  set i [lsearch -exact [vget $files * 0] $e]
-	  if {$i >= 0} {
-	    # evaluating this 3-item result returns the info about one file
-	    return [list vget $files $i]
-	  }
-	}
-	fail ENOENT
+      	if {$remain == 1} {
+      	  set files [vget $dirs $parent files]
+      	  if 1 {
+       	    set i [lsearch -exact [vget $files * name] $e]
+        	  if {$i >= 0} {
+        	    # evaluating this 3-item result returns the info about one file
+        	    return [list vget $files $i]
+        	  }
+        	} else {
+            view $files loop {
+              if {$(name) eq $e} {
+                # evaluating this 3-item result returns the info about one file
+                return [list vget $files $(#)]
+              }
+            }
+          }
+      	}
+      	fail ENOENT
       }
     }
     # evaluating this 4-item result returns the files subview
-    return [list vget $dirs $parent 2]
+    return [list vget $dirs $parent files]
   }
   proc isDir {tag} {
     return [expr {[llength $tag] == 4}]
@@ -86,21 +94,21 @@ namespace eval vfs::mkcl {
     if {$pattern ne ""} {
       set c {}
       if {[isDir $tag]} {
-	# collect file names
-	if {$type & 16} {
-	  set c [eval [linsert $tag end * 0]]
-	}
-	# collect directory names
-	if {$type & 4} {
-	  foreach r [lsearch -exact -int -all $v::prows($db) [lindex $tag 2]] {
-	    lappend c [lindex $v::dname($db) $r]
-	  }
-	}
+      	# collect file names
+      	if {$type & 16} {
+      	  set c [eval [linsert $tag end * 0]]
+      	}
+      	# collect directory names
+      	if {$type & 4} {
+      	  foreach r [lsearch -exact -int -all $v::prows($db) [lindex $tag 2]] {
+      	    lappend c [lindex $v::dname($db) $r]
+      	  }
+      	}
       }
       foreach x $c {
-	if {[string match $pattern $x]} {
-	  lappend o [file join $actual $x]
-	}
+      	if {[string match $pattern $x]} {
+      	  lappend o [file join $actual $x]
+      	}
       }
     } elseif {$type & ([isDir $tag]?4:16)} {
       set o [list $actual]
@@ -111,7 +119,7 @@ namespace eval vfs::mkcl {
     switch -- [llength $args] {
       0 { return [::vfs::listAttributes] }
       1 { set index [lindex $args 0]
-	  return [::vfs::attributesGet $root $path $index] }
+      	  return [::vfs::attributesGet $root $path $index] }
       2 { fail EROFS }
     }
   }
@@ -119,7 +127,7 @@ namespace eval vfs::mkcl {
     if {$mode ne "" && $mode ne "r"} { fail EROFS }
     set tag [lookUp $db $file]
     if {[isDir $tag]} { fail ENOENT }
-    foreach {name size date contents} [eval $tag] break
+    foreach {name size date contents} [eval $tag *] break
     if {[string length $contents] != $size} {
       set contents [vfs::zip -mode decompress $contents]
     }
@@ -142,11 +150,11 @@ namespace eval vfs::mkcl {
       set s 0
       set d 0
       set c ""
-      incr l [eval [linsert $tag end #]]
+      incr l [eval [linsert $tag -1 #]]
       incr l [llength [lsearch -exact -int -all $v::prows($db) [lindex $tag 2]]]
     } else {
       set t file
-      foreach {n s d c} [eval $tag] break
+      foreach {n s d c} [eval $tag *] break
     }
     return [list type $t size $s atime $d ctime $d mtime $d nlink $l \
 		  csize [string length $c] gid 0 uid 0 ino 0 mode 0777]

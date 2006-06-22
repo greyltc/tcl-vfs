@@ -1,3 +1,7 @@
+2006-06-22  Jean-Claude Wippler  <jcw@equi4.com>
+
+	* library/mkclvfs.tcl: Updated to latest 1.4 revision
+
 2006-05-26  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* generic/vfs.c (VfsOpenFileChannel): handle closing channels that
