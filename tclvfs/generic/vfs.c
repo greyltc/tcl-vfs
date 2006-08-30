@@ -14,6 +14,7 @@
  *	it does cope with multiple interpreters in multiple threads.
  *	
  * Copyright (c) 2001-2004 Vince Darley.
+ * Copyright (c) 2006 ActiveState Software Inc.
  * 
  * See the file "license.terms" for information on usage and redistribution
  * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
@@ -50,37 +51,6 @@ EXTERN int Vfs_Init _ANSI_ARGS_((Tcl_Interp*));
  */
 static void Vfs_AddVolume    _ANSI_ARGS_((Tcl_Obj*));
 static int  Vfs_RemoveVolume _ANSI_ARGS_((Tcl_Obj*));
-
-/* 
- * Stores the list of volumes registered with the vfs (and therefore
- * also registered with Tcl).  It is maintained as a valid Tcl list at
- * all times, or NULL if there are none (we don't keep it as an empty
- * list just as a slight optimisation to improve Tcl's efficiency in
- * determining whether paths are absolute or relative).
- * 
- * We keep a refCount on this object whenever it is non-NULL.
- */
-static Tcl_Obj *vfsVolumes = NULL;
-
-/* 
- * Declare a mutex for thread-safety of modification of the
- * list of vfs volumes.
- */
-TCL_DECLARE_MUTEX(vfsVolumesMutex)
-
-/* 
- * Stores a script to evaluate when an internal error is detected in
- * a tclvfs implementation.  This is most useful for debugging.
- * 
- * When it is not NULL we keep a refCount on it.
- */
-static Tcl_Obj *internalErrorScript = NULL;
-
-/* 
- * Declare a mutex for thread-safety of modification of the
- * internal error script.
- */
-TCL_DECLARE_MUTEX(internalErrorMutex)
 
 /*
  * struct Vfs_InterpCmd --
@@ -262,12 +232,31 @@ typedef struct VfsMount {
     struct VfsMount* nextMount;
 } VfsMount;
 
-static VfsMount* listOfMounts = NULL;
-/* 
- * Declare a mutex for thread-safety of modification of the
- * list of vfs mounts.
+#define TCL_TSD_INIT(keyPtr)	(ThreadSpecificData *)Tcl_GetThreadData((keyPtr), sizeof(ThreadSpecificData))
+
+/*
+ * Declare a thread-specific list of vfs mounts and volumes.
+ *
+ * Stores the list of volumes registered with the vfs (and therefore
+ * also registered with Tcl).  It is maintained as a valid Tcl list at
+ * all times, or NULL if there are none (we don't keep it as an empty
+ * list just as a slight optimisation to improve Tcl's efficiency in
+ * determining whether paths are absolute or relative).
+ *
+ * We keep a refCount on this object whenever it is non-NULL.
+ *
+ * internalErrorScript is evaluated when an internal error is detected in
+ * a tclvfs implementation.  This is most useful for debugging.
+ *
+ * When it is not NULL we keep a refCount on it.
  */
-TCL_DECLARE_MUTEX(vfsMountsMutex)
+
+typedef struct ThreadSpecificData {
+    VfsMount *listOfMounts;
+    Tcl_Obj *vfsVolumes;
+    Tcl_Obj *internalErrorScript;
+} ThreadSpecificData;
+static Tcl_ThreadDataKey dataKey;
 
 /* We might wish to consider exporting these in the future */
 
@@ -285,6 +274,7 @@ static void            Vfs_RegisterWithInterp _ANSI_ARGS_((Tcl_Interp*));
 static VfsNativeRep*   VfsGetNativePath(Tcl_Obj* pathPtr);
 static Tcl_CloseProc   VfsCloseProc;
 static void            VfsExitProc(ClientData clientData);
+static void            VfsThreadExitProc(ClientData clientData);
 static Tcl_Obj*	       VfsFullyNormalizePath(Tcl_Interp *interp, 
 				             Tcl_Obj *pathPtr);
 static Tcl_Obj*        VfsBuildCommandForPath(Tcl_Interp **iRef, 
@@ -396,6 +386,7 @@ Vfs_RegisterWithInterp(interp)
     if (vfsAlreadyRegistered == NULL) {
 	Tcl_FSRegister((ClientData)1, &vfsFilesystem);
 	Tcl_CreateExitHandler(VfsExitProc, (ClientData)NULL);
+	Tcl_CreateThreadExitHandler(VfsThreadExitProc, NULL);
     }
 }
    
@@ -465,6 +456,7 @@ Vfs_AddMount(mountPoint, isVolume, interp, mountCmd)
     char *strRep;
     int len;
     VfsMount *newMount;
+    ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
     
     if (mountPoint == NULL || interp == NULL || mountCmd == NULL) {
 	return TCL_ERROR;
@@ -497,10 +489,8 @@ Vfs_AddMount(mountPoint, isVolume, interp, mountCmd)
     newMount->isVolume = isVolume;
     Tcl_IncrRefCount(mountCmd);
     
-    Tcl_MutexLock(&vfsMountsMutex);
-    newMount->nextMount = listOfMounts;
-    listOfMounts = newMount;
-    Tcl_MutexUnlock(&vfsMountsMutex);
+    newMount->nextMount = tsdPtr->listOfMounts;
+    tsdPtr->listOfMounts = newMount;
 
     if (isVolume) {
 	Vfs_AddVolume(mountPoint);
@@ -542,6 +532,7 @@ Vfs_RemoveMount(mountPoint, interp)
     /* These two are only used if mountPoint is non-NULL */
     char *strRep = NULL;
     int len = 0;
+    ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
     
     VfsMount *mountIter;
     /* Set to NULL just to avoid warnings */
@@ -550,9 +541,8 @@ Vfs_RemoveMount(mountPoint, interp)
     if (mountPoint != NULL) {
 	strRep = Tcl_GetStringFromObj(mountPoint, &len);
     }
-       
-    Tcl_MutexLock(&vfsMountsMutex);
-    mountIter = listOfMounts;
+
+    mountIter = tsdPtr->listOfMounts;
     
     while (mountIter != NULL) {
 	if ((interp == mountIter->interpCmd.interp) 
@@ -560,8 +550,8 @@ Vfs_RemoveMount(mountPoint, interp)
 		(mountIter->mountLen == len && 
 		 !strcmp(mountIter->mountPoint, strRep)))) {
 	    /* We've found the mount. */
-	    if (mountIter == listOfMounts) {
-		listOfMounts = mountIter->nextMount;
+	    if (mountIter == tsdPtr->listOfMounts) {
+		tsdPtr->listOfMounts = mountIter->nextMount;
 	    } else {
 		lastMount->nextMount = mountIter->nextMount;
 	    }
@@ -581,13 +571,11 @@ Vfs_RemoveMount(mountPoint, interp)
 	    Tcl_DecrRefCount(mountIter->interpCmd.mountCmd);
 	    ckfree((char*)mountIter);
 	    Tcl_FSMountsChanged(&vfsFilesystem);
-	    Tcl_MutexUnlock(&vfsMountsMutex);
 	    return TCL_OK;
 	}
 	lastMount = mountIter;
 	mountIter = mountIter->nextMount;
     }
-    Tcl_MutexUnlock(&vfsMountsMutex);
     return TCL_ERROR;
 }
 
@@ -620,6 +608,7 @@ Vfs_FindMount(pathMount, mountLen)
 {
     VfsMount *mountIter;
     char *mountStr;
+    ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
     
     if (pathMount == NULL) {
 	return NULL;
@@ -631,19 +620,15 @@ Vfs_FindMount(pathMount, mountLen)
 	mountStr = Tcl_GetString(pathMount);
     }
 
-    Tcl_MutexLock(&vfsMountsMutex);
-
-    mountIter = listOfMounts;
+    mountIter = tsdPtr->listOfMounts;
     while (mountIter != NULL) {
 	if (mountIter->mountLen == mountLen && 
 	  !strncmp(mountIter->mountPoint, mountStr, (size_t)mountLen)) {
 	    Vfs_InterpCmd *ret = &mountIter->interpCmd;
-	    Tcl_MutexUnlock(&vfsMountsMutex);
 	    return ret;
 	}
 	mountIter = mountIter->nextMount;
     }
-    Tcl_MutexUnlock(&vfsMountsMutex);
     return NULL;
 }
 
@@ -663,18 +648,16 @@ Vfs_ListMounts(void)
 {
     VfsMount *mountIter;
     Tcl_Obj *res = Tcl_NewObj();
-
-    Tcl_MutexLock(&vfsMountsMutex);
+    ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
 
     /* Build list of mounts */
-    mountIter = listOfMounts;
+    mountIter = tsdPtr->listOfMounts;
     while (mountIter != NULL) {
 	Tcl_Obj* mount = Tcl_NewStringObj(mountIter->mountPoint, 
 					  mountIter->mountLen);
 	Tcl_ListObjAppendElement(NULL, res, mount);
 	mountIter = mountIter->nextMount;
     }
-    Tcl_MutexUnlock(&vfsMountsMutex);
     return res;
 }
 
@@ -704,6 +687,7 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
     Tcl_Obj	*CONST objv[];
 {
     int index;
+    ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
 
     static CONST char *optionStrings[] = {
 	"info", "internalerror", "mount", "unmount", 
@@ -733,28 +717,24 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 	    }
 	    if (objc == 2) {
 	        /* Return the current script */
-		Tcl_MutexLock(&internalErrorMutex);
-		if (internalErrorScript != NULL) {
-		    Tcl_SetObjResult(interp, internalErrorScript);
+		if (tsdPtr->internalErrorScript != NULL) {
+		    Tcl_SetObjResult(interp, tsdPtr->internalErrorScript);
 		}
-		Tcl_MutexUnlock(&internalErrorMutex);
 	    } else {
 		/* Set the script */
 		int len;
-		Tcl_MutexLock(&internalErrorMutex);
-		if (internalErrorScript != NULL) {
-		    Tcl_DecrRefCount(internalErrorScript);
+		if (tsdPtr->internalErrorScript != NULL) {
+		    Tcl_DecrRefCount(tsdPtr->internalErrorScript);
 		}
 		Tcl_GetStringFromObj(objv[2], &len);
 		if (len == 0) {
 		    /* Clear our script */
-		    internalErrorScript = NULL;
+		    tsdPtr->internalErrorScript = NULL;
 		} else {
 		    /* Set it */
-		    internalErrorScript = objv[2];
-		    Tcl_IncrRefCount(internalErrorScript);
+		    tsdPtr->internalErrorScript = objv[2];
+		    Tcl_IncrRefCount(tsdPtr->internalErrorScript);
 		}
-		Tcl_MutexUnlock(&internalErrorMutex);
 	    }
 	    return TCL_OK;
 	}
@@ -806,7 +786,7 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		int retVal;
 		path = VfsFullyNormalizePath(interp, objv[2]);
 		retVal = Vfs_AddMount(path, 0, interp, objv[3]);
-		if (path != NULL) Tcl_DecrRefCount(path);
+		if (path != NULL) { Tcl_DecrRefCount(path); }
 		return retVal;
 	    }
 	    break;
@@ -864,14 +844,14 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 
 /* Handle an error thrown by a tcl vfs implementation */
 static void
-VfsInternalError(Tcl_Interp* interp) {
+VfsInternalError(Tcl_Interp* interp)
+{
     if (interp != NULL) {
-	Tcl_MutexLock(&internalErrorMutex);
-	if (internalErrorScript != NULL) {
-	    Tcl_EvalObjEx(interp, internalErrorScript, 
+	ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
+	if (tsdPtr->internalErrorScript != NULL) {
+	    Tcl_EvalObjEx(interp, tsdPtr->internalErrorScript,
 			  TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
 	}
-	Tcl_MutexUnlock(&internalErrorMutex);
     }
 }
 
@@ -1503,6 +1483,7 @@ VfsMatchInDirectory(
 	VfsMount *mountIter;
 	int len;
 	CONST char *prefix;
+	ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
 
 	prefix = Tcl_GetStringFromObj(Tcl_FSGetNormalizedPath(NULL, dirPtr), 
 				      &len);
@@ -1514,10 +1495,8 @@ VfsMatchInDirectory(
 	    len--;
 	}
 
-	Tcl_MutexLock(&vfsMountsMutex);
-
 	/* Build list of mounts */
-	mountIter = listOfMounts;
+	mountIter = tsdPtr->listOfMounts;
 	while (mountIter != NULL) {
 	    if (mountIter->mountLen > (len+1) 
 		&& !strncmp(mountIter->mountPoint, prefix, (size_t)len) 
@@ -1531,7 +1510,6 @@ VfsMatchInDirectory(
 	    }
 	    mountIter = mountIter->nextMount;
 	}
-	Tcl_MutexUnlock(&vfsMountsMutex);
 	return TCL_OK;
     } else {
 	Tcl_Obj *mountCmd = NULL;
@@ -1850,16 +1828,15 @@ static Tcl_Obj*
 VfsListVolumes(void)
 {
     Tcl_Obj *retVal;
+    ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
 
-    Tcl_MutexLock(&vfsVolumesMutex);
-    if (vfsVolumes != NULL) {
-	Tcl_IncrRefCount(vfsVolumes);
-	retVal = vfsVolumes;
+    if (tsdPtr->vfsVolumes != NULL) {
+	Tcl_IncrRefCount(tsdPtr->vfsVolumes);
+	retVal = tsdPtr->vfsVolumes;
     } else {
 	retVal = NULL;
     }
-    Tcl_MutexUnlock(&vfsVolumesMutex);
-    
+
     return retVal;
 }
 
@@ -1867,26 +1844,26 @@ static void
 Vfs_AddVolume(volume)
     Tcl_Obj *volume;
 {
-    Tcl_MutexLock(&vfsVolumesMutex);
-    
-    if (vfsVolumes == NULL) {
-        vfsVolumes = Tcl_NewObj();
-	Tcl_IncrRefCount(vfsVolumes);
+    ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
+
+    if (tsdPtr->vfsVolumes == NULL) {
+        tsdPtr->vfsVolumes = Tcl_NewObj();
+	Tcl_IncrRefCount(tsdPtr->vfsVolumes);
     } else {
-	if (Tcl_IsShared(vfsVolumes)) {
+#if 0
+	if (Tcl_IsShared(tsdPtr->vfsVolumes)) {
 	    /* 
 	     * Another thread is using this object, so we duplicate the
 	     * object and reduce the refCount on the shared one.
 	     */
-	    Tcl_Obj *oldVols = vfsVolumes;
-	    vfsVolumes = Tcl_DuplicateObj(oldVols);
-	    Tcl_IncrRefCount(vfsVolumes);
+	    Tcl_Obj *oldVols = tsdPtr->vfsVolumes;
+	    tsdPtr->vfsVolumes = Tcl_DuplicateObj(oldVols);
+	    Tcl_IncrRefCount(tsdPtr->vfsVolumes);
 	    Tcl_DecrRefCount(oldVols);
 	}
+#endif
     }
-    Tcl_ListObjAppendElement(NULL, vfsVolumes, volume);
-    
-    Tcl_MutexUnlock(&vfsVolumesMutex);
+    Tcl_ListObjAppendElement(NULL, tsdPtr->vfsVolumes, volume);
 }
 
 static int
@@ -1894,35 +1871,35 @@ Vfs_RemoveVolume(volume)
     Tcl_Obj *volume;
 {
     int i, len;
+    ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
 
-    Tcl_MutexLock(&vfsVolumesMutex);
-
-    Tcl_ListObjLength(NULL, vfsVolumes, &len);
+    Tcl_ListObjLength(NULL, tsdPtr->vfsVolumes, &len);
     for (i = 0;i < len; i++) {
 	Tcl_Obj *vol;
-        Tcl_ListObjIndex(NULL, vfsVolumes, i, &vol);
+        Tcl_ListObjIndex(NULL, tsdPtr->vfsVolumes, i, &vol);
 	if (!strcmp(Tcl_GetString(vol),Tcl_GetString(volume))) {
 	    /* It's in the list, at index i */
 	    if (len == 1) {
 		/* An optimization here */
-		Tcl_DecrRefCount(vfsVolumes);
-		vfsVolumes = NULL;
+		Tcl_DecrRefCount(tsdPtr->vfsVolumes);
+		tsdPtr->vfsVolumes = NULL;
 	    } else {
-		/* Make ourselves the unique owner */
-		if (Tcl_IsShared(vfsVolumes)) {
-		    Tcl_Obj *oldVols = vfsVolumes;
-		    vfsVolumes = Tcl_DuplicateObj(oldVols);
-		    Tcl_IncrRefCount(vfsVolumes);
+		/*
+		 * Make ourselves the unique owner
+		 * XXX: May be unnecessary now that it is tsd
+		 */
+		if (Tcl_IsShared(tsdPtr->vfsVolumes)) {
+		    Tcl_Obj *oldVols = tsdPtr->vfsVolumes;
+		    tsdPtr->vfsVolumes = Tcl_DuplicateObj(oldVols);
+		    Tcl_IncrRefCount(tsdPtr->vfsVolumes);
 		    Tcl_DecrRefCount(oldVols);
 		}
 		/* Remove the element */
-		Tcl_ListObjReplace(NULL, vfsVolumes, i, 1, 0, NULL);
-		Tcl_MutexUnlock(&vfsVolumesMutex);
+		Tcl_ListObjReplace(NULL, tsdPtr->vfsVolumes, i, 1, 0, NULL);
 		return TCL_OK;
 	    }
 	}
     }
-    Tcl_MutexUnlock(&vfsVolumesMutex);
 
     return TCL_ERROR;
 }
@@ -2048,13 +2025,23 @@ static void
 VfsExitProc(ClientData clientData)
 {
     Tcl_FSUnregister(&vfsFilesystem);
-    /* 
+}
+
+static void
+VfsThreadExitProc(ClientData clientData)
+{
+    ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
+    /*
      * This is probably no longer needed, because each individual
      * interp's cleanup will trigger removal of all volumes which
      * belong to it.
      */
-    if (vfsVolumes != NULL) {
-        Tcl_DecrRefCount(vfsVolumes);
-	vfsVolumes = NULL;
+    if (tsdPtr->vfsVolumes != NULL) {
+	Tcl_DecrRefCount(tsdPtr->vfsVolumes);
+	tsdPtr->vfsVolumes = NULL;
+    }
+    if (tsdPtr->internalErrorScript != NULL) {
+	Tcl_DecrRefCount(tsdPtr->internalErrorScript);
+	tsdPtr->internalErrorScript = NULL;
     }
 }

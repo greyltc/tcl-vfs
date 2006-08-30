@@ -1,3 +1,12 @@
+2006-08-30  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* generic/vfs.c: move static globals to being thread-specific.  If
+	you wish to access a mount point or volume in a thread, you need
+	to remount the file in the thread.  This is a change from the
+	previous behavior that would allow access across threads, which
+	was unsafe and would potentially crash.
+		**** POTENTIAL INCOMPATIBILITY ****
+
 2006-06-22  Jean-Claude Wippler  <jcw@equi4.com>
 
 	* library/mkclvfs.tcl: Updated to latest 1.4 revision
