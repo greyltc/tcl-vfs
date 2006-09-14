@@ -1,3 +1,12 @@
+2006-09-14  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* library/httpvfs.tcl: rewritten to clean up http tokens and
+	actually interpret data from them.
+	(Mount): If a url doesn't return "ok" status, return failure.
+	(stat, access): If HEAD returns 404 or status != ok, return ENOENT.
+
+	* library/vfslib.tcl: code cleanup
+
 2006-08-30  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* generic/vfs.c: move static globals to being thread-specific.  If

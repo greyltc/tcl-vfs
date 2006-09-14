@@ -10,33 +10,39 @@ namespace eval vfs::http {}
 
 proc vfs::http::Mount {dirurl local} {
     ::vfs::log "http-vfs: attempt to mount $dirurl at $local"
-    if {[string index $dirurl end] != "/"} {
+    if {[string index $dirurl end] ne "/"} {
 	append dirurl "/"
     }
-    if {[string range $dirurl 0 6] == "http://"} {
+    if {[string match "http://*" $dirurl]} {
 	set rest [string range $dirurl 7 end]
     } else {
 	set rest $dirurl
 	set dirurl "http://${dirurl}"
     }
-    
+
     if {![regexp {(([^:]*)(:([^@]*))?@)?([^/]*)(/(.*/)?([^/]*))?$} $rest \
-      junk junk user junk pass host junk path file]} {
-	return -code error "Sorry I didn't understand\
-	  the url address \"$dirurl\""
+	      junk junk user junk pass host junk path file]} {
+	return -code error "unable to parse url \"$dirurl\""
     }
-    
+
     if {[string length $file]} {
 	return -code error "Can only mount directories, not\
 	  files (perhaps you need a trailing '/' - I understood\
 	  a path '$path' and file '$file')"
     }
-    
-    if {![string length $user]} {
+
+    if {$user eq ""} {
 	set user anonymous
     }
-    
+
     set token [::http::geturl $dirurl -validate 1]
+    http::wait $token
+    set status [http::status $token]
+    http::cleanup $token
+    if {$status ne "ok"} {
+	# we'll take whatever http agrees is "ok"
+	return -code error "received status \"$status\" for \"$dirurl\""
+    }
 
     if {![catch {vfs::filesystem info $dirurl}]} {
 	# unmount old mount
@@ -55,10 +61,10 @@ proc vfs::http::Unmount {dirurl local} {
 }
 
 proc vfs::http::handler {dirurl path cmd root relative actualpath args} {
-    if {$cmd == "matchindirectory"} {
-	eval [list $cmd $dirurl $relative $actualpath] $args
+    if {$cmd eq "matchindirectory"} {
+	eval [linsert $args 0 $cmd $dirurl $relative $actualpath]
     } else {
-	eval [list $cmd $dirurl $relative] $args
+	eval [linsert $args 0 $cmd $dirurl $relative]
     }
 }
 
@@ -67,11 +73,22 @@ proc vfs::http::handler {dirurl path cmd root relative actualpath args} {
 
 proc vfs::http::stat {dirurl name} {
     ::vfs::log "stat $name"
-    
+
     # get information on the type of this file.  We describe everything
     # as a file (not a directory) since with http, even directories
     # really behave as the index.html they contain.
-    set state [::http::geturl "$dirurl$name" -validate 1]
+    set token [::http::geturl "$dirurl$name" -validate 1]
+    http::wait $token
+    set ncode [http::ncode $token]
+    if {$ncode == 404 || [http::status $token] ne "ok"} {
+	# 404 Not Found
+	set code [http::code $token]
+	http::cleanup $token
+	vfs::filesystem posixerror $::vfs::posix(ENOENT)
+	return -code error \
+	    "could not read \"$name\": no such file or directory ($code)"
+    }
+    http::cleanup $token
     set mtime 0
     lappend res type file
     lappend res dev -1 uid -1 gid -1 nlink 1 depth 0 \
@@ -83,14 +100,22 @@ proc vfs::http::access {dirurl name mode} {
     ::vfs::log "access $name $mode"
     if {$mode & 2} {
 	vfs::filesystem posixerror $::vfs::posix(EROFS)
+	return -code error "read-only"
     }
     if {$name == ""} { return 1 }
-    set state [::http::geturl "$dirurl$name"]
-    set info ""
-    if {[string length $info]} {
-	return 1
+    set token [::http::geturl "$dirurl$name" -validate 1]
+    http::wait $token
+    set ncode [http::ncode $token]
+    if {$ncode == 404 || [http::status $token] ne "ok"} {
+	# 404 Not Found
+	set code [http::code $token]
+	http::cleanup $token
+	vfs::filesystem posixerror $::vfs::posix(ENOENT)
+	return -code error \
+	    "could not read \"$name\": no such file or directory ($code)"
     } else {
-	error "No such file"
+	http::cleanup $token
+	return 1
     }
 }
 
@@ -105,11 +130,13 @@ proc vfs::http::open {dirurl name mode permissions} {
     switch -glob -- $mode {
 	"" -
 	"r" {
-	    set state [::http::geturl "$dirurl$name"]
+	    set token [::http::geturl "$dirurl$name"]
 
 	    set filed [vfs::memchan]
 	    fconfigure $filed -translation binary
-	    puts -nonewline $filed [::http::data $state]
+	    http::wait $token
+	    puts -nonewline $filed [::http::data $token]
+	    http::cleanup $token
 
 	    fconfigure $filed -translation auto
 	    seek $filed 0
@@ -131,14 +158,13 @@ proc vfs::http::matchindirectory {dirurl path actualpath pattern type} {
 
     if {[string length $pattern]} {
 	# need to match all files in a given remote http site.
-	
     } else {
 	# single file
 	if {![catch {access $dirurl $path 0}]} {
 	    lappend res $path
 	}
     }
-    
+
     return $res
 }
 
