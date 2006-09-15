@@ -54,7 +54,7 @@ package ifneeded zipvfs       1.0 [list source [file join $dir zipvfs.tcl]]
 
 # New
 package ifneeded vfs::ftp     1.0 [list source [file join $dir ftpvfs.tcl]]
-package ifneeded vfs::http    0.5 [list source [file join $dir httpvfs.tcl]]
+package ifneeded vfs::http    0.6 [list source [file join $dir httpvfs.tcl]]
 package ifneeded vfs::mk4     1.10 [list source [file join $dir mk4vfs.tcl]]
 package ifneeded vfs::mkcl    1.4 [list source [file join $dir mkclvfs.tcl]]
 package ifneeded vfs::ns      0.5 [list source [file join $dir tclprocvfs.tcl]]

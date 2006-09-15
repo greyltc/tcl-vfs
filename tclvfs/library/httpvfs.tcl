@@ -1,15 +1,35 @@
 
-package provide vfs::http 0.5
+package provide vfs::http 0.6
 
 package require vfs 1.0
 package require http
 
 # This works for basic operations, but has not been very debugged.
 
-namespace eval vfs::http {}
+namespace eval vfs::http {
+    # Allow for options when mounting an http URL
+    variable options
+    # -urlencode means automatically parse "foo/my file (2).txt" as
+    # "foo/my%20file%20%282%29.txt", as per RFC 3986, for the user.
+    set options(-urlencode) 1
+    # -urlparse would further parse URLs for ? (query string) and # (anchor)
+    # components, leaving those unencoded. Only works when -urlencode is true.
+    set options(-urlparse) 0
+}
 
-proc vfs::http::Mount {dirurl local} {
-    ::vfs::log "http-vfs: attempt to mount $dirurl at $local"
+proc vfs::http::Mount {dirurl local args} {
+    ::vfs::log "http-vfs: attempt to mount $dirurl at $local (args: $args)"
+    variable options
+    foreach {key val} $args {
+	# only do exact option name matching for now
+	if {[info exists options($key)]} {
+	    # currently only boolean values
+	    if {![string is boolean -strict $val]} {
+		return -code error "invalid boolean value \"$val\" for $key"
+	    }
+	    set options($key) $val
+	}
+    }
     if {[string index $dirurl end] ne "/"} {
 	append dirurl "/"
     }
@@ -68,16 +88,43 @@ proc vfs::http::handler {dirurl path cmd root relative actualpath args} {
     }
 }
 
+proc vfs::http::urlname {name} {
+    # Parse the passed in name into a suitable URL name based on mount opts
+    variable options
+    if {$options(-urlencode)} {
+	set querystr ""
+	if {$options(-urlparse)} {
+	    # check for ? and split if necessary so that the query_string
+	    # part doesn't get encoded.  Anchors come after this as well.
+	    set idx [string first ? $name]
+	    if {$idx >= 0} {
+		set querystr [string range $name $idx end] ; # includes ?
+		set name [string range $name 0 [expr {$idx-1}]]
+	    }
+	}
+	set urlparts [list]
+	foreach part [file split $name] {
+	    lappend urlparts [http::mapReply $part]
+	}
+	set urlname "[join $urlparts /]$querystr"
+    } else {
+	set urlname $name
+    }
+    return $urlname
+}
+
 # If we implement the commands below, we will have a perfect
 # virtual file system for remote http sites.
 
 proc vfs::http::stat {dirurl name} {
-    ::vfs::log "stat $name"
+    set urlname [urlname $name]
+    ::vfs::log "stat $name ($urlname)"
 
     # get information on the type of this file.  We describe everything
     # as a file (not a directory) since with http, even directories
     # really behave as the index.html they contain.
-    set token [::http::geturl "$dirurl$name" -validate 1]
+
+    set token [::http::geturl "$dirurl$urlname" -validate 1]
     http::wait $token
     set ncode [http::ncode $token]
     if {$ncode == 404 || [http::status $token] ne "ok"} {
@@ -97,13 +144,14 @@ proc vfs::http::stat {dirurl name} {
 }
 
 proc vfs::http::access {dirurl name mode} {
-    ::vfs::log "access $name $mode"
+    set urlname [urlname $name]
+    ::vfs::log "access $name $mode ($urlname)"
     if {$mode & 2} {
 	vfs::filesystem posixerror $::vfs::posix(EROFS)
 	return -code error "read-only"
     }
     if {$name == ""} { return 1 }
-    set token [::http::geturl "$dirurl$name" -validate 1]
+    set token [::http::geturl "$dirurl$urlname" -validate 1]
     http::wait $token
     set ncode [http::ncode $token]
     if {$ncode == 404 || [http::status $token] ne "ok"} {
@@ -122,7 +170,8 @@ proc vfs::http::access {dirurl name mode} {
 # We've chosen to implement these channels by using a memchan.
 # The alternative would be to use temporary files.
 proc vfs::http::open {dirurl name mode permissions} {
-    ::vfs::log "open $name $mode $permissions"
+    set urlname [urlname $name]
+    ::vfs::log "open $name $mode $permissions ($urlname)"
     # return a list of two elements:
     # 1. first element is the Tcl channel name which has been opened
     # 2. second element (optional) is a command to evaluate when
@@ -130,7 +179,7 @@ proc vfs::http::open {dirurl name mode permissions} {
     switch -glob -- $mode {
 	"" -
 	"r" {
-	    set token [::http::geturl "$dirurl$name"]
+	    set token [::http::geturl "$dirurl$urlname"]
 
 	    set filed [vfs::memchan]
 	    fconfigure $filed -translation binary
@@ -140,6 +189,7 @@ proc vfs::http::open {dirurl name mode permissions} {
 
 	    fconfigure $filed -translation auto
 	    seek $filed 0
+	    # XXX: the close command should free vfs::memchan somehow??
 	    return [list $filed]
 	}
 	"a" -

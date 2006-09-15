@@ -1,3 +1,13 @@
+2006-09-15  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* library/pkgIndex.tcl: bump vfs::http to 0.6
+	* library/httpvfs.tcl:  Add urlname encoding to handle the
+	translation of "/foo/my file (2).txt" as
+	foo/my%20file%20%282%29.txt, per RFC 3986, for the user.  This is
+	controlled via a new ?-urlencode bool? mount option, default 1.
+		**** POTENTIAL INCOMPATIBILITY ****
+		**** if user was "working around" at [open] level ****
+
 2006-09-14  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* library/httpvfs.tcl: rewritten to clean up http tokens and
