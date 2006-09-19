@@ -1,3 +1,10 @@
+2006-09-19  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* library/httpvfs.tcl (vfs::http::urlparse): add method to
+	deconstruct the url using RFC 3986 semantics.
+	(vfs::http::Mount): add support for HTTP basic auth if a user was
+	passed in the url
+
 2006-09-15  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* library/pkgIndex.tcl: bump vfs::http to 0.6
