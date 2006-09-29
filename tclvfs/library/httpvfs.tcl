@@ -291,7 +291,7 @@ proc vfs::http::urlname {name} {
 proc vfs::http::geturl {url args} {
     # a wrapper around http::geturl that handles 404 or !ok status check
     # returns error on no success, or a fully ready http token otherwise
-    set token [linsert $args 0 ::http::geturl $url]
+    set token [eval [linsert $args 0 ::http::geturl $url]]
     http::wait $token
 
     if {[http::ncode $token] == 404 || [http::status $token] ne "ok"} {
