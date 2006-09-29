@@ -288,6 +288,26 @@ proc vfs::http::urlname {name} {
     return $urlname
 }
 
+proc vfs::http::geturl {url args} {
+    # a wrapper around http::geturl that handles 404 or !ok status check
+    # returns error on no success, or a fully ready http token otherwise
+    set token [linsert $args 0 ::http::geturl $url]
+    http::wait $token
+
+    if {[http::ncode $token] == 404 || [http::status $token] ne "ok"} {
+	# 404 Not Found
+	set code [http::code $token]
+	http::cleanup $token
+	vfs::filesystem posixerror $::vfs::posix(ENOENT)
+	return -code error \
+	    "could not read \"$url\": no such file or directory ($code)"
+    }
+
+    # treat returned token like a regular http token
+    # call http::cleanup on it when done
+    return $token
+}
+
 # If we implement the commands below, we will have a perfect
 # virtual file system for remote http sites.
 
@@ -299,17 +319,8 @@ proc vfs::http::stat {dirurl headers name} {
     # as a file (not a directory) since with http, even directories
     # really behave as the index.html they contain.
 
-    set token [::http::geturl "$dirurl$urlname" -validate 1 -headers $headers]
-    http::wait $token
-    set ncode [http::ncode $token]
-    if {$ncode == 404 || [http::status $token] ne "ok"} {
-	# 404 Not Found
-	set code [http::code $token]
-	http::cleanup $token
-	vfs::filesystem posixerror $::vfs::posix(ENOENT)
-	return -code error \
-	    "could not read \"$name\": no such file or directory ($code)"
-    }
+    # this will through an error if the file doesn't exist
+    set token [geturl "$dirurl$urlname" -validate 1 -headers $headers]
     http::cleanup $token
     set mtime 0
     lappend res type file
@@ -326,20 +337,10 @@ proc vfs::http::access {dirurl headers name mode} {
 	return -code error "read-only"
     }
     if {$name == ""} { return 1 }
-    set token [::http::geturl "$dirurl$urlname" -validate 1 -headers $headers]
-    http::wait $token
-    set ncode [http::ncode $token]
-    if {$ncode == 404 || [http::status $token] ne "ok"} {
-	# 404 Not Found
-	set code [http::code $token]
-	http::cleanup $token
-	vfs::filesystem posixerror $::vfs::posix(ENOENT)
-	return -code error \
-	    "could not read \"$name\": no such file or directory ($code)"
-    } else {
-	http::cleanup $token
-	return 1
-    }
+    # this will through an error if the file doesn't exist
+    set token [geturl "$dirurl$urlname" -validate 1 -headers $headers]
+    http::cleanup $token
+    return 1
 }
 
 # We've chosen to implement these channels by using a memchan.
@@ -354,11 +355,9 @@ proc vfs::http::open {dirurl headers name mode permissions} {
     switch -glob -- $mode {
 	"" -
 	"r" {
-	    set token [::http::geturl "$dirurl$urlname" -headers $headers]
-
+	    set token [geturl "$dirurl$urlname" -headers $headers]
 	    set filed [vfs::memchan]
 	    fconfigure $filed -translation binary
-	    http::wait $token
 	    puts -nonewline $filed [::http::data $token]
 	    http::cleanup $token
 

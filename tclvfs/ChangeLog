@@ -1,3 +1,8 @@
+2006-09-29  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* library/httpvfs.tcl (vfs::http::geturl): wrapper around
+	http::geturl that does 404 check.
+
 2006-09-19  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* library/httpvfs.tcl (vfs::http::urlparse): add method to
