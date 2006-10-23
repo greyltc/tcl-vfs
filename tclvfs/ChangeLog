@@ -1,3 +1,20 @@
+2006-10-23  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	Initial upload of template virtual filesystems in new subfolder:
+	* library/template/collatevfs.tcl
+	* library/template/deltavfs.tcl
+	* library/template/fishvfs.tcl
+	* library/template/quotavfs.tcl
+	* library/template/templatevfs.tcl
+	* library/template/versionvfs.tcl
+
+	Plus helper utlities:
+	* library/template/tdelta.tcl - required by deltavfs.tcl
+	* library/template/globfind.tcl - required by quotavfs.tcl
+
+	* library/pkgIndex.tcl - added "package ifneeded" statements for
+	template virtual filesystems.
+
 2006-09-29  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* library/httpvfs.tcl (vfs::http::geturl): wrapper around

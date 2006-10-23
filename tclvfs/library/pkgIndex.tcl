@@ -64,3 +64,17 @@ package ifneeded vfs::urltype 1.0 [list source [file join $dir vfsUrl.tcl]]
 package ifneeded vfs::webdav  0.1 [list source [file join $dir webdavvfs.tcl]]
 package ifneeded vfs::zip     1.0 [list source [file join $dir zipvfs.tcl]]
 package ifneeded vfs::tk      0.5 [list source [file join $dir tkvfs.tcl]]
+
+# Virtual filesystems based on the template vfs:
+package ifneeded vfs::template::collate     1.0 [list source [file join $dir template collatevfs.tcl]]
+package ifneeded vfs::template::version     1.0 [list source [file join $dir template versionvfs.tcl]]
+package ifneeded vfs::template::version::delta     1.0 [list source [file join $dir template deltavfs.tcl]]
+package ifneeded vfs::template::fish     1.0 [list source [file join $dir template fishvfs.tcl]]
+package ifneeded vfs::template::quota     1.0 [list source [file join $dir template quotavfs.tcl]]
+package ifneeded vfs::template     1.0 [list source [file join $dir template templatevfs.tcl]]
+
+package ifneeded globfind     1.0 [list source [file join $dir template globfind.tcl]]
+package ifneeded trsync     1.0 [list source [file join $dir template tdelta.tcl]]
+
+
+
