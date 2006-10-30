@@ -1,3 +1,55 @@
+if 0 {
+########################
+
+globfind.tcl --
+
+Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
+License: Tcl license
+Version 1.0
+
+The proc globfind is a replacement for tcllib's fileutil::find
+
+Usage: globfind ?basedir ?filtercmd??
+
+Options:
+
+basedir - the directory from which to start the search.  Defaults to current directory.
+
+filtercmd - Tcl command; for each file found in the basedir, the filename will be
+appended to filtercmd and the result will be evaluated.  The evaluation should return
+0 or 1; only files whose return code is 1 will be included in the final return result.
+
+----
+
+The proc fileutil::find is useful, but it has several deficiencies:
+
+    * On Windows, hidden files are mishandled.
+    * On Windows, checks to avoid infinite loops due to nested 
+	symbolic links are not done.
+    * On Unix, nested loop checking requires a "file stat" of each 
+	file/dir encountered, a significant performance hit.
+    * The basedir from which the search starts is not included in the 
+	results, as it is with GNU find.
+    * If the basedir is a file, it is returned in the result not as a 
+	list element (like glob) but as a string.
+    * The proc calls itself recursively, and thus risks running into 
+	interp recursion limits for very large systems.
+    * fileutil.tcl contains three separate instantiations of proc 
+	find for varying os's/versions. Maintenance nightmare.
+
+The proc globfind eliminates all the above deficiencies. It checks for 
+nested symbolic links in a platform-independent way, and scans 
+directory hierarchies without recursion.
+
+For speed and simplicity, it takes advantage of glob's ability to use 
+multiple patterns to scan deeply into a directory structure in a single 
+command, hence the name. Its calling syntax is the same as fileutil::find, 
+so with a name change it could be used as a drop-in replacement:
+
+########################
+}
+
+
 package provide globfind 1.0
 
 namespace eval ::globfind {
@@ -134,6 +186,8 @@ proc globfind {{basedir .} {filtercmd {}}} {
 	return $filterFiles
 }
 
+# scfind: a command suitable for use as a filtercmd with globfind, arguments
+# duplicate a subset of GNU find args.
 
 proc scfind {args} {
 	set filename [file join [pwd] [lindex $args end]]
@@ -211,6 +265,8 @@ proc scfind {args} {
 	return 1
 }
 
+# find: example use of globfind and scfind to duplicate a subset of the
+# command line interface of GNU find.
 proc find {args} {
 	globfind [lindex $args 0] [list [subst "scfind $args"]]
 }
@@ -219,6 +275,5 @@ namespace export -clear globfind
 
 }
 # end namespace globfind
-
 
 

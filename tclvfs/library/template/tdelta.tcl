@@ -4,6 +4,8 @@
 #	and re-create one file by applying the delta to the other.
 #
 # Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
+# License: Tcl license
+# Version 1.0
 #
 # Usage:
 #
