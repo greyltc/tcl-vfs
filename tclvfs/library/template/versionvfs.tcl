@@ -5,7 +5,7 @@ versionvfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.01
+Version 1.0
 
 A versioning virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -187,20 +187,17 @@ proc file_attributes {file {attribute {}} args} {
 	}
 	return $returnValue
 }
+
 proc file_delete {file} {
 	upvar path path root root relative relative
 	set dir 0
 
 # make sure subfiles of directory are deleted:
 	if [file isdirectory $file] {
-		set dir 1
-		set subfiles [globfind [file join $root $relative]]
-		set subfileloc [lsearch $subfiles [file join $root $relative]]
-		set subfiles [lreplace $subfiles $subfileloc $subfileloc]
+		set subfiles [globfind $file]
 		set subfiles [lsort -decreasing $subfiles]
-		foreach sf $subfiles {
-			::file delete -force -- $sf
-		}
+		foreach sf $subfiles {globdelete $sf}
+		set dir 1
 	}
 	set fileName [VAcquireFile $path $root $relative]
 
@@ -376,6 +373,19 @@ proc UnmountProcedure {path to} {
 	return
 }
 
+# utility proc called by file_delete for recursive deletion of dir contents:
+proc globdelete {file} {
+	upvar root root
+	if [file isdirectory $file] {return}
+	set file [file join [file dirname $file] [lindex [split $file \;] 0]]
+	set fileName $file\;[VCreateTag $root]
+	set fileName [split $fileName \;]
+	set fileName [linsert $fileName 2 "deleted"]
+	set fileName [join $fileName \;]
+	close [open $fileName w]
+	if ![string first {.&} [file tail $fileName]] {catch {file attributes $fileName -hidden 1}}
+}
+
 # Can replace this proc with one that uses different hash function if preferred.
 proc Hash {channel} {
 	seek $channel 0
@@ -399,9 +409,7 @@ proc VAcquireFile {path root relative {actualpath {}}} {
 	}
 
 # grab all versions:
-	if [catch {set versions [glob -path $fileName -nocomplain -types f "\;*"]} result] {
-		set versions [glob -path $fileName -nocomplain -types f "\;*"]
-	}
+	set versions [glob -path $fileName -nocomplain -types f "\;*"]
 	if [catch {::vfs::filesystem info $path}] {append versions " [glob -path $fileName -nocomplain -types "f hidden" "\;*"]"}
 
 	set versions [string trim $versions]
