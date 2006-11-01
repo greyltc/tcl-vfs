@@ -1,3 +1,8 @@
+2006-10-31  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	* library/template/versionvfs.tcl: added code to ensure all
+	subfiles of a directory are deleted before dir deletion.
+
 2006-10-29  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	Added comments and license info:

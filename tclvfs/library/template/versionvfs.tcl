@@ -5,7 +5,7 @@ versionvfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.0
+Version 1.01
 
 A versioning virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -72,11 +72,12 @@ The versioning vfs inherits the -cache and -volume options of the template vfs.
 ########################
 }
 
-package provide vfs::template::version 1.0
-
-package require vfs::template
+package require globfind
+namespace import -force ::globfind::globfind
 
 namespace eval ::vfs::template::version {
+
+package require vfs_template
 
 # read template procedures into current namespace. Do not edit:
 foreach templateProc [namespace eval ::vfs::template {info procs}] {
@@ -104,7 +105,7 @@ proc close_ {channelID} {
 
 # delete file version created by open_ if it's a new file:
 	if [string equal $fileStats(hash) {}] {
-		file delete $fileStats(filename)
+		file delete -- $fileStats(filename)
 	}
 
 # save new version:
@@ -189,12 +190,23 @@ proc file_attributes {file {attribute {}} args} {
 proc file_delete {file} {
 	upvar path path root root relative relative
 	set dir 0
-	if [file isdirectory $file] {set dir 1}
+
+# make sure subfiles of directory are deleted:
+	if [file isdirectory $file] {
+		set dir 1
+		set subfiles [globfind [file join $root $relative]]
+		set subfileloc [lsearch $subfiles [file join $root $relative]]
+		set subfiles [lreplace $subfiles $subfileloc $subfileloc]
+		set subfiles [lsort -decreasing $subfiles]
+		foreach sf $subfiles {
+			::file delete -force -- $sf
+		}
+	}
 	set fileName [VAcquireFile $path $root $relative]
 
 # allow straight deletion of new zero-length file:
 	if {!$dir && ([llength [VersionsAll $path $relative]] == 1) && ![file size $fileName]} {
-		file delete -force $fileName
+		file delete -force -- $fileName
 		return
 	}
 
@@ -387,7 +399,9 @@ proc VAcquireFile {path root relative {actualpath {}}} {
 	}
 
 # grab all versions:
-	set versions [glob -path $fileName -nocomplain -types f "\;*"]
+	if [catch {set versions [glob -path $fileName -nocomplain -types f "\;*"]} result] {
+		set versions [glob -path $fileName -nocomplain -types f "\;*"]
+	}
 	if [catch {::vfs::filesystem info $path}] {append versions " [glob -path $fileName -nocomplain -types "f hidden" "\;*"]"}
 
 	set versions [string trim $versions]
@@ -418,7 +432,7 @@ proc VAcquireFile {path root relative {actualpath {}}} {
 		for {set i [incr fileNumber -1]} {$i >= 0} {incr i -1} {
 			if {[llength $projectFiles] <= $keep} {break}
 			set delFile [file join [file dirname [file join $path $relative]] [file tail [lindex $projectFiles $i]]]
-			if ![catch {file delete $delFile}] {set projectFiles [lreplace $projectFiles $i $i]}
+			if ![catch {file delete -- $delFile}] {set projectFiles [lreplace $projectFiles $i $i]}
 		}
 	}
 
