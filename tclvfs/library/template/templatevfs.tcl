@@ -7,7 +7,7 @@ templatevfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.0
+Version 1.01
 
 The template virtual filesystem is designed as a prototype on which to build new virtual 
 filesystems.  Only a few simple, abstract procedures have to be overridden to produce a new
@@ -41,9 +41,8 @@ a procedure that ensures that all vfs's are explicitly unmounted before the
 shell terminates.
 
 When a vfs built on the template vfs is mounted, the mount command options are stored in an array named
-vfs::template::mount with the virtual mount points as the array index name.  On exit, the contents of
-this array are stored in the file $HOME/.vfs_tcl.  When this file is sourced, the array vfs::template::mount
-is restored by reading $HOME/.vfs_tcl if the file exists.
+vfs::template::mount with the virtual mount point as the array index name.  Thus a vfs can be re-mounted
+by executing "eval" on the contents of the array element whose index is the vfs's virtual mount point.
 
 ########################
 }
@@ -238,7 +237,7 @@ proc handler {path cmd root relative actualpath args} {
 		}
 		fileattributes {
 			set index [lindex $args 0]
-			set value [lindex $args 1]
+			if {[llength $args] > 1} {set value [lindex $args 1]}
 			set extra {}
 			if [string equal $relative {}] {eval set extra \"-cache \$[namespace current]::cache(\$root)\"}
 
@@ -253,7 +252,7 @@ proc handler {path cmd root relative actualpath args} {
 			set attribute [lindex [lsort [array names attributes]] $index]
 
 			# if value given in args, set it and return:
-			if ![string equal $value {}] {
+			if [info exists value] {
 				if [string equal $attribute "-cache"] {
 					set [namespace current]::cache($root) $value
 				} else {
@@ -267,7 +266,6 @@ proc handler {path cmd root relative actualpath args} {
 			if ![string equal $index {}] {
 				return $attributes($attribute)
 			}
-
 			# otherwise, just return all attribute names
 			return [lsort [array names attributes]]
 		}
@@ -337,6 +335,7 @@ proc handler {path cmd root relative actualpath args} {
 					return -code error $::vfs::posix(ENOTEMPTY)
 				}
 			}
+			if {$relative == {}} {Unmount $root ; return}
 			RemoveDirectory $path $root $relative $actualpath
 			CacheClear $virtualName
 		}
@@ -616,31 +615,11 @@ namespace export -clear *
 catch {rename ::exit ::vfs::template::exit}
 
 proc ::exit {} {
-	foreach vfs [lsort -decreasing [::vfs::filesystem info]] {
+	foreach vfs [::vfs::filesystem info] {
 		if [catch {$::vfs::_unmountCmd($vfs) $vfs} result] {
 			puts "$vfs: $result"
 		}		
 	}
-
-	# save contents of array which stores historical mount command options
-	if [info exists ::vfs::template::mount] {
-		set startDir [pwd]
-		cd
-		set f [open .vfs_tcl w]
-		puts $f [array get ::vfs::template::mount]
-		close $f
-		cd $startDir
-	}
 	::vfs::template::exit
-}
-
-# restore mount command options history to array:
-if [file exists .vfs_tcl] {
-	set startDir [pwd]
-	cd
-	set f [open .vfs_tcl r]
-	array set ::vfs::template::mount [read $f]
-	close $f
-	cd $startDir
 }
 

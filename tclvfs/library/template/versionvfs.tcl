@@ -5,7 +5,7 @@ versionvfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.0
+Version 1.02
 
 A versioning virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -72,12 +72,14 @@ The versioning vfs inherits the -cache and -volume options of the template vfs.
 ########################
 }
 
+package provide vfs::template::version 1.0
+
+package require vfs::template
+
 package require globfind
 namespace import -force ::globfind::globfind
 
 namespace eval ::vfs::template::version {
-
-package require vfs_template
 
 # read template procedures into current namespace. Do not edit:
 foreach templateProc [namespace eval ::vfs::template {info procs}] {
@@ -157,7 +159,7 @@ proc file_attributes {file {attribute {}} args} {
 			eval return \$::vfs::template::version::${attribute}(\$root)
 		}
 		set ::vfs::template::version::${attribute}($root) [lindex $args 0]
-		if {[lindex $args 0] == {{}}} {unset ::vfs::template::version::${attribute}($root)}
+		if {[lindex $args 0] == {}} {unset ::vfs::template::version::${attribute}($root)}
 		return
 	}
 	# process read-only vfs-specific attributes:
@@ -196,8 +198,13 @@ proc file_delete {file} {
 	if [file isdirectory $file] {
 		set subfiles [globfind $file]
 		set subfiles [lsort -decreasing $subfiles]
-		foreach sf $subfiles {globdelete $sf}
+		set deleted {}
+		foreach sf $subfiles {
+			if [file isdirectory $sf] {continue}
+			globdelete $sf
+		}
 		set dir 1
+		return
 	}
 	set fileName [VAcquireFile $path $root $relative]
 
@@ -375,11 +382,12 @@ proc UnmountProcedure {path to} {
 
 # utility proc called by file_delete for recursive deletion of dir contents:
 proc globdelete {file} {
-	upvar root root
-	if [file isdirectory $file] {return}
-	set file [file join [file dirname $file] [lindex [split $file \;] 0]]
+	upvar root root deleted deleted
+	set file [file join [file dirname $file] [lindex [split [file tail $file] \;] 0]]
+	if {[lsearch $deleted $file] > -1} {return}
+	lappend deleted $file
 	set fileName $file\;[VCreateTag $root]
-	set fileName [split $fileName \;]
+	set fileName [split $fileName \;] 
 	set fileName [linsert $fileName 2 "deleted"]
 	set fileName [join $fileName \;]
 	close [open $fileName w]
