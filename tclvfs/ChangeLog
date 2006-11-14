@@ -1,3 +1,8 @@
+2006-11-14  Jean-Claude Wippler  <jcw@equi4.com>
+
+	* library/mkclvfs.tcl: removed, now part of the vlerq extension again
+	* library/pkgIndex.tcl, pkgIndex.tcl.in, Makefile.in: removed mkcl
+
 2006-11-10  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	* library/template/templatevfs.tcl: file delete on vfs mount 
