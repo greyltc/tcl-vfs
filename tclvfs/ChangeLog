@@ -1,3 +1,8 @@
+2006-12-10  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	* library/template/versionvfs.tcl: when time attribute is set,
+	files created after set time are made invisible.
+
 2006-11-14  Jean-Claude Wippler  <jcw@equi4.com>
 
 	* library/mkclvfs.tcl: removed, now part of the vlerq extension again

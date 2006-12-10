@@ -476,7 +476,7 @@ proc FileTransport {filename} {
 
 
 }
-# end namespace ::vfs::template
+# end namespace ::vfs::template::fish
 
 
 # Each transport procedure has its own namespace and Transport proc.

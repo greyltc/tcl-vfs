@@ -5,7 +5,7 @@ versionvfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.02
+Version 1.03
 
 A versioning virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -150,7 +150,6 @@ proc file_attributes {file {attribute {}} args} {
 	set latest [lindex [lindex [lsort [set allVersions [VersionsAll $path $relative]]] end] 0]
 	set acquired [lindex [split [set fileName [VAcquireFile $path $root $relative]] \;] 1]
 	if ![string first .&dir [file tail $fileName]] {::vfs::filesystem posixerror $::vfs::posix(ENOENT)}
-
 # process vfs-specific attributes:
 	if {($relative == {}) && ([string map {-keep 1 -project 1 -time 1} $attribute] == 1)} {
 		set attribute [string range $attribute 1 end]
@@ -171,11 +170,9 @@ proc file_attributes {file {attribute {}} args} {
 		if {$args == {}} {return [file tail $fileName]}
 		error "cannot set attribute \"-version_filename\" for file \"[file tail $relative]\": attribute is readonly"
 	}
-
 # check if current version is latest, if not disallow edit:
 	if {($args != {}) && ($acquired != {}) && ($latest != $acquired)} {::vfs::filesystem posixerror $::vfs::posix(EPERM)}
 	set returnValue [eval file attributes \$fileName $attribute $args]
-
 # collect values for vfs-specific attributes:
 	if {$attribute == {}} {
 		append returnValue " [list -versions $allVersions]"
@@ -473,6 +470,12 @@ proc VAcquireFile {path root relative {actualpath {}}} {
 		set projectLength [llength $tags]
 		if {($projectLength > 1) && !$projectMember} {return [file join $path $relative]}
 	}
+
+# if time tag value is before creation date of chosen version, make file invisible:
+	if {[info exists ::vfs::template::version::time($root)] && ([lindex [split $fileName \;] 1] > "$::vfs::template::version::time($root)000")} {
+		return [file join $path $relative]
+	}
+
 	if ![string first .&dir [file tail $relative]] {
 		set fileName [file join $path [file dirname $relative]]
 		return [file normalize $fileName]
