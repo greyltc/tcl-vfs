@@ -1,3 +1,10 @@
+2007-03-07  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* library/webdavvfs.tcl: silence debug output
+	* http2.6/http.tcl: merge in from tclsoap and jcw's webdav
+	versions and merged in tcl8.5 changes.
+	* http2.6/pkgIndex.tcl: version to 2.6.5
+
 2006-12-28  Jean-Claude Wippler  <jcw@equi4.com>
 
 	* configure: autoconf 2.59

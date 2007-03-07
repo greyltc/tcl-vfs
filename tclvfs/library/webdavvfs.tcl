@@ -197,11 +197,11 @@ proc vfs::webdav::matchindirectory {dirurl extraHeadersList path actualpath patt
 		continue
 	    }
 	    # Get tail of name (don't use 'file tail' since it isn't a file).
-	    puts "checking: $name"
+	    vfs::log "checking: $name"
 	    regexp {[^/]+/?$} $name name
 	    if {$name == ""} { continue }
 	    if {[string match $pattern $name]} {
-		puts "check: $name"
+		vfs::log "check: $name"
 		if {$type == 0} {
 		    lappend res [file join $actualpath $name]
 		} else {
@@ -209,7 +209,7 @@ proc vfs::webdav::matchindirectory {dirurl extraHeadersList path actualpath patt
 		      [file join $actualpath $name] $type]
 		}
 	    }
-	    #puts "got: $res"
+	    #vfs::log "got: $res"
 	}
     } else {
 	# single file

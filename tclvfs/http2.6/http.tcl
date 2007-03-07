@@ -1,13 +1,12 @@
 # http.tcl --
 #
-#	Client-side HTTP for GET, POST, and HEAD commands.
-#	These routines can be used in untrusted code that uses 
-#	the Safesock security policy.  These procedures use a 
-#	callback interface to avoid using vwait, which is not 
+#	Client-side HTTP for GET, POST, and HEAD commands. These routines can
+#	be used in untrusted code that uses the Safesock security policy. These
+#	procedures use a callback interface to avoid using vwait, which is not
 #	defined in the safe base.
 #
-# See the file "license.terms" for information on usage and
-# redistribution of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+# See the file "license.terms" for information on usage and redistribution of
+# this file, and for a DISCLAIMER OF ALL WARRANTIES.
 #
 # RCS: @(#) $Id$
 
@@ -22,35 +21,63 @@
 # 2.4	Added -binary option to http::geturl and charset element
 #	to the state array.
 # 2.5   Added HTTP/1.1 support for persistent connections. New options
-#       -protocol, -keepalive, -socketvar.
+#       -protocol, -keepalive, -socketvar. (Pat Thoyts)
 # 2.6   Added support for HTTP/1.1 extensions.  New option -method used
-#       for WebDav.
+#       for WebDav. (Vince Darley)
+# 2.6.1 Synchronized with Tcl http 2.4.4 (encoding enhancements)
+# 2.6.2 Removed to -socketvar option and now handle socket usage internally
+# 2.6.3 Added support for chunked encoding.
+# 2.6.4 Merged in jcw's webdav mods to fix the chunked transfer
+# 2.6.5 Merged up to 2.5.3 from tcl cvs (formMap, url decomposition)
 
 package require Tcl 8.2
 # keep this in sync with pkgIndex.tcl
-package provide http 2.6
+package provide http 2.6.5
 
 namespace eval http {
     variable http
-    array set http {
-	-accept */*
-	-proxyhost {}
-	-proxyport {}
-	-proxyfilter http::ProxyRequired
+    if {![info exists http]} {
+        array set http {
+            -accept */*
+            -proxyhost {}
+            -proxyport {}
+            -proxyfilter http::ProxyRequired
+            -urlencoding utf-8
+        }
+        
+        # Use a Mozilla compatible useragent header to avoid problems with
+        # some web sites.
+        set http(-useragent) \
+            "Mozilla/5.0 ([string totitle $::tcl_platform(platform)];\
+             $::tcl_platform(os)) http/[package provide http]\
+             Tcl/[package provide Tcl]"
     }
-    set http(-useragent) "Tcl http client package [package provide http]"
 
     proc init {} {
-	variable formMap
-	variable alphanumeric a-zA-Z0-9
+	# Set up the map for quoting chars. RFC3986 Section 2.3 say percent
+	# encode all except: "... percent-encoded octets in the ranges of ALPHA
+	# (%41-%5A and %61-%7A), DIGIT (%30-%39), hyphen (%2D), period (%2E),
+	# underscore (%5F), or tilde (%7E) should not be created by URI
+	# producers ..."
 	for {set i 0} {$i <= 256} {incr i} {
 	    set c [format %c $i]
-	    if {![string match \[$alphanumeric\] $c]} {
-		set formMap($c) %[format %.2x $i]
+	    if {![string match {[-._~a-zA-Z0-9]} $c]} {
+		set map($c) %[format %.2x $i]
 	    }
 	}
 	# These are handled specially
-	array set formMap { " " + \n %0d%0a }
+	set map(\n) %0d%0a
+        variable formMap [array get map]
+
+        # Create a map for HTTP/1.1 open sockets
+        variable socketmap
+        if {[info exists socketmap]} {
+            foreach {url sock} [array get socketmap] {
+                catch {close $sock}
+            }
+            array unset a
+        }
+        array set socketmap {}
     }
     init
 
@@ -63,8 +90,17 @@ namespace eval http {
     # This can be changed, but iso8859-1 is the RFC standard.
     variable defaultCharset "iso8859-1"
 
+    # Force RFC 3986 strictness in geturl url verification?
+    variable strict 1
+
     namespace export geturl config reset wait formatQuery register unregister
     # Useful, but not exported: data size status code
+}
+
+# http::Log --
+#	Debugging output -- define this to observe HTTP/1.1 socket usage.
+#
+proc http::Log {msg} {
 }
 
 # http::register --
@@ -122,7 +158,7 @@ proc http::config {args} {
 	}
 	return $result
     }
-    regsub -all -- - $options {} options
+    set options [string map {- ""} $options]
     set pat ^-([join $options |])$
     if {[llength $args] == 1} {
 	set flag [lindex $args 0]
@@ -165,10 +201,11 @@ proc http::Finish { token {errormsg ""} {skipCB 0}} {
 	set state(error) [list $errormsg $errorInfo $errorCode]
 	set state(status) error
     }
-    if {[info exists state(-socketvar)] && [info exists $state(-socketvar)]} {
-        set $state(-socketvar) {}
+    if {$state(status) == "timeout"
+        || ([info exists state(connection)] 
+            && $state(connection) == "close")} {
+        CloseSocket $state(sock) $token
     }
-    catch {close $state(sock)}
     catch {after cancel $state(after)}
     if {[info exists state(-command)] && !$skipCB} {
 	if {[catch {eval $state(-command) {$token}} err]} {
@@ -177,12 +214,76 @@ proc http::Finish { token {errormsg ""} {skipCB 0}} {
 		set state(status) error
 	    }
 	}
-	if {[info exist state(-command)]} {
+	if {[info exists state(-command)]} {
 	    # Command callback may already have unset our state
 	    unset state(-command)
 	}
     }
 }
+
+# http::CloseSocket -
+#
+#	Close a socket and remove it from the persistent sockets table.
+#	If possible an http token is included here but when we are called
+#	from a fileevent on remote closure we need to find the correct
+#	entry - hence the second section.
+
+proc ::http::CloseSocket {s {token {}}} {
+    variable socketmap
+    catch {fileevent $s readable {}}
+    set conn_id {}
+    if {$token != {}} {
+        variable $token
+        upvar 0 $token state        
+        if {[info exists state(socketinfo)]} {
+            set conn_id $state(socketinfo)
+        }
+    } else {
+        set map [array get socketmap]
+        set ndx [lsearch -exact $map $s]
+        if {$ndx != -1} {
+            incr ndx -1
+            set conn_id [lindex $map $ndx]
+        }
+    }
+    if {$conn_id == {}} {
+        Log "Closing socket $s (no connection info)"
+        catch {close $s}
+    } else {
+        CloseConnection $conn_id
+    }
+}
+
+# -------------------------------------------------------------------------
+
+proc ::http::OpenConnection {host port {socketcmd socket} {async ""}} {
+    variable socketmap
+    if {![info exists socketmap($host:$port)]} {
+        set sock [eval $socketcmd $async $host $port]
+        set id [string map {sock conn} $sock]
+        variable $id
+        upvar 0 $id conn
+        set conn(sock) $sock
+        set id [namespace which -variable $id]
+        set socketmap($host:$port) $id
+        Log "Connection $id used for $host:$port"
+    } else {
+        set id $socketmap($host:$port)
+    }
+    return $id
+}
+
+proc ::http::CloseConnection {id} {
+    variable socketmap
+    if {[info exists socketmap($id)]} {
+        Log "Closing connection $id (sock $socketmap($id))"
+        catch {close $socketmap($id)}
+        unset socketmap($id)
+    }
+    return
+}
+
+# -------------------------------------------------------------------------
 
 # http::reset --
 #
@@ -202,10 +303,16 @@ proc http::reset { token {why reset} } {
     catch {fileevent $state(sock) readable {}}
     catch {fileevent $state(sock) writable {}}
     Finish $token
+    if {[info exists state]} {
+        if {$state(status) == "error" || $state(status) == "timeout"} {
+            # For errors make sure we close - there might be crud in the pipe.
+            CloseSocket $state(sock) $token
+        }
+    }
     if {[info exists state(error)]} {
 	set errorlist $state(error)
 	unset state
-	eval error $errorlist
+	eval ::error $errorlist
     }
 }
 
@@ -218,17 +325,17 @@ proc http::reset { token {why reset} } {
 #       args		Option value pairs. Valid options include:
 #				-blocksize, -validate, -headers, -timeout
 # Results:
-#	Returns a token for this connection.
-#	This token is the name of an array that the caller should
-#	unset to garbage collect the state.
+#	Returns a token for this connection. This token is the name of an array
+#	that the caller should unset to garbage collect the state.
 
 proc http::geturl { url args } {
     variable http
     variable urlTypes
     variable defaultCharset
+    variable strict
 
-    # Initialize the state variable, an array.  We'll return the
-    # name of this array as the token for the transaction.
+    # Initialize the state variable, an array. We'll return the name of this
+    # array as the token for the transaction.
 
     if {![info exists http(uid)]} {
 	set http(uid) 0
@@ -250,9 +357,8 @@ proc http::geturl { url args } {
 	-type           application/x-www-form-urlencoded
 	-queryprogress	{}
 	-protocol       1.1
-	-keepalive      0
-	-socketvar      {}
-	binary          false
+	-keepalive      1
+        binary          0
 	state		header
 	meta		{}
 	coding		{}
@@ -264,23 +370,30 @@ proc http::geturl { url args } {
         body            {}
 	status		""
 	http            ""
+        connection      close
+    }
+    # These flags have their types verified [Bug 811170]
+    array set type {
+	-binary		boolean
+	-blocksize	integer
+	-queryblocksize integer
+	-validate	boolean
+	-timeout	integer
     }
     set state(charset)	$defaultCharset
     set options {-binary -blocksize -channel -command -handler -headers \
 	    -progress -query -queryblocksize -querychannel -queryprogress\
-	    -validate -timeout -type -protocol -keepalive -socketvar\
-	    -method}
+	    -validate -timeout -type -protocol -keepalive -method}
     set usage [join $options ", "]
-    regsub -all -- - $options {} options
+    set options [string map {- ""} $options]
     set pat ^-([join $options |])$
     foreach {flag value} $args {
 	if {[regexp $pat $flag]} {
 	    # Validate numbers
-	    if {[info exists state($flag)] && \
-		    [string is integer -strict $state($flag)] && \
-		    ![string is integer -strict $value]} {
+	    if {[info exists type($flag)] && \
+		    ![string is $type($flag) -strict $value]} {
 		unset $token
-		return -code error "Bad value for $flag ($value), must be integer"
+		return -code error "Bad value for $flag ($value), must be $type($flag)"
 	    }
 	    set state($flag) $value
 	} else {
@@ -299,15 +412,118 @@ proc http::geturl { url args } {
     }
 
     # Validate URL, determine the server host and port, and check proxy case
+    # Recognize user:pass@host URLs also, although we do not do anything with
+    # that info yet.
 
-    if {![regexp -nocase {^(([^:]*)://)?([^/:]+)(:([0-9]+))?(/.*)?$} $url \
-	    x prefix proto host y port srvurl]} {
+    # URLs have basically four parts.
+    # First, before the colon, is the protocol scheme (e.g. http)
+    # Second, for HTTP-like protocols, is the authority
+    #	The authority is preceded by // and lasts up to (but not including)
+    #	the following / and it identifies up to four parts, of which only one,
+    #	the host, is required (if an authority is present at all). All other
+    #	parts of the authority (user name, password, port number) are optional.
+    # Third is the resource name, which is split into two parts at a ?
+    #	The first part (from the single "/" up to "?") is the path, and the
+    #	second part (from that "?" up to "#") is the query. *HOWEVER*, we do
+    #	not need to separate them; we send the whole lot to the server.
+    # Fourth is the fragment identifier, which is everything after the first
+    #	"#" in the URL. The fragment identifier MUST NOT be sent to the server
+    #	and indeed, we don't bother to validate it (it could be an error to
+    #	pass it in here, but it's cheap to strip).
+    #
+    # An example of a URL that has all the parts:
+    #   http://jschmoe:xyzzy@www.bogus.net:8000/foo/bar.tml?q=foo#changes
+    # The "http" is the protocol, the user is "jschmoe", the password is
+    # "xyzzy", the host is "www.bogus.net", the port is "8000", the path is
+    # "/foo/bar.tml", the query is "q=foo", and the fragment is "changes".
+    #
+    # Note that the RE actually combines the user and password parts, as
+    # recommended in RFC 3986. Indeed, that RFC states that putting passwords
+    # in URLs is a Really Bad Idea, something with which I would agree utterly.
+    # Also note that we do not currently support IPv6 addresses.
+    #
+    # From a validation perspective, we need to ensure that the parts of the
+    # URL that are going to the server are correctly encoded.
+    # This is only done if $::http::strict is true (default 0 for compat).
+
+    set URLmatcher {(?x)		# this is _expanded_ syntax
+	^
+	(?: (\w+) : ) ?			# <protocol scheme>
+	(?: //
+	    (?:
+		(
+		    [^@/\#?]+		# <userinfo part of authority>
+		) @
+	    )?
+	    ( [^/:\#?]+ )		# <host part of authority>
+	    (?: : (\d+) )?		# <port part of authority>
+	)?
+	( / [^\#?]* (?: \? [^\#?]* )?)?	# <path> (including query)
+	(?: \# (.*) )?			# <fragment>
+	$
+    }
+
+    # Phase one: parse
+    if {![regexp -- $URLmatcher $url -> proto user host port srvurl]} {
 	unset $token
 	return -code error "Unsupported URL: $url"
     }
+    # Phase two: validate
+    if {$host eq ""} {
+	# Caller has to provide a host name; we do not have a "default host"
+	# that would enable us to handle relative URLs.
+	unset $token
+	return -code error "Missing host part: $url"
+	# Note that we don't check the hostname for validity here; if it's
+	# invalid, we'll simply fail to resolve it later on.
+    }
+    if {$port ne "" && $port>65535} {
+	unset $token
+	return -code error "Invalid port number: $port"
+    }
+    # The user identification and resource identification parts of the URL can
+    # have encoded characters in them; take care!
+    if {$user ne ""} {
+	# Check for validity according to RFC 3986, Appendix A
+	set validityRE {(?xi)
+	    ^
+	    (?: [-\w.~!$&'()*+,;=:] | %[0-9a-f][0-9a-f] )+
+	    $
+	}
+	if {$strict && ![regexp -- $validityRE $user]} {
+	    unset $token
+	    # Provide a better error message in this error case
+	    if {[regexp {(?i)%(?![0-9a-f][0-9a-f]).?.?} $user bad]} {
+		return -code error \
+			"Illegal encoding character usage \"$bad\" in URL user"
+	    }
+	    return -code error "Illegal characters in URL user"
+	}
+    }
+    if {$srvurl ne ""} {
+	# Check for validity according to RFC 3986, Appendix A
+	set validityRE {(?xi)
+	    ^
+	    # Path part (already must start with / character)
+	    (?:	      [-\w.~!$&'()*+,;=:@/]  | %[0-9a-f][0-9a-f] )*
+	    # Query part (optional, permits ? characters)
+	    (?: \? (?: [-\w.~!$&'()*+,;=:@/?] | %[0-9a-f][0-9a-f] )* )?
+	    $
+	}
+	if {$strict && ![regexp -- $validityRE $srvurl]} {
+	    unset $token
+	    # Provide a better error message in this error case
+	    if {[regexp {(?i)%(?![0-9a-f][0-9a-f])..} $srvurl bad]} {
+		return -code error \
+			"Illegal encoding character usage \"$bad\" in URL path"
+	    }
+	    return -code error "Illegal characters in URL path"
+	}
+    } else {
+	set srvurl /
+    }
     if {[string length $proto] == 0} {
 	set proto http
-	set url ${proto}://$url
     }
     if {![info exists urlTypes($proto)]} {
 	unset $token
@@ -319,20 +535,27 @@ proc http::geturl { url args } {
     if {[string length $port] == 0} {
 	set port $defport
     }
-    if {[string length $srvurl] == 0} {
-	set srvurl /
-    }
-    if {[string length $proto] == 0} {
-	set url http://$url
-    }
-    set state(url) $url
     if {![catch {$http(-proxyfilter) $host} proxy]} {
 	set phost [lindex $proxy 0]
 	set pport [lindex $proxy 1]
     }
 
-    # If a timeout is specified we set up the after event
-    # and arrange for an asynchronous socket connection.
+    # OK, now reassemble into a full URL
+    set url ${proto}://
+    if {$user ne ""} {
+	append url $user
+	append url @
+    }
+    append url $host
+    if {$port != $defport} {
+	append url : $port
+    }
+    append url $srvurl
+    # Don't append the fragment!
+    set state(url) $url
+
+    # If a timeout is specified we set up the after event and arrange for an
+    # asynchronous socket connection.
 
     if {$state(-timeout) > 0} {
 	set state(after) [after $state(-timeout) \
@@ -342,21 +565,39 @@ proc http::geturl { url args } {
 	set async ""
     }
 
+    # If we are using the proxy, we must pass in the full URL that includes
+    # the server name.
+
+    if {[info exists phost] && [string length $phost]} {
+        set srvurl $url
+        set state(socketinfo) $phost:$pport
+    } else {
+        set state(socketinfo) $host:$port
+    }
+
     # See if we are supposed to use a previously opened channel.
-    if {$state(-socketvar) != {}} {
-        upvar $state(-socketvar) s
+    set s {}
+    if {$state(-keepalive)} {
+        variable socketmap
+        if {[info exists socketmap($state(socketinfo))]} {
+            if {[catch {fconfigure $socketmap($state(socketinfo))}]} {
+                Log "WARNING: socket for $state(socketinfo) was closed"
+                unset socketmap($state(socketinfo))
+            } else {
+                set s $socketmap($state(socketinfo))
+                #Log "reusing socket $s for $state(socketinfo)"
+                catch {fileevent $s writable {}}
+                catch {fileevent $s readable {}}
+            }
+        }
+
+        set state(connection) {}
     }
     if {![info exists s] || $s == {}} {
 
-        # If we are using the proxy, we must pass in the full URL that
-        # includes the server name.
-        
-        if {[info exists phost] && [string length $phost]} {
-            set srvurl $url
-            set conStat [catch {eval $defcmd $async {$phost $pport}} s]
-        } else {
-            set conStat [catch {eval $defcmd $async {$host $port}} s]
-        }
+        set conStat [catch {
+            eval $defcmd $async [split $state(socketinfo) :]
+        } s]
         if {$conStat} {
             
             # something went wrong while trying to establish the
@@ -370,15 +611,17 @@ proc http::geturl { url args } {
         }
     }
     set state(sock) $s
+    #Log "Using $s for $state(socketinfo)"
+    set socketmap($state(socketinfo)) $s
 
-    # Wait for the connection to complete
+    # Wait for the connection to complete.
 
     if {$state(-timeout) > 0} {
 	fileevent $s writable [list http::Connect $token]
 	http::wait $token
 
 	if {[string equal $state(status) "error"]} {
-	    # something went wrong while trying to establish the connection
+	    # Something went wrong while trying to establish the connection.
 	    # Clean up after events and such, but DON'T call the command
 	    # callback (if available) because we're going to throw an 
 	    # exception from here instead.
@@ -396,8 +639,8 @@ proc http::geturl { url args } {
 
     fconfigure $s -translation {auto crlf} -buffersize $state(-blocksize)
 
-    # The following is disallowed in safe interpreters, but the socket
-    # is already in non-blocking mode in that case.
+    # The following is disallowed in safe interpreters, but the socket is
+    # already in non-blocking mode in that case.
 
     catch {fconfigure $s -blocking off}
     set how GET
@@ -407,7 +650,7 @@ proc http::geturl { url args } {
 	    set how POST
 	    set contDone 0
 	} else {
-	    # there's no query data
+	    # There's no query data.
 	    unset state(-query)
 	    set isQuery 0
 	}
@@ -426,16 +669,26 @@ proc http::geturl { url args } {
     if {[catch {
 	puts $s "$how $srvurl HTTP/$state(-protocol)"
 	puts $s "Accept: $http(-accept)"
-	puts $s "Host: $host:$port"
+	if {$port == $defport} {
+	    # Don't add port in this case, to handle broken servers.
+	    # [Bug #504508]
+	    puts $s "Host: $host"
+	} else {
+	    puts $s "Host: $host:$port"
+	}
 	puts $s "User-Agent: $http(-useragent)"
         if { $state(-protocol) == 1.0 && $state(-keepalive)} {
-            puts $s "Connection: Keep-Alive"
+            puts $s "Connection: keep-alive"
         }
         if { $state(-protocol) > 1.0 && ! $state(-keepalive) } {
             puts $s "Connection: close" ;# RFC2616 sec 8.1.2.1
         }
+        if {[info exists phost] && [string length $phost] \
+                && $state(-keepalive)} {
+            puts $s "Proxy-Connection: Keep-Alive"
+        }
 	foreach {key value} $state(-headers) {
-	    regsub -all \[\n\r\]  $value {} value
+	    set value [string map [list \n "" \r ""] $value]
 	    set key [string trim $key]
 	    if {[string equal $key "Content-Length"]} {
 		set contDone 1
@@ -484,7 +737,7 @@ proc http::geturl { url args } {
 	} else {
 	    puts $s ""
 	    flush $s
-	    fileevent $s readable [list http::Event $token]
+	    fileevent $s readable [list http::Event $s $token]
 	}
 
 	if {! [info exists state(-command)]} {
@@ -577,7 +830,7 @@ proc http::error {token} {
 proc http::cleanup {token} {
     variable $token
     upvar 0 $token state
-    if {[info exist state]} {
+    if {[info exists state]} {
 	unset state
     }
 }
@@ -640,6 +893,7 @@ proc http::Write {token} {
 	    incr state(queryoffset) $state(-queryblocksize)
 	    if {$state(queryoffset) >= $state(querylength)} {
 		set state(queryoffset) $state(querylength)
+                puts $s ""
 		set done 1
 	    }
 	} else {
@@ -663,7 +917,7 @@ proc http::Write {token} {
     if {$done} {
 	catch {flush $s}
 	fileevent $s writable {}
-	fileevent $s readable [list http::Event $token]
+	fileevent $s readable [list http::Event $s $token]
     }
 
     # Callback to the client after we've completely handled everything
@@ -679,34 +933,58 @@ proc http::Write {token} {
 #	Handle input on the socket
 #
 # Arguments
+#       s       The socket receiving input.
 #	token	The token returned from http::geturl
 #
 # Side Effects
 #	Read the socket and handle callbacks.
 
-proc http::Event {token} {
+proc http::Event {s token} {
     variable $token
     upvar 0 $token state
-    set s $state(sock)
 
-     if {[eof $s]} {
-	Eof $token 1
+    if {![info exists state]} {
+        Log "Event $s with invalid token '$token' - remote close?"
+        if {! [eof $s]} {
+            if {[string length [set d [read $s]]] != 0} {
+                Log "WARNING: additional data left on closed socket"
+            }
+        }
+        CloseSocket $s
+        return
+    }
+    if {[eof $s]} {
+        if {[info exists $token]} {
+            set state(connection) close
+            Eof $token
+        } else {
+            # open connection closed on a token that has been cleaned up.
+            CloseSocket $s
+        }
 	return
     }
     if {[string equal $state(state) "header"]} {
 	if {[catch {gets $s line} n]} {
 	    Finish $token $n
 	} elseif {$n == 0} {
+            # We have now read all headers
+            if {$state(http) == ""} { return }
+
             # We ignore HTTP/1.1 100 Continue returns. RFC2616 sec 8.2.3
             if {[lindex $state(http) 1] == 100} {
                 return
             }
+            variable encodings
 	    set state(state) body
+
+            # We have to use binary translation to count bytes properly.
             fconfigure $s -translation binary
-	    if {$state(-binary) || ![regexp -nocase ^text $state(type)] || \
-		    [regexp gzip|compress $state(coding)]} {
+
+	    if {$state(-binary) || ![string match -nocase text* $state(type)]
+		    || [string match *gzip* $state(coding)]
+		    || [string match *compress* $state(coding)]} {
 		# Turn off conversions for non-text data
-                set state(binary) true
+                set state(binary) 1
 		if {[info exists state(-channel)]} {
 		    fconfigure $state(-channel) -translation binary
 		}
@@ -718,27 +996,77 @@ proc http::Event {token} {
 		CopyStart $s $token
 	    }
 	} elseif {$n > 0} {
-	    if {[regexp -nocase {^content-type:(.+)$} $line x type]} {
-		set state(type) [string trim $type]
-		# grab the optional charset information
-		regexp -nocase {charset\s*=\s*(\S+)} $type x state(charset)
-	    }
-	    if {[regexp -nocase {^content-length:(.+)$} $line x length]} {
-		set state(totalsize) [string trim $length]
-	    }
-	    if {[regexp -nocase {^content-encoding:(.+)$} $line x coding]} {
-		set state(coding) [string trim $coding]
-	    }
-	    if {[regexp -nocase {^([^:]+):(.+)$} $line x key value]} {
-		lappend state(meta) $key [string trim $value]
-	    } elseif {[regexp ^HTTP $line]} {
-		set state(http) $line
-	    }
+            # Process header lines
+            if {[regexp -nocase {^([^:]+):(.+)$} $line x key value]} {
+                switch [string tolower $key] {
+                    content-type {
+                        set state(type) [string trim [string tolower $value]]
+                        # grab the optional charset information
+                        regexp -nocase {charset\s*=\s*(\S+)} $state(type) \
+                            x state(charset)
+                    }
+                    content-length {
+                        set state(totalsize) [string trim $value]
+                    }
+                    content-encoding {
+                        set state(coding) [string trim $value]
+                    }
+                    transfer-encoding {
+                        set state(transfer) \
+                            [string trim [string tolower $value]]
+                    }
+                    proxy-connection -
+                    connection {
+                        set state(connection) \
+                            [string trim [string tolower $value]]
+                    }
+                }
+                lappend state(meta) $key [string trim $value]
+                
+            } elseif {[string match HTTP* $line]} {
+                set state(http) $line
+            }
 	}
     } else {
+        # Now reading body
 	if {[catch {
 	    if {[info exists state(-handler)]} {
 		set n [eval $state(-handler) {$s $token}]
+            } elseif {[info exists state(transfer_final)]} {
+                set line [getTextLine $s]
+		set n [string length $line]
+                if {$n > 0} {
+                    Log "found $n bytes following final chunk"
+                    append state(transfer_final) $line
+                } else {
+                    Log "final chunk part"
+                    Eof $token
+                }
+            } elseif {[info exists state(transfer)]
+                      && $state(transfer) == "chunked"} {
+                set size 0
+                set chunk [getTextLine $s]
+		set n [string length $chunk]
+                if {[string trim $chunk] != ""} {
+                    scan $chunk %x size
+                    if {$size != 0} {
+			set bl [fconfigure $s -blocking]
+			fconfigure $s -blocking 1
+                        set chunk [read $s $size]
+			fconfigure $s -blocking $bl
+                        set n [string length $chunk]
+                        if {$n >= 0} {
+                            append state(body) $chunk
+                        }
+                        if {$size != [string length $chunk]} {
+                            Log "WARNING: mis-sized chunk:\
+                                was [string length $chunk], should be $size"
+                        }
+			getTextLine $s
+                    } else {
+                        set state(transfer_final) {}
+                    }
+                }
 	    } else {
 		set block [read $s $state(-blocksize)]
 		set n [string length $block]
@@ -746,13 +1074,15 @@ proc http::Event {token} {
 		    append state(body) $block
 		}
 	    }
-	    if {$n >= 0} {
-		incr state(currentsize) $n
-	    }
-            # If Content-Length - check for end of data.
-            if {$state(totalsize) > 0 \
-                    && $state(currentsize) >= $state(totalsize)} {
-                Eof $token
+            if {[info exists state]} {
+                if {$n >= 0} {
+                    incr state(currentsize) $n
+                }
+                # If Content-Length - check for end of data.
+                if {$state(totalsize) > 0 \
+                        && $state(currentsize) >= $state(totalsize)} {
+                    Eof $token
+                }
             }
 	} err]} {
 	    Finish $token $err
@@ -763,6 +1093,25 @@ proc http::Event {token} {
 	    }
 	}
     }
+}
+
+# http::getTextLine --
+#
+#	Get one line with the stream in blocking crlf mode
+#
+# Arguments
+#       s       The socket receiving input.
+#
+# Results:
+#       The line of text, without trailing newline
+
+proc http::getTextLine {s} {
+    set tr [fconfigure $s -translation]
+    set bl [fconfigure $s -blocking]
+    fconfigure $s -translation crlf -blocking 1
+    set r [gets $s]
+    fconfigure $s -translation $tr -blocking $bl
+    return $r
 }
 
 # http::CopyStart
@@ -836,33 +1185,23 @@ proc http::Eof {token {force 0}} {
 	set state(status) ok
     }
 
-    if {! $state(binary)} {
-        
-        # If we are getting text, set the data's encoding
-        # correctly.  iso8859-1 is the RFC default, but
-        # this could be any IANA charset.  However, we
-        # only know how to convert what we have encodings
-        # for.
-        
-        variable encodings
-        set idx [lsearch -exact $encodings \
-                     [string tolower $state(charset)]]
-        if {$idx >= 0} {
-            set state(body) [encoding convertfrom \
-                                 [lindex $encodings $idx] \
-                                 $state(body)]
+    if { ! $state(binary) } {
+
+        # If we are getting text, set the incoming channel's
+        # encoding correctly.  iso8859-1 is the RFC default, but
+        # this could be any IANA charset.  However, we only know
+        # how to convert what we have encodings for.
+
+        set enc [CharsetToEncoding $state(charset)]
+        if {$enc != "binary"} {
+            set state(body) [encoding convertfrom $enc $state(body)]
         }
-        
-        # Translate text line endings
+
+        # Translate text line endings.
         set state(body) [string map {\r\n \n \r \n} $state(body)]
     }
 
-    set state(state) eof
-    if {$state(-keepalive) && ! $force} {
-        catch {after cancel $state(after)}
-    } else {
-        Finish $token
-    }
+    Finish $token
 }
 
 # http::wait --
@@ -925,18 +1264,25 @@ proc http::formatQuery {args} {
 #       The encoded string
 
 proc http::mapReply {string} {
+    variable http
     variable formMap
-    variable alphanumeric
 
     # The spec says: "non-alphanumeric characters are replaced by '%HH'"
-    # 1 leave alphanumerics characters alone
-    # 2 Convert every other character to an array lookup
-    # 3 Escape constructs that are "special" to the tcl parser
-    # 4 "subst" the result, doing all the array substitutions
+    # Use a pre-computed map and [string map] to do the conversion
+    # (much faster than [regsub]/[subst]). [Bug 1020491]
 
-    regsub -all \[^$alphanumeric\] $string {$formMap(&)} string
-    regsub -all {[][{})\\]\)} $string {\\&} string
-    return [subst -nocommand $string]
+    if {$http(-urlencoding) ne ""} {
+	set string [encoding convertto $http(-urlencoding) $string]
+	return [string map $formMap $string]
+    }
+    set converted [string map $formMap $string]
+    if {[string match "*\[\u0100-\uffff\]*" $converted]} {
+	regexp {[\u0100-\uffff]} $converted badChar
+	# Return this error message for maximum compatability... :^/
+	return -code error \
+	    "can't read \"formMap($badChar)\": no such element in array"
+    }
+    return $converted
 }
 
 # http::ProxyRequired --
@@ -956,5 +1302,45 @@ proc http::ProxyRequired {host} {
 	    set http(-proxyport) 8080
 	}
 	return [list $http(-proxyhost) $http(-proxyport)]
+    }
+}
+
+# http::CharsetToEncoding --
+#
+# 	Tries to map a given IANA charset to a tcl encoding.
+#	If no encoding can be found, returns binary.
+#
+
+proc http::CharsetToEncoding {charset} {
+    variable encodings
+    variable defaultCharset
+
+    set charset [string tolower $charset]
+    if {[regexp {iso-?8859-([0-9]+)} $charset - num]} {
+	set encoding "iso8859-$num"
+    } elseif {[regexp {iso-?2022-(jp|kr)} $charset - ext]} {
+	set encoding "iso2022-$ext"
+    } elseif {[regexp {shift[-_]?js} $charset -]} {
+	set encoding "shiftjis"
+    } elseif {[regexp {(windows|cp)-?([0-9]+)} $charset - - num]} {
+	set encoding "cp$num"
+    } elseif {[string equal $charset "us-ascii"]} {
+	set encoding "ascii"
+    } elseif {[regexp {(iso-?)?lat(in)?-?([0-9]+)} $charset - - - num]} {
+	switch $num {
+	    5 {set encoding "iso8859-9"}
+	    1 -
+	    2 -
+	    3 {set encoding "iso8859-$num"}
+	}
+    } else {
+	# other charset, like euc-xx, utf-8,...  may directly maps to encoding
+	set encoding $charset
+    }
+    set idx [lsearch -exact $encodings $encoding]
+    if {$idx >= 0} {
+	return $encoding
+    } else {
+	return "binary"
     }
 }
