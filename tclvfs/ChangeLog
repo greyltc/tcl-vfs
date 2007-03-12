@@ -1,3 +1,11 @@
+2007-03-12  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* http2.6/http.tcl: Fixed some bugs (0 length body with chunked
+	transfer) and added support for gzip encoding if zlib is
+	available. Tested continued operation with Tcl 8.2.
+	* library/webdavvfs.tcl: Encoding is now in the http package.
+	* http2.6/pkgIndex.tcl: version to 2.6.6
+
 2007-03-07  Pat Thoyts  <patthoyts@users.sourceforge.net>
 
 	* library/webdavvfs.tcl: silence debug output

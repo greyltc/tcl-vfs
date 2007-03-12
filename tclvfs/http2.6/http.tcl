@@ -29,10 +29,11 @@
 # 2.6.3 Added support for chunked encoding.
 # 2.6.4 Merged in jcw's webdav mods to fix the chunked transfer
 # 2.6.5 Merged up to 2.5.3 from tcl cvs (formMap, url decomposition)
+# 2.6.6 Support content-encoding gzip. Handle 0 length body in chunked.
 
 package require Tcl 8.2
 # keep this in sync with pkgIndex.tcl
-package provide http 2.6.5
+package provide http 2.6.6
 
 namespace eval http {
     variable http
@@ -48,9 +49,9 @@ namespace eval http {
         # Use a Mozilla compatible useragent header to avoid problems with
         # some web sites.
         set http(-useragent) \
-            "Mozilla/5.0 ([string totitle $::tcl_platform(platform)];\
-             $::tcl_platform(os)) http/[package provide http]\
-             Tcl/[package provide Tcl]"
+            "Mozilla/5.0 ([string totitle $::tcl_platform(platform)]; U;\
+             $::tcl_platform(os) $::tcl_platform(osVersion))\
+             http/[package provide http] Tcl/[package provide Tcl]"
     }
 
     proc init {} {
@@ -82,8 +83,10 @@ namespace eval http {
     init
 
     variable urlTypes
-    array set urlTypes {
-	http	{80 ::socket}
+    if {![info exists urlTypes]} {
+        array set urlTypes {
+            http	{80 ::socket}
+        }
     }
 
     variable encodings [string tolower [encoding names]]
@@ -201,12 +204,14 @@ proc http::Finish { token {errormsg ""} {skipCB 0}} {
 	set state(error) [list $errormsg $errorInfo $errorCode]
 	set state(status) error
     }
-    if {$state(status) == "timeout"
+    if {[string equal $state(status) "timeout"]
+        || [string equal $state(status) "error"]
         || ([info exists state(connection)] 
-            && $state(connection) == "close")} {
+            && $state(connection) == "close")
+    } then {
         CloseSocket $state(sock) $token
     }
-    catch {after cancel $state(after)}
+    if {[info exists state(after)]} { after cancel $state(after) }
     if {[info exists state(-command)] && !$skipCB} {
 	if {[catch {eval $state(-command) {$token}} err]} {
 	    if {[string length $errormsg] == 0} {
@@ -255,23 +260,6 @@ proc ::http::CloseSocket {s {token {}}} {
 }
 
 # -------------------------------------------------------------------------
-
-proc ::http::OpenConnection {host port {socketcmd socket} {async ""}} {
-    variable socketmap
-    if {![info exists socketmap($host:$port)]} {
-        set sock [eval $socketcmd $async $host $port]
-        set id [string map {sock conn} $sock]
-        variable $id
-        upvar 0 $id conn
-        set conn(sock) $sock
-        set id [namespace which -variable $id]
-        set socketmap($host:$port) $id
-        Log "Connection $id used for $host:$port"
-    } else {
-        set id $socketmap($host:$port)
-    }
-    return $id
-}
 
 proc ::http::CloseConnection {id} {
     variable socketmap
@@ -469,7 +457,7 @@ proc http::geturl { url args } {
 	return -code error "Unsupported URL: $url"
     }
     # Phase two: validate
-    if {$host eq ""} {
+    if {[string length $host] < 1} {
 	# Caller has to provide a host name; we do not have a "default host"
 	# that would enable us to handle relative URLs.
 	unset $token
@@ -477,13 +465,13 @@ proc http::geturl { url args } {
 	# Note that we don't check the hostname for validity here; if it's
 	# invalid, we'll simply fail to resolve it later on.
     }
-    if {$port ne "" && $port>65535} {
+    if {[string length $port] != 0 && $port > 65535} {
 	unset $token
 	return -code error "Invalid port number: $port"
     }
     # The user identification and resource identification parts of the URL can
     # have encoded characters in them; take care!
-    if {$user ne ""} {
+    if {![string equal $user ""]} {
 	# Check for validity according to RFC 3986, Appendix A
 	set validityRE {(?xi)
 	    ^
@@ -500,7 +488,7 @@ proc http::geturl { url args } {
 	    return -code error "Illegal characters in URL user"
 	}
     }
-    if {$srvurl ne ""} {
+    if {![string equal $srvurl ""]} {
 	# Check for validity according to RFC 3986, Appendix A
 	set validityRE {(?xi)
 	    ^
@@ -542,7 +530,7 @@ proc http::geturl { url args } {
 
     # OK, now reassemble into a full URL
     set url ${proto}://
-    if {$user ne ""} {
+    if {![string equal $user ""]} {
 	append url $user
 	append url @
     }
@@ -570,8 +558,11 @@ proc http::geturl { url args } {
 
     if {[info exists phost] && [string length $phost]} {
         set srvurl $url
-        set state(socketinfo) $phost:$pport
+        set targetAddr [list $phost $pport]
+        # Don't share proxy connections among different hosts.
+        set state(socketinfo) ${host}:${port}
     } else {
+        set targetAddr [list $host $port]
         set state(socketinfo) $host:$port
     }
 
@@ -585,7 +576,7 @@ proc http::geturl { url args } {
                 unset socketmap($state(socketinfo))
             } else {
                 set s $socketmap($state(socketinfo))
-                #Log "reusing socket $s for $state(socketinfo)"
+                Log "reusing socket $s for $state(socketinfo)"
                 catch {fileevent $s writable {}}
                 catch {fileevent $s readable {}}
             }
@@ -596,7 +587,7 @@ proc http::geturl { url args } {
     if {![info exists s] || $s == {}} {
 
         set conStat [catch {
-            eval $defcmd $async [split $state(socketinfo) :]
+            eval $defcmd $async $targetAddr
         } s]
         if {$conStat} {
             
@@ -611,7 +602,7 @@ proc http::geturl { url args } {
         }
     }
     set state(sock) $s
-    #Log "Using $s for $state(socketinfo)"
+    Log "Using $s for $state(socketinfo)"
     set socketmap($state(socketinfo)) $s
 
     # Wait for the connection to complete.
@@ -687,7 +678,11 @@ proc http::geturl { url args } {
                 && $state(-keepalive)} {
             puts $s "Proxy-Connection: Keep-Alive"
         }
+        set accept_encoding_seen 0
 	foreach {key value} $state(-headers) {
+            if {[string equal accept-encoding [string tolower $key]]} {
+                set accept_encoding_seen 1
+            }
 	    set value [string map [list \n "" \r ""] $value]
 	    set key [string trim $key]
 	    if {[string equal $key "Content-Length"]} {
@@ -698,6 +693,13 @@ proc http::geturl { url args } {
 		puts $s "$key: $value"
 	    }
 	}
+        if {!$accept_encoding_seen
+            && [llength [package provide zlib]] > 0 
+            && !([info exists state(-channel)] 
+                 || [info exists state(-handler)])
+        } then {
+            puts $s "Accept-Encoding: gzip, identity, *;q=0.1"
+        }
 	if {$isQueryChannel && $state(querylength) == 0} {
 	    # Try to determine size of data in channel
 	    # If we cannot seek, the surrounding catch will trap us
@@ -977,14 +979,28 @@ proc http::Event {s token} {
             variable encodings
 	    set state(state) body
 
+            # For non-chunked transfer we may have no body -- in this case we may get
+            # no further file event if the connection doesn't close and no more data
+            # is sent. We can tell and must finish up now - not later.
+            if {!(([info exists state(connection)] 
+                   && [string equal $state(connection) "close"])
+                  || [info exists state(transfer)])
+                &&  $state(totalsize) == 0
+            } then {
+                Log "body size is 0 and no events likely - complete."
+                Eof $token
+                return
+            }
+
             # We have to use binary translation to count bytes properly.
             fconfigure $s -translation binary
 
-	    if {$state(-binary) || ![string match -nocase text* $state(type)]
-		    || [string match *gzip* $state(coding)]
-		    || [string match *compress* $state(coding)]} {
+	    if {$state(-binary) || ![string match -nocase text* $state(type)]} {
 		# Turn off conversions for non-text data
                 set state(binary) 1
+            }
+            if {$state(binary) || [string match *gzip* $state(coding)]
+                || [string match *compress* $state(coding)]} {
 		if {[info exists state(-channel)]} {
 		    fconfigure $state(-channel) -translation binary
 		}
@@ -995,6 +1011,7 @@ proc http::Event {s token} {
 		fileevent $s readable {}
 		CopyStart $s $token
 	    }
+            http::Log [array get state]
 	} elseif {$n > 0} {
             # Process header lines
             if {[regexp -nocase {^([^:]+):(.+)$} $line x key value]} {
@@ -1004,6 +1021,7 @@ proc http::Event {s token} {
                         # grab the optional charset information
                         regexp -nocase {charset\s*=\s*(\S+)} $state(type) \
                             x state(charset)
+                        http::Log "Received Content-Type $state(type) and $state(charset) ($x)"
                     }
                     content-length {
                         set state(totalsize) [string trim $value]
@@ -1068,11 +1086,12 @@ proc http::Event {s token} {
                     }
                 }
 	    } else {
-		set block [read $s $state(-blocksize)]
-		set n [string length $block]
-		if {$n >= 0} {
-		    append state(body) $block
-		}
+                Log "read non-chunk $state(currentsize) of $state(totalsize)"
+                set block [read $s $state(-blocksize)]
+                set n [string length $block]
+                if {$n >= 0} {
+                    append state(body) $block
+                }
 	    }
             if {[info exists state]} {
                 if {$n >= 0} {
@@ -1185,6 +1204,14 @@ proc http::Eof {token {force 0}} {
 	set state(status) ok
     }
 
+    if {[string equal $state(coding) "gzip"] && [string length $state(body)] > 0} {
+        if {[catch {
+            set state(body) [Gunzip $state(body)]
+        } err]} {
+            return [Finish $token $err]
+        }
+    }
+
     if { ! $state(binary) } {
 
         # If we are getting text, set the incoming channel's
@@ -1271,7 +1298,7 @@ proc http::mapReply {string} {
     # Use a pre-computed map and [string map] to do the conversion
     # (much faster than [regsub]/[subst]). [Bug 1020491]
 
-    if {$http(-urlencoding) ne ""} {
+    if {![string equal $http(-urlencoding) ""]} {
 	set string [encoding convertto $http(-urlencoding) $string]
 	return [string map $formMap $string]
     }
@@ -1343,4 +1370,57 @@ proc http::CharsetToEncoding {charset} {
     } else {
 	return "binary"
     }
+}
+
+# http::Gunzip --
+#
+#	Decompress data transmitted using the gzip transfer coding.
+#
+
+proc http::Gunzip {data} {
+    binary scan $data Scb5icc magic method flags time xfl os
+    set pos 10
+    if {$magic != 0x1f8b} {
+        return -code error "invalid data: supplied data is not in gzip format"
+    }
+    if {$method != 8} {
+        return -code error "invalid compression method"
+    }
+
+    foreach {f_text f_crc f_extra f_name f_comment} [split $flags ""] break
+    set extra ""
+    if { $f_extra } {
+	binary scan $data @${pos}S xlen
+        incr pos 2
+        set extra [string range $data $pos $xlen]
+        set pos [incr xlen]
+    }
+
+    set name ""
+    if { $f_name } {
+        set ndx [string first \0 $data $pos]
+        set name [string range $data $pos $ndx]
+        set pos [incr ndx]
+    }
+
+    set comment ""
+    if { $f_comment } {
+        set ndx [string first \0 $data $pos]
+        set comment [string range $data $pos $ndx]
+        set pos [incr ndx]
+    }
+
+    set fcrc ""
+    if { $f_crc } {
+	set fcrc [string range $pos [incr pos]]
+        incr pos
+    }
+
+    binary scan [string range $data end-7 end] ii crc size
+    set inflated [zlib inflate [string range $data $pos end-8]]
+
+    if { $crc != [set chk [zlib crc32 $inflated]] } {
+	return -code error "invalid data: checksum mismatch $crc != $chk"
+    }
+    return $inflated
 }

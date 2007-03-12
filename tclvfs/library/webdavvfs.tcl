@@ -153,12 +153,8 @@ proc vfs::webdav::open {dirurl extraHeadersList name mode permissions} {
 	    upvar #0 $token state
 
 	    set filed [vfs::memchan]
-	    
-	    fconfigure $filed -encoding $state(charset)
-	    
+            fconfigure $filed -encoding binary -translation binary
 	    puts -nonewline $filed [::http::data $token]
-
-	    fconfigure $filed -translation auto
 	    seek $filed 0
 	    ::http::cleanup $token
 	    return [list $filed]
