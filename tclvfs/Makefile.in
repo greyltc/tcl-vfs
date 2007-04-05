@@ -294,7 +294,7 @@ distclean: clean
 
 install-lib-binaries:
 	@mkdir -p $(DESTDIR)$(pkglibdir)
-	@list='$(lib_BINARIES)'; for p in $$list; do \
+	@list='$(BINARIES)'; for p in $$list; do \
 	  if test -f $$p; then \
 	    echo "Installing $$p in $(DESTDIR)$(pkglibdir)"; \
 	    $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkglibdir)/$$p; \
@@ -351,7 +351,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
 uninstall-binaries:
-	list='$(lib_BINARIES)'; for p in $$list; do \
+	list='$(BINARIES)'; for p in $$list; do \
 	  rm -f $(DESTDIR)$(pkglibdir)/$$p; \
 	done
 	list='$(PKG_TCL_SOURCES)'; for p in $$list; do \

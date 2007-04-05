@@ -1,3 +1,7 @@
+2007-04-05  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* Makefile.in: Was failing install the pkgIndex.tcl file
+
 2007-03-12  Pat Thoyts  <patthoyts@users.sourceforge.net>
 
 	* http2.6/http.tcl: Fixed some bugs (0 length body with chunked
