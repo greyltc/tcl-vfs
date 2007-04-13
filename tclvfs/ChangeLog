@@ -1,3 +1,8 @@
+2007-04-13  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* Makefile.in:     Applied patch #1589278 to include the template
+	* pkgIndex.tcl.in: vfs files in the install.
+
 2007-04-05  Pat Thoyts  <patthoyts@users.sourceforge.net>
 
 	* Makefile.in: Was failing install the pkgIndex.tcl file

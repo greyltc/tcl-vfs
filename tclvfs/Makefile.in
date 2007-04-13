@@ -41,7 +41,12 @@ PKG_TCL_SOURCES = @PKG_TCL_SOURCES@ \
 		  tarvfs.tcl tclprocvfs.tcl testvfs.tcl \
 		  vfsUrl.tcl vfsUtils.tcl vfslib.tcl \
 		  webdavvfs.tcl zipvfs.tcl tclIndex \
-		  tkvfs.tcl
+		  tkvfs.tcl \
+		  template/collatevfs.tcl template/deltavfs.tcl \
+		  template/fishvfs.tcl template/globfind.tcl \
+		  template/quotavfs.tcl template/tdelta.tcl \
+		  template/templatevfs.tcl template/versionvfs.tcl
+
 
 #========================================================================
 # This is a list of public header files to be installed, if any.
@@ -319,9 +324,10 @@ install-lib-binaries:
 	@echo "Installing library files in $(DESTDIR)$(pkglibdir)";
 	@list='$(PKG_TCL_SOURCES)'; for p in $$list; do \
 	  if test -f $(srcdir)/library/$$p; then \
-	    destp=`basename $$p`; \
-	    echo "    $$destp"; \
-	    $(INSTALL_DATA) $(srcdir)/library/$$p $(DESTDIR)$(pkglibdir)/$$destp; \
+	    destd=`dirname $$p`; \
+	    echo "    $$p"; \
+	    mkdir -p $(DESTDIR)$(pkglibdir)/$$destd; \
+	    $(INSTALL_DATA) $(srcdir)/library/$$p $(DESTDIR)$(pkglibdir)/$$p; \
 	  fi; \
 	done
 	@if test "x$(SHARED_BUILD)" = "x1"; then \
