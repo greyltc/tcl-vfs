@@ -1,3 +1,17 @@
+2007-05-28  Andreas Kupries  <andreask@activestate.com>
+
+	* library/starkit.tcl (header): Added helper command
+	  'fullnormalize' and use it to resolve symlinks in the path to
+	  the file calling starkit::header. This makes it possible to run
+	  starkits and starpacks via symlinks.
+
+2007-04-17  Andreas Kupries  <andreask@activestate.com>
+
+	* library/zipvfs.tcl: "zip::DosTime" extended to handle bad
+	  timestamps without crashing. Force-fixed to nearest legal
+	  date/time. "zip::EndOfArchive" extended to find chunk even
+	  if a (long) zip archive comment is present.
+
 2007-04-13  Pat Thoyts  <patthoyts@users.sourceforge.net>
 
 	* Makefile.in:     Applied patch #1589278 to include the template

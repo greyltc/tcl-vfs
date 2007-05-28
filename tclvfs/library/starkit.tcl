@@ -37,7 +37,7 @@ namespace eval starkit {
     # called from the header of a starkit
     proc header {driver args} {
 	if {[catch {
-	    set self [info script]
+	    set self [fullnormalize [info script]]
 
 	    package require ${driver}vfs
 	    eval [list ::vfs::${driver}::Mount $self $self] $args
@@ -46,6 +46,16 @@ namespace eval starkit {
 	}]} {
 	    panic $::errorInfo
 	}
+    }
+
+    proc fullnormalize {path} {
+	# SNARFED from tcllib, fileutil.
+	# 8.5
+	# return [file join {expand}[lrange [file split
+	#    [file normalize [file join $path __dummy__]]] 0 end-1]]
+
+	return [eval [list file join] [lrange [file split \
+		   [file normalize [file join $path __dummy__]]] 0 end-1]]
     }
 
     # called from the startup script of a starkit to init topdir and auto_path

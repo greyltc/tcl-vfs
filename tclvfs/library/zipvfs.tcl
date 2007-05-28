@@ -240,17 +240,37 @@ proc zip::DosTime {date time} {
     set time [u_short $time]
     set date [u_short $date]
 
-    set sec [expr { ($time & 0x1F) * 2 }]
-    set min [expr { ($time >> 5) & 0x3F }]
+    # time = fedcba9876543210
+    #        HHHHHmmmmmmSSSSS (sec/2 actually)
+
+    # data = fedcba9876543210
+    #        yyyyyyyMMMMddddd
+
+    set sec  [expr { ($time & 0x1F) * 2 }]
+    set min  [expr { ($time >> 5) & 0x3F }]
     set hour [expr { ($time >> 11) & 0x1F }]
 
     set mday [expr { $date & 0x1F }]
-    set mon [expr { (($date >> 5) & 0xF) }]
+    set mon  [expr { (($date >> 5) & 0xF) }]
     set year [expr { (($date >> 9) & 0xFF) + 1980 }]
 
-    set dt [format {%4.4d-%2.2d-%2.2d %2.2d:%2.2d:%2.2d} \
-	$year $mon $mday $hour $min $sec]
-    return [clock scan $dt -gmt 1]
+    # Fix up bad date/time data, no need to fail
+    while {$sec  > 59} {incr sec  -60}
+    while {$min  > 59} {incr sec  -60}
+    while {$hour > 23} {incr hour -24}
+    if {$mday < 1}  {incr mday}
+    if {$mon  < 1}  {incr mon}
+    while {$mon > 12} {incr hour -12}
+
+    while {[catch {
+	set dt [format {%4.4d-%2.2d-%2.2d %2.2d:%2.2d:%2.2d} \
+		    $year $mon $mday $hour $min $sec]
+	set res [clock scan $dt -gmt 1]
+    }]} {
+	# Only mday can be wrong, at end of month
+	incr mday -1
+    }
+    return $res
 }
 
 
@@ -330,15 +350,36 @@ proc zip::EndOfArchive {fd arr} {
 
     # [SF Tclvfs Bug 1003574]. Do not seek over beginning of file.
     seek $fd 0 end
-    set n [tell $fd]
-    if {$n < 512} {set n -$n} else {set n -512}
-    seek $fd $n end
 
-    set hdr [read $fd 512]
-    set pos [string first "PK\05\06" $hdr]
-    if {$pos == -1} {
-	error "no header found"
+    # Just looking in the last 512 bytes may be enough to handle zip
+    # archives without comments, however for archives which have
+    # comments the chunk may start at an arbitrary distance from the
+    # end of the file. So if we do not find the header immediately
+    # we have to extend the range of our search, possibly until we
+    # have a large part of the archive in memory. We can fail only
+    # after the whole file has been searched.
+
+    set sz  [tell $fd]
+    set len 512
+    set at  512
+    while {1} {
+	if {$sz < $at} {set n -$sz} else {set n -$at}
+
+	seek $fd $n end
+	set hdr [read $fd $len]
+	set pos [string first "PK\05\06" $hdr]
+	if {$pos == -1} {
+	    if {$at >= $sz} {
+		return -code error "no header found"
+	    }
+	    set len 540 ; # after 1st iteration we force overlap with last buffer
+	    incr at 512 ; # to ensure that the pattern we look for is not split at
+	    #           ; # a buffer boundary, nor the header itself
+	} else {
+	    break
+	}
     }
+
     set hdr [string range $hdr [expr $pos + 4] [expr $pos + 21]]
     set pos [expr [tell $fd] + $pos - 512]
 
