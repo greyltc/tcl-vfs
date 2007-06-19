@@ -1,3 +1,9 @@
+2007-06-19  Andreas Kupries  <andreask@activestate.com>
+
+	* library/starkit.tcl (header): See last entry. Simplified the
+	  helper command 'fullnormalize', replaced complex file
+	  split/lrange/join/eval operation with 'file dirname'.
+
 2007-05-28  Andreas Kupries  <andreask@activestate.com>
 
 	* library/starkit.tcl (header): Added helper command

@@ -54,8 +54,7 @@ namespace eval starkit {
 	# return [file join {expand}[lrange [file split
 	#    [file normalize [file join $path __dummy__]]] 0 end-1]]
 
-	return [eval [list file join] [lrange [file split \
-		   [file normalize [file join $path __dummy__]]] 0 end-1]]
+	return [file dirname [file normalize [file join $path __dummy__]]]
     }
 
     # called from the startup script of a starkit to init topdir and auto_path
