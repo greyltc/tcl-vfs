@@ -979,6 +979,12 @@ proc http::Event {s token} {
             variable encodings
 	    set state(state) body
 
+            # If doing a HEAD, then we won't get any body
+            if {$state(-validate)} {
+                Eof $token
+                return
+            }
+
             # For non-chunked transfer we may have no body -- in this case we may get
             # no further file event if the connection doesn't close and no more data
             # is sent. We can tell and must finish up now - not later.
