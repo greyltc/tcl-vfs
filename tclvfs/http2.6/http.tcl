@@ -251,9 +251,9 @@ proc ::http::CloseSocket {s {token {}}} {
             set conn_id [lindex $map $ndx]
         }
     }
-    if {$conn_id == {}} {
+    if {$conn_id == {} || ![info exists socketmap($conn_id)]} {
         Log "Closing socket $s (no connection info)"
-        catch {close $s}
+        if {[catch {close $s} err]} { Log "Error: $err" }
     } else {
         CloseConnection $conn_id
     }
@@ -265,8 +265,10 @@ proc ::http::CloseConnection {id} {
     variable socketmap
     if {[info exists socketmap($id)]} {
         Log "Closing connection $id (sock $socketmap($id))"
-        catch {close $socketmap($id)}
+        if {[catch {close $socketmap($id)} err]} { Log "Error: $err" }
         unset socketmap($id)
+    } else {
+        Log "Cannot close connection $id - no socket in socket map"
     }
     return
 }
@@ -602,8 +604,11 @@ proc http::geturl { url args } {
         }
     }
     set state(sock) $s
-    Log "Using $s for $state(socketinfo)"
-    set socketmap($state(socketinfo)) $s
+    Log "Using $s for $state(socketinfo)\
+        [expr {$state(-keepalive)?"keepalive":""}]"
+    if {$state(-keepalive)} {
+        set socketmap($state(socketinfo)) $s
+    }
 
     # Wait for the connection to complete.
 
@@ -1017,7 +1022,7 @@ proc http::Event {s token} {
 		fileevent $s readable {}
 		CopyStart $s $token
 	    }
-            http::Log [array get state]
+            #http::Log [array get state]
 	} elseif {$n > 0} {
             # Process header lines
             if {[regexp -nocase {^([^:]+):(.+)$} $line x key value]} {
@@ -1025,9 +1030,8 @@ proc http::Event {s token} {
                     content-type {
                         set state(type) [string trim [string tolower $value]]
                         # grab the optional charset information
-                        regexp -nocase {charset\s*=\s*(\S+)} $state(type) \
-                            x state(charset)
-                        http::Log "Received Content-Type $state(type) and $state(charset) ($x)"
+                        regexp -nocase {charset\s*=\s*(\S+?);?} \
+                            $state(type) -> state(charset)
                     }
                     content-length {
                         set state(totalsize) [string trim $value]
@@ -1092,7 +1096,7 @@ proc http::Event {s token} {
                     }
                 }
 	    } else {
-                Log "read non-chunk $state(currentsize) of $state(totalsize)"
+                #Log "read non-chunk $state(currentsize) of $state(totalsize)"
                 set block [read $s $state(-blocksize)]
                 set n [string length $block]
                 if {$n >= 0} {
@@ -1383,6 +1387,7 @@ proc http::CharsetToEncoding {charset} {
 #	Decompress data transmitted using the gzip transfer coding.
 #
 
+# FIX ME: redo using zlib sinflate
 proc http::Gunzip {data} {
     binary scan $data Scb5icc magic method flags time xfl os
     set pos 10
