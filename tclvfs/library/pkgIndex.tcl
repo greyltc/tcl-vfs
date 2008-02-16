@@ -31,7 +31,7 @@ if {![info exists dir]} {
 }
 set dll [file join $dir $dll[info sharedlibextension]]
 
-proc loadvfs {dir dll} {
+proc ::vfs::loadvfs {dir dll} {
     global auto_path
     if {[lsearch -exact $auto_path $dir] == -1} {
 	lappend auto_path $dir
@@ -44,7 +44,7 @@ proc loadvfs {dir dll} {
     load $dll
 }
 
-package ifneeded vfs        1.3.0 [list loadvfs $dir $dll]
+package ifneeded vfs        1.3.0 [list ::vfs::loadvfs $dir $dll]
 package ifneeded starkit    1.3.1 [list source [file join $dir starkit.tcl]]
 package ifneeded vfslib     1.3.1 [list source [file join $dir vfslib.tcl]]
 
@@ -65,16 +65,6 @@ package ifneeded vfs::webdav  0.1 [list source [file join $dir webdavvfs.tcl]]
 package ifneeded vfs::zip     1.0 [list source [file join $dir zipvfs.tcl]]
 package ifneeded vfs::tk      0.5 [list source [file join $dir tkvfs.tcl]]
 
-# Virtual filesystems based on the template vfs:
-package ifneeded vfs::template::collate     1.0 [list source [file join $dir template collatevfs.tcl]]
-package ifneeded vfs::template::version     1.0 [list source [file join $dir template versionvfs.tcl]]
-package ifneeded vfs::template::version::delta     1.0 [list source [file join $dir template deltavfs.tcl]]
-package ifneeded vfs::template::fish     1.0 [list source [file join $dir template fishvfs.tcl]]
-package ifneeded vfs::template::quota     1.0 [list source [file join $dir template quotavfs.tcl]]
-package ifneeded vfs::template     1.0 [list source [file join $dir template templatevfs.tcl]]
-
-package ifneeded globfind     1.0 [list source [file join $dir template globfind.tcl]]
-package ifneeded trsync     1.0 [list source [file join $dir template tdelta.tcl]]
 
 
 

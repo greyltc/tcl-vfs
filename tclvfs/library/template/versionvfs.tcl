@@ -5,7 +5,7 @@ versionvfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.03
+Version 1.5
 
 A versioning virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -19,7 +19,7 @@ Directories are versioned and tagged in the same way as files.
 Older versions can be retrieved by setting the -project and -time values appropriately.
 
 
-Usage: Mount ?-keep <number> -project <list of tags> -time <timestamp or "clock scan" suitable phrase>? <existing directory> <virtual directory>
+Usage: mount ?-keep <number> -project <list of tags> -time <timestamp or "clock scan" suitable phrase>? <existing directory> <virtual directory>
 
 Options:
 
@@ -72,12 +72,9 @@ The versioning vfs inherits the -cache and -volume options of the template vfs.
 ########################
 }
 
-package provide vfs::template::version 1.0
+package require vfs::template 1.5
 
-package require vfs::template
-
-package require globfind
-namespace import -force ::globfind::globfind
+package require fileutil::globfind
 
 namespace eval ::vfs::template::version {
 
@@ -336,6 +333,8 @@ proc MountProcedure {args} {
 
 # add custom handling for new vfs args here.
 
+	namespace import -force ::fileutil::globfind::globfind
+
 	set argsLength [llength $args]
 	for {set i 0} {$i < $argsLength} {incr i} {
 		switch -- [lindex $args $i] {
@@ -398,7 +397,7 @@ proc Hash {channel} {
 	::md5::md5 -hex -- [read $channel]
 }
 
-# figure out if time is a string, milliseconds or seconds count, return seconds cound
+# figure out if time is a string, milliseconds or seconds count, return seconds count
 proc SetTime {time} {
 	if ![string is digit -strict $time] {catch {set time [clock scan $time]}}
 	if ![string is digit -strict $time] {error "invalid time value."}

@@ -7,7 +7,7 @@ templatevfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.01
+Version 1.5
 
 The template virtual filesystem is designed as a prototype on which to build new virtual 
 filesystems.  Only a few simple, abstract procedures have to be overridden to produce a new
@@ -19,13 +19,13 @@ scalable, including file information caching and management of close callback er
 The template vfs provides a useful function of its own, it mirrors a real directory to a 
 virtual location, analogous to a Unix-style link.
 
-Usage: Mount ?-cache <number>? ?-volume? <existing directory> <virtual directory>
+Usage: mount ?-cache <number>? ?-volume? <existing directory> <virtual directory>
 
 Options:
 
 -cache
 Sets number of seconds file stat and attributes information will dwell in cache after 
-being retrieved.  Default is 2.  Setting value of 0 will essentially disble caching.  This 
+being retrieved.  Default is 2.  Setting value of 0 will essentially disable caching.  This 
 value is viewable and editable after mount by calling "file attributes <virtual directory> -cache ?value?"
 
 -volume
@@ -49,7 +49,12 @@ by executing "eval" on the contents of the array element whose index is the vfs'
 
 package require vfs 1.0
 
-package provide vfs::template 1.0
+# force sourcing of vfsUtils.tcl: 
+set vfs::posix(load) x
+vfs::posixError load
+unset vfs::posix(load)
+
+package provide vfs::template 1.5
 
 namespace eval ::vfs::template {
 
@@ -68,7 +73,7 @@ file commands.
 ########################
 }
 
-package require vfs::template
+package require vfs::template 1.5
 
 # read template procedures into current namespace. Do not edit:
 foreach templateProc [namespace eval ::vfs::template {info procs}] {
@@ -145,7 +150,7 @@ proc UnmountProcedure {path to} {
 
 namespace eval ::vfs::template {
 
-proc Mount {args} {
+proc mount {args} {
 
 # handle template command line args:
 	set volume [lindex $args [lsearch $args "-volume"]]
@@ -160,9 +165,6 @@ proc Mount {args} {
 	# ensure files named ".vfs_*" can be opened
 	set ::vfs::template::vfs_retrieve 1
 
-	# make sure file commands can be called without redirection to vfs procs:
-	catch {namespace forget ::vfs::template::overload::*}
-
 	set pathto [eval MountProcedure $args]
 
 	# re-hide ".vfs_*" files
@@ -173,7 +175,7 @@ proc Mount {args} {
 	if [string equal $volume {}] {set to [file normalize $to]}
 
 # preserve mount info for later duplication if desired:
-	set ::vfs::template::mount($to) "[namespace current]::Mount $volume -cache $cache $args"
+	set ::vfs::template::mount($to) "[namespace current]::mount $volume -cache $cache $args"
 
 # if virtual location still mounted, unmount it by force:
 	if {[lsearch [::vfs::filesystem info] $to] != -1} {::vfs::filesystem unmount $to}
@@ -184,7 +186,7 @@ proc Mount {args} {
 
 # register location with Tclvfs package:
 	eval ::vfs::filesystem mount $volume \$to \[list [namespace current]::handler \$path\]
-	::vfs::RegisterMount $to [list [namespace current]::Unmount]
+	::vfs::RegisterMount $to [list [namespace current]::unmount]
 
 # ensure close callback background error appears at script execution level:
 	trace remove execution ::close leave ::vfs::template::CloseTrace
@@ -196,13 +198,12 @@ proc Mount {args} {
 }
 
 # undo Tclvfs API hooks:
-proc Unmount {to} {
+proc unmount {to} {
 	set to [::file normalize $to]
 	set path [lindex [::vfs::filesystem info $to] end]
 
 # call custom unmount procedure:
 	set ::vfs::template::vfs_retrieve 1
-	catch {namespace forget ::vfs::template::overload::*}
 	UnmountProcedure $path $to
 	unset -nocomplain ::vfs::template::vfs_retrieve
 
@@ -216,8 +217,6 @@ proc Unmount {to} {
 # vfshandler command required by Tclvfs API:
 proc handler {path cmd root relative actualpath args} {
 # puts [list $path $root $relative $cmd $args [namespace current]]
-	# ensure all calls to file commands by handler are redirected to simplified API at top of this script
-	catch {namespace import -force ::vfs::template::overload::*}
 
 	set fileName [::file join $path $relative]
 	set virtualName [::file join $root $relative]
@@ -262,7 +261,7 @@ proc handler {path cmd root relative actualpath args} {
 				return
 			}
 
-			# if attribute give in args, return its value:
+			# if attribute given in args, return its value:
 			if ![string equal $index {}] {
 				return $attributes($attribute)
 			}
@@ -323,7 +322,7 @@ proc handler {path cmd root relative actualpath args} {
 			set mode [lindex $args 1]
 			if [string equal $mode "r"] {return}
 			# never use real close command here, custom overloaded proc only.
-			set err [catch {close $channelID} result]
+			set err [catch {close_ $channelID} result]
 			if $err {::vfs::template::closeerror $::errorInfo ; error $::errorInfo}
 			return
 		}
@@ -331,11 +330,11 @@ proc handler {path cmd root relative actualpath args} {
 			set recursive [lindex $args 0]
 			if !$recursive {
 				if {[MatchInDirectory $path $root $relative $actualpath * 0] != {}} {
-					::vfs::filesystem posixerror $::vfs::posix(ENOTEMPTY)
-					return -code error $::vfs::posix(ENOTEMPTY)
+					::vfs::filesystem posixerror $::vfs::posix(EEXIST)
+					return -code error $::vfs::posix(EEXIST)
 				}
 			}
-			if {$relative == {}} {Unmount $root ; return}
+			if {$relative == {}} {unmount $root ; return}
 			RemoveDirectory $path $root $relative $actualpath
 			CacheClear $virtualName
 		}
@@ -370,7 +369,7 @@ proc Access {path root relative actualpath mode} {
 	foreach mode $modeString {
 		set result [CacheGet [namespace current]::$mode $virtualName [set [namespace current]::cache($root)] $secs]
 		if [string equal $result ""] {
-			set result [eval file $mode \$fileName]
+			set result [eval file_$mode \$fileName]
 			CacheSet [namespace current]::$mode $virtualName $result $secs
 		}
 		if !$result {error error}
@@ -379,22 +378,23 @@ proc Access {path root relative actualpath mode} {
 }
 
 proc CreateDirectory {path root relative actualpath} {
-	file mkdir [::file join $path $relative]
+	file_mkdir [::file join $path $relative]
 }
 
 proc DeleteFile {path root relative actualpath} {
 	set fileName [::file join $path $relative]
-	file delete -force -- $fileName
+#	file delete -force -- $fileName
+	file_delete $fileName
 }
 
 proc FileAttributes {path root relative actualpath} {
 	set fileName [::file join $path $relative]
-	return [file attributes $fileName]
+	return [file_attributes $fileName]
 }
 
 proc FileAttributesSet {path root relative actualpath attribute value} {
 	set fileName [::file join $path $relative]
-	file attributes $fileName $attribute $value
+	file_attributes $fileName $attribute $value
 }
 
 proc MatchInDirectory {path root relative actualpath pattern types} {
@@ -411,9 +411,9 @@ proc MatchInDirectory {path root relative actualpath pattern types} {
 	set pathName [::file join $path $relative]
 
 # get non-hidden files:
-	set globList [glob -directory $pathName -nocomplain -tails -types $typeString -- $pattern]
+	set globList [glob_ -directory $pathName -nocomplain -tails -types $typeString -- $pattern]
 # if underlying location is not itself a vfs, get hidden files (Tclvfs doesn't pass "hidden" type to handler)
-	if [catch {::vfs::filesystem info $path}] {append globList " [glob -directory $pathName  -nocomplain -tails -types "$typeString hidden" -- $pattern]"}
+	if [catch {::vfs::filesystem info $path}] {set globList [concat $globList [glob_ -directory $pathName  -nocomplain -tails -types "$typeString hidden" -- $pattern]]}
 
 # convert real path to virtual path:
 	set newGlobList {}
@@ -430,25 +430,26 @@ proc Open {path root relative actualpath mode permissions} {
 	set fileName [::file join $path $relative]
 	set newFile 0
 	if ![file exists $fileName] {set newFile 1}
-	set channelID [open $fileName $mode]
-	if $newFile {catch {file attributes $fileName -permissions $permissions}}
+	set channelID [open_ $fileName $mode]
+	if $newFile {catch {file_attributes $fileName -permissions $permissions}}
 	return $channelID
 }
 
 proc RemoveDirectory {path root relative actualpath} {
 	set fileName [::file join $path $relative]
-	file delete -force -- $fileName
+#	file delete -force -- $fileName
+	file_delete $fileName
 }
 
 proc Stat {path root relative actualpath} {
-	file stat [::file join $path $relative] fs
+	file_stat [::file join $path $relative] fs
 	return [array get fs]
 }
 
 proc Utime {path root relative actualpath atime mtime} {
 	set fileName [::file join $path $relative]
-	file atime $fileName $atime
-	file mtime $fileName $mtime
+	file_atime $fileName $atime
+	file_mtime $fileName $mtime
 }
 
 # check value of ::errorInfo to ensure close callback didn't generate background 
@@ -528,86 +529,22 @@ proc CacheSet {array file value args} {
 	array set $array [list $fileValue $value]
 }
 
+# map built-in file selection dialogs to pure Tk equivalents, so virtual
+# filesystems can be browsed with same-looking code:
+proc tk_getOpenFile {args} {
+	eval [eval list ::tk::dialog::file:: open $args]
+}
+
+proc tk_getSaveFile {args} {
+	eval [eval list ::tk::dialog::file:: save $args]
+}
+
+proc tk_chooseDirectory {args} {
+	eval [eval list ::tk::dialog::file::chooseDir:: $args]
+}
+
 }
 # end namespace eval ::vfs::template
-
-# Following procs redirect all calls to file commands in Tclvfs API to the simplified API
-# at the top of this script.  If one desires to work directly with the Tclvfs API procs 
-# instead of the simplified API, delete contents of this namespace, and simplified procs will never be called.
-
-namespace eval ::vfs::template::overload {
-
-proc close {args} {
-	uplevel namespace forget ::vfs::template::overload::*
-	upvar path path root root relative relative
-	set rv [uplevel close_ $args]
-	uplevel namespace import -force ::vfs::template::overload::*
-	return $rv
-}
-
-proc file {args} {
-	uplevel namespace forget ::vfs::template::overload::*
-	upvar path path root root relative relative
-
-	set option [lindex $args 0]
-	set fileName [lindex $args 1]
-
-	set rv {}
-	switch -- $option {
-		atime -
-		mtime {
-			set time [lindex $args 2]
-			set rv [uplevel file_$option [list $fileName] $time]
-		}
-		attributes {
-			set attribute [lindex $args 2]
-			set value [lindex $args 3]
-			set rv [uplevel file_attributes [list $fileName] [lrange $args 2 3]]
-		}
-		delete {
-			set fileName [lindex $args 3]
-			set rv [uplevel file_delete [list $fileName]]
-		}
-		executable -
-		exists -
-		mkdir -
-		readable -
-		writable {
-			set rv [uplevel file_$option [list $fileName]]
-		} 
-		stat {
-			set arrayName [lindex $args 2]
-			uplevel file_stat [list $fileName] $arrayName
-		}
-		default {
-			set rv [uplevel ::file $args]
-		}
-	}
-	uplevel namespace import -force ::vfs::template::overload::*
-	return $rv
-}
-
-proc open {args} {
-	upvar path path root root relative relative
-	uplevel namespace forget ::vfs::template::overload::*
-	set rv [uplevel open_ $args]
-	uplevel namespace import -force ::vfs::template::overload::*
-	return $rv
-}
-
-proc glob {args} {
-	upvar path path root root relative relative
-	uplevel namespace forget ::vfs::template::overload::*
-	set rv [uplevel glob_ $args]
-	uplevel namespace import -force ::vfs::template::overload::*
-	return $rv
-}
-
-namespace export -clear *
-
-}
-# end namespace ::vfs::template::overload
-
 
 # overload exit command so that all vfs's are explicitly 
 # unmounted before program termination:

@@ -5,7 +5,7 @@ collatevfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.0
+Version 1.5
 
 A collate/broadcast/collect/catchup virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -19,7 +19,7 @@ Catchup: If any specified directory is not available during any write action, th
 a catchup queue.  With each subsequent write action, the queue is examined, and if any directory has 
 become available, the action is performed, allowing offline directories to "catch up."
 
-Usage: Mount ?-read <directories> -write <directories> -collect <directories> -catchup <directories>? <virtual directory>
+Usage: mount ?-read <directories> -write <directories> -collect <directories> -catchup <directories>? <virtual directory>
 
 Each pathname in <directories> is meant to stand individually, the <directories> symbol is not meant to indicate a 
 Tcl list.  The sets of specified locations are independent; they can overlap or not as desired.  Note each
@@ -35,8 +35,9 @@ generated, the combined files of the corresponding subdirectory of all specified
 
 -write
 When an individual file is opened for writing, each of the directories specified is searched in 
-order for the file; the first file found with the appropriate name is opened.  When the file is closed, a 
-copy of it is distributed to each specified write directory.
+order for the file; the first file found with the appropriate name is opened.  If the file doesn't exist, 
+it is created in the first specified write location.  When the file is closed, a copy of it is distributed to 
+each specified write directory.
 
 -collect
 Auto-generates one or more file caches; a copy of any file opened for reading or writing in any of the above 
@@ -62,7 +63,7 @@ Files will be read first from the hard drive, if not found there the CD-ROM and 
 The hard drive can be specified as the single write location, and no writes to the CD-ROM or 
 ftp site will ever be attempted:
 
-Mount -read C:/install/package/docs CDROM:/package/docs FTP:/pub/releases/package/docs -write C:/install/package/docs C:/collate/docs
+mount -read C:/install/package/docs CDROM:/package/docs FTP:/pub/releases/package/docs -write C:/install/package/docs C:/collate/docs
 
 
 Example collect location use: specify a single hard drive location as a read and collect directory.  
@@ -70,15 +71,13 @@ Specify a ftp vfs as a secondary read directory.  As ftp files are downloaded th
 collect directory; the local copies are accessed first on subsequent reads: hence the collect
 specification produces a self-generating local cache:
 
-Mount -read C:/install/package/images FTP:/pub/releases/package/images -collect C:/install/package/images C:/collate/images
+mount -read C:/install/package/images FTP:/pub/releases/package/images -collect C:/install/package/images C:/collate/images
 
 
 ########################
 }
 
-package provide vfs::template::collate 1.0
-
-package require vfs::template
+package require vfs::template 1.5
 
 namespace eval ::vfs::template::collate {
 
@@ -121,7 +120,7 @@ proc file_attributes {file {attribute {}} args} {
 		return
 	}
 	set returnValue [eval file attributes \$file $attribute $args]
-	if {($relative == {}) && ($attribute == {})} {append returnValue " [list -read $::vfs::template::collate::read($root) -write $::vfs::template::collate::write($root) -collect $::vfs::template::collate::collect($root) -catchup $::vfs::template::collate::catchupstore($root)]"}
+	if {($relative == {}) && ($attribute == {})} {set returnValue [concat $returnValue [list -read $::vfs::template::collate::read($root) -write $::vfs::template::collate::write($root) -collect $::vfs::template::collate::collect($root) -catchup $::vfs::template::collate::catchupstore($root)]]}
 	return $returnValue
 }
 proc file_delete {file} {
@@ -165,7 +164,7 @@ proc glob_ {directory dir nocomplain tails types typeString dashes pattern} {
 	set newFiles {}
 	foreach path $::vfs::template::collate::read($root) {
 		if ![file exists $path] {continue}
-		append allFiles " [glob -directory [file join $path $relative] -nocomplain -tails -types $typeString -- $pattern]"
+		set allFiles [concat $allFiles [glob -directory [file join $path $relative] -nocomplain -tails -types $typeString -- $pattern]]
 	}
 	set allFiles [lsort -unique $allFiles]
 	return $allFiles
@@ -323,6 +322,7 @@ proc WriteFile {root relative action} {
 						append newCatchup "[list $action $path $rel]\n" ; continue
 					}
 					if ![file exists $source] {continue}
+					file mkdir [file dirname $target]
 					file copy -force -- $source $target
 				}
 				delete {
@@ -354,4 +354,3 @@ proc WriteFile {root relative action} {
 
 }
 # end namespace ::vfs::template::collate
-

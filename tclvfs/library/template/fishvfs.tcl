@@ -13,9 +13,9 @@ fishvfs.tcl --
  
 	Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 	License: Tcl license
-	Version 1.0
+	Version 1.5
  
- Usage: Mount ?-volume? \
+ Usage: mount ?-volume? \
  	?-cache <number>? \		# cache retention seconds
  	?-exec? \				# location of executable
  	?-transport <protocol>? \	# can be ssh, rsh or plink
@@ -78,13 +78,13 @@ information; the option switch values will override the URL values.
 
 Examples:
  
- Mount -transport ssh -user root -host tcl.tk / /mnt/vfs/tcl
+ mount -transport ssh -user root -host tcl.tk / /mnt/vfs/tcl
  
- Mount -volume /home/foo rsh://foo@localcomp
+ mount -volume /home/foo rsh://foo@localcomp
  
- Mount -volume -password foopass /home/foo plink://foo@bar.org:2323/remotemount
+ mount -volume -password foopass /home/foo plink://foo@bar.org:2323/remotemount
  
- Mount -cache 60 -transport plink -user foo -password foopass -host bar.org /home/foo C:/Tcl/mount/foo
+ mount -cache 60 -transport plink -user foo -password foopass -host bar.org /home/foo C:/Tcl/mount/foo
  
 
 Client configuration:
@@ -105,9 +105,7 @@ Client configuration:
 ########################
 }
 
-package provide vfs::template::fish 1.0
-
-package require vfs::template
+package require vfs::template 1.5
 
 namespace eval ::vfs::template::fish {
 

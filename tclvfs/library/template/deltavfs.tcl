@@ -5,7 +5,7 @@ deltavfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.0
+Version 1.5
 
 A delta virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -16,7 +16,7 @@ As the versioning filesystem generates a new separate file for every file edit, 
 invisibly generate and manage deltas of the separate versions to save space.
 
 
-Usage: Mount <existing directory> <virtual directory>
+Usage: mount <existing directory> <virtual directory>
 
 
 The delta vfs inherits the -cache and -volume options of the template vfs.
@@ -24,9 +24,7 @@ The delta vfs inherits the -cache and -volume options of the template vfs.
 ########################
 }
 
-package provide vfs::template::version::delta 1.0
-
-package require vfs::template
+package require vfs::template 1.5
 
 namespace eval ::vfs::template::version::delta {
 
