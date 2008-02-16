@@ -1,3 +1,13 @@
+2008-02-15  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	vfs::template package update ver. 1.5:
+
+	* Better formatting as Tcl package (added template/pkgIndex.tcl)
+	* Added chrootvfs.tcl
+	* Code refactored for simplicity and better performance
+	* Added improved globfind package
+	* Bug fixes.
+
 2007-06-19  Andreas Kupries  <andreask@activestate.com>
 
 	* library/starkit.tcl (header): See last entry. Simplified the
