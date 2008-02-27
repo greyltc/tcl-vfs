@@ -10,7 +10,7 @@
 
 package ifneeded vfs::template 1.5.1 [list source [file join $dir templatevfs.tcl]]
 
-set ::auto_index(::vfs::template::mount) [list package require vfs::template 1.5]
+set ::auto_index(::vfs::template::mount) [list package require vfs::template 1.5.1]
 set ::auto_index(::vfs::template::collate::mount) [list source [file join $dir collatevfs.tcl]]
 set ::auto_index(::vfs::template::quota::mount) [list source [file join $dir quotavfs.tcl]]
 set ::auto_index(::vfs::template::version::mount) [list source [file join $dir versionvfs.tcl]]
