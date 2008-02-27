@@ -1,3 +1,10 @@
+2008-02-26  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	vfs::template package update ver. 1.5.1:
+
+	* deltavfs.tcl, versionvfs.tcl, quotavfs.tcl: minor bug
+	  fixes and reformatting.
+
 2008-02-15  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	vfs::template package update ver. 1.5:
