@@ -5,7 +5,7 @@ deltavfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.5
+Version 1.5.1
 
 A delta virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -232,6 +232,9 @@ proc Delta {filename} {
 }
 
 proc GetFileName {file} {
+	set isdir 0
+	if {([string first \; $file] == -1) && ![set isdir [file isdirectory $file]]} {return {}}
+	if $isdir {return $file}
 	set fileNames [glob -nocomplain -path $file *]
 	if {[lindex [file system $file] 0] != "tclvfs"} {append fileNames " [glob -nocomplain -path $file -type hidden *]"}
 	set fileName [lindex $fileNames 0]

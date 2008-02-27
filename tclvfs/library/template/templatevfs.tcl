@@ -7,7 +7,7 @@ templatevfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.5
+Version 1.5.1
 
 The template virtual filesystem is designed as a prototype on which to build new virtual 
 filesystems.  Only a few simple, abstract procedures have to be overridden to produce a new
@@ -54,7 +54,7 @@ set vfs::posix(load) x
 vfs::posixError load
 unset vfs::posix(load)
 
-package provide vfs::template 1.5
+package provide vfs::template 1.5.1
 
 namespace eval ::vfs::template {
 

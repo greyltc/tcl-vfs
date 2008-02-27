@@ -5,7 +5,7 @@ versionvfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.5
+Version 1.5.1
 
 A versioning virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -221,12 +221,15 @@ proc file_delete {file} {
 proc file_executable {file} {
 	upvar path path root root relative relative
 	set fileName [VAcquireFile $path $root $relative]
+	if ![string first .&dir [file tail $fileName]] {return 0}
 	file executable $fileName
 }
 proc file_exists {file} {
 	upvar path path root root relative relative
 	set fileName [VAcquireFile $path $root $relative]
-	file exists $fileName
+	if ![string first .&dir [file tail $fileName]] {return 0}
+	if [file isdirectory $fileName] {return 1}
+	expr ![string equal [file join $path $relative] $fileName]
 }
 proc file_mkdir {file} {
 	upvar root root
@@ -242,6 +245,7 @@ proc file_mkdir {file} {
 proc file_readable {file} {
 	upvar path path root root relative relative
 	set fileName [VAcquireFile $path $root $relative]
+	if ![string first .&dir [file tail $fileName]] {return 0}
 	file readable $fileName
 }
 proc file_stat {file array} {
@@ -258,6 +262,7 @@ proc file_stat {file array} {
 proc file_writable {file} {
 	upvar path path root root relative relative
 	set fileName [VAcquireFile $path $root $relative]
+	if ![string first .&dir [file tail $fileName]] {return 0}
 	file writable $fileName
 }
 proc glob_ {directory dir nocomplain tails types typeString dashes pattern} {

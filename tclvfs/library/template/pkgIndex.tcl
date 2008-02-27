@@ -8,7 +8,7 @@
 # script is sourced, the variable $dir must contain the
 # full path name of this file's directory.
 
-package ifneeded vfs::template 1.5 [list source [file join $dir templatevfs.tcl]]
+package ifneeded vfs::template 1.5.1 [list source [file join $dir templatevfs.tcl]]
 
 set ::auto_index(::vfs::template::mount) [list package require vfs::template 1.5]
 set ::auto_index(::vfs::template::collate::mount) [list source [file join $dir collatevfs.tcl]]

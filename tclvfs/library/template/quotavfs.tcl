@@ -5,7 +5,7 @@ quotavfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.5
+Version 1.5.1
 
 A quota-enforcing virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -170,7 +170,7 @@ proc file_stat {file array} {upvar $array fs ; ::file stat $file fs}
 proc file_writable {file} {file writable $file}
 proc glob_ {directory dir nocomplain tails types typeString dashes pattern} {glob -directory $dir -nocomplain -tails -types $typeString -- $pattern}
 proc open_ {file mode} {
-	upvar root root
+	upvar root root permissions permissions
 	upvar newFile newFile
 	if {$mode == "r"} {
 		set atime [clock seconds]
@@ -178,18 +178,24 @@ proc open_ {file mode} {
 		set ::vfs::template::quota::files($file) $atime
 		return [open $file r]
 	}
+
+if $newFile {
+	set now [clock seconds]
+	set fstat "mtime $now atime $now mode $permissions type file ctime $now size 0"
+	QuotaAdd $file
+}
 	set channel [open $file $mode]
 
 # Check if new file violates any quotas by adding it to quota tallies:
-	if $newFile {
-		set err [catch {QuotaAdd $file} result]
-		if $err {
-			close $channel
-			file delete -force -- $file
-			vfs::filesystem posixerror $::vfs::posix(EDQUOT)
-			error "Disk quota exceeded"
-		}
-	}
+#	if $newFile {
+#		set err [catch {QuotaAdd $file} result]
+#		if $err {
+#			close $channel
+#			file delete -force -- $file
+#			vfs::filesystem posixerror $::vfs::posix(EDQUOT)
+#			error "Disk quota exceeded"
+#		}
+#	}
 # remove file from quota tallies until channel is closed:
 	array set quotaArray $::vfs::template::quota::quota($root)
 	QuotaDelete $file 0
@@ -274,7 +280,7 @@ proc CheckPattern {pattern value} {
 proc QuotaAdd {fileName} {
 	set caller [lindex [info level -1] 0]
 	if {$caller == "MountProcedure"} {set init 1} else {set init 0}
-	upvar path path root root quotaSize quotaSize
+	upvar path path root root quotaSize quotaSize fstat fstat
 	if ![string first ".vfs_" [file tail $fileName]] {return 0}
 	if {[info exists path] && ($fileName == $path)} {return 0}
 	array set quotaArray $::vfs::template::quota::quota($root)
@@ -282,8 +288,12 @@ proc QuotaAdd {fileName} {
 	set items [lsort -unique [string map {",type " " " ",rule " " " ",quota " " " ",current " " "} " [array names quotaArray] "]]
 
 	set delete 1
+if [info exists fstat] {
+	array set fs $fstat	
+} else {
 	set noexist [catch {file stat $fileName fs}]
 	if $noexist {return 0}
+}
 	set fs(filename) $fileName
 
 # if this call is being used to check edits, replace file size with channel size and don't delete file if edit too big:
@@ -296,7 +306,7 @@ proc QuotaAdd {fileName} {
 # Check each defined quota to see if given file violates it:
 	foreach item $items {
 		regexp {([0-9]*),(.*)} $item trash groupCount item
-		if ![info exists fs($item)] {array set fs [file attributes $fileName]}
+		if ![info exists fs($item)] {if [file exists $fileName] {array set fs [file attributes $fileName]}}
 		if ![info exists fs($item)] {continue}
 		set contrib [eval $quotaArray($groupCount,$item,rule) [list $fs($item)]]
 		if $contrib	{	
@@ -422,7 +432,7 @@ proc QuotaDelete {fileName {delete 1}} {
 		# Check each quota to see if current file contributes to it:
 		foreach item $items {
 		 	regexp {([0-9]*),(.*)} $item trash groupCount item
-			if ![info exists fs($item)] {array set fs [file attributes $file] ; set stat($file) [array get fs]}
+			if ![info exists fs($item)] {if [file exists $file] {array set fs [file attributes $file]} ; set stat($file) [array get fs]}
 			if ![info exists fs($item)] {continue}
 			set contrib [eval $quotaArray($groupCount,$item,rule) [list $fs($item)]]
 			if $contrib	{
