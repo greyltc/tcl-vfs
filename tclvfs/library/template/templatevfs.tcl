@@ -7,7 +7,7 @@ templatevfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.5.1
+Version 1.5.2
 
 The template virtual filesystem is designed as a prototype on which to build new virtual 
 filesystems.  Only a few simple, abstract procedures have to be overridden to produce a new
@@ -54,7 +54,7 @@ set vfs::posix(load) x
 vfs::posixError load
 unset vfs::posix(load)
 
-package provide vfs::template 1.5.1
+package provide vfs::template 1.5.2
 
 namespace eval ::vfs::template {
 
@@ -541,6 +541,17 @@ proc tk_getSaveFile {args} {
 
 proc tk_chooseDirectory {args} {
 	eval [eval list ::tk::dialog::file::chooseDir:: $args]
+}
+
+# workaround for bug in tclkit:
+proc memchan {args} {
+	if {$::tcl_platform(platform) == "windows"} {
+		package require Memchan
+		set chan [uplevel 1 ::memchan $args]
+		return $chan
+	} else {
+		return ::vfs::memchan $args
+	}
 }
 
 }

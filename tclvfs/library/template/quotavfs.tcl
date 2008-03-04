@@ -5,7 +5,7 @@ quotavfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.5.1
+Version 1.5.2
 
 A quota-enforcing virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -202,7 +202,7 @@ if $newFile {
 	set ::vfs::template::quota::quota($root) [array get quotaArray]
 
 # Use memchan to store edits so edit can be rejected if it violates size quotas:
-	set memchannel [vfs::memchan]
+	set memchannel [memchan]
 	fconfigure $channel -translation binary
 	fconfigure $memchannel -translation binary
 	seek $channel 0

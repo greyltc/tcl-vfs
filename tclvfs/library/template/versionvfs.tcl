@@ -5,7 +5,7 @@ versionvfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.5.1
+Version 1.5.2
 
 A versioning virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -298,7 +298,7 @@ proc open_ {file mode} {
 	if {$fileName == [file join $path $relative]} {
 		set fileName [VFileNameEncode [file join $path $relative]]\;[VCreateTag $root]
 		close [open $fileName $mode]
-		set channelID [vfs::memchan]
+		set channelID [memchan]
 		set ::vfs::template::version::filestats($channelID) "filename [list $fileName] hash [list $hash]"
 		return $channelID
 	}
@@ -309,7 +309,7 @@ proc open_ {file mode} {
 	fconfigure $f -translation binary
 	set hash [Hash $f]
 	close $f
-	set filed [vfs::memchan]
+	set filed [memchan]
 	if {[string index $mode 0] == "a"} {
 		set f [open $fileName r]
 		fconfigure $f -translation binary

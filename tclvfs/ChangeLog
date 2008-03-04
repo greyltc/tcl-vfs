@@ -1,3 +1,12 @@
+2008-03-04  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	vfs::template package update ver. 1.5.2:
+
+	* templatevfs.tcl, deltavfs.tcl, versionvfs.tcl, quotavfs.tcl, fishvfs.tcl:
+	  added workaround to memchan bug that shows up when tclkit used.
+	* pkgIndex.tcl, tclIndex: moved auto_index edits from former to latter
+	  to conform to Tcl package management standard practice.
+
 2008-02-26  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	vfs::template package update ver. 1.5.1:

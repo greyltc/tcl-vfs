@@ -8,16 +8,9 @@
 # script is sourced, the variable $dir must contain the
 # full path name of this file's directory.
 
-package ifneeded vfs::template 1.5.1 [list source [file join $dir templatevfs.tcl]]
+if {[lsearch -exact $::auto_path $dir] == -1} {
+    lappend ::auto_path $dir
+}
 
-set ::auto_index(::vfs::template::mount) [list package require vfs::template 1.5.1]
-set ::auto_index(::vfs::template::collate::mount) [list source [file join $dir collatevfs.tcl]]
-set ::auto_index(::vfs::template::quota::mount) [list source [file join $dir quotavfs.tcl]]
-set ::auto_index(::vfs::template::version::mount) [list source [file join $dir versionvfs.tcl]]
-set ::auto_index(::vfs::template::version::delta::mount) [list source [file join $dir deltavfs.tcl]]
-set ::auto_index(::vfs::template::chroot::mount) [list source [file join $dir chrootvfs.tcl]]
-set ::auto_index(::vfs::template::fish::mount) [list source [file join $dir fishvfs.tcl]]
-
-package ifneeded fileutil::globfind 1.5 [list source [file join $dir globfind.tcl]]
-package ifneeded trsync 1.0 [list source [file join $dir tdelta.tcl]]
+package ifneeded vfs::template 1.5.2 [list source [file join $dir templatevfs.tcl]]
 

@@ -13,7 +13,7 @@ fishvfs.tcl --
  
 	Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 	License: Tcl license
-	Version 1.5
+	Version 1.5.2
  
  Usage: mount ?-volume? \
  	?-cache <number>? \		# cache retention seconds
@@ -331,7 +331,7 @@ proc open_ {file mode} {
 	set command "ls -l '$file' | ( read a b c d x e\; echo \$x )"
 	if {([catch {set fileSize [Transport $root $command]}]) && ($mode == "r")} {error "couldn't open \"$file\": no such file or directory" "no such file or directory" {POSIX ENOENT {no such file or directory}}}
 
-	set channelID [::vfs::memchan]
+	set channelID [memchan]
 
 # file must exist after open procedure, ensure it:
 	set command "touch -a '$file'"

@@ -5,7 +5,7 @@ deltavfs.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.5.1
+Version 1.5.2
 
 A delta virtual filesystem.  Requires the template vfs in templatevfs.tcl.
 
@@ -136,7 +136,7 @@ proc open_ {file mode} {
 	if ![file exists $fileName] {set newFile 1}
 	set fileName $file
 	set channelID [Reconstitute $fileName]
-	if [string equal $channelID {}] {set channelID [open $fileName $mode] ; close $channelID ; set channelID [::vfs::memchan]}
+	if [string equal $channelID {}] {set channelID [open $fileName $mode] ; close $channelID ; set channelID [memchan]}
 	if $newFile {catch {file attributes $fileName -permissions $permissions}}
 	return $channelID
 }
@@ -267,7 +267,7 @@ proc Reconstitute {fileName} {
 		fconfigure $f -translation binary
 		set copyInstructions [read $f]
 		close $f
-		set fileToConstruct [::vfs::memchan]
+		set fileToConstruct [memchan]
 		tpatch $targetFile $copyInstructions $fileToConstruct
 		catch {close $targetFile}
 		set targetFile $fileToConstruct
