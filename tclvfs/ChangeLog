@@ -1,3 +1,8 @@
+2008-03-21  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* http2.6/http.tcl, http2.6/pkgIndex.tcl: merge with tcl cvs 2.7
+	http changes, change this version to 2.6.8.
+
 2008-03-10  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* http2.6/http.n, http2.6/http.tcl, http2.6/pkgIndex.tcl: merge
