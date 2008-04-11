@@ -1,7 +1,7 @@
 # Starkit support, see http://www.equi4.com/starkit/
 # by Jean-Claude Wippler, July 2002
 
-package provide starkit 1.3.1
+package provide starkit 1.3.2
 
 package require vfs
 

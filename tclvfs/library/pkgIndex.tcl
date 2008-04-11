@@ -45,7 +45,7 @@ proc ::vfs::loadvfs {dir dll} {
 }
 
 package ifneeded vfs        1.3.0 [list ::vfs::loadvfs $dir $dll]
-package ifneeded starkit    1.3.1 [list source [file join $dir starkit.tcl]]
+package ifneeded starkit    1.3.2 [list source [file join $dir starkit.tcl]]
 package ifneeded vfslib     1.3.1 [list source [file join $dir vfslib.tcl]]
 
 # Old
