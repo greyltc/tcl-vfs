@@ -1,3 +1,13 @@
+2008-04-15  Andreas Kupries  <andreask@activestate.com>
+
+	* library/pkgIndex.tcl: Moved the backward compatibility package
+	* library/mkvfs.tcl: names (mk4vfs, zipvfs) into separate files,
+	* library/zipvfs.tcl: as true packages. They properly load the new
+	* library/mk4vfscompat.tcl: packages. The mess with one file
+	* library/zipvfscompat.tcl: annoncing itself as two packages has
+	been removed. Patchlevels bumped (1.10.1, 1.0.1 respectively),
+	considering it as bug fix.
+
 2008-04-11  Andreas Kupries  <andreask@activestate.com>
 
 	* library/pkgIndex.tcl: Bumped version of starkit to 1.3.2. We

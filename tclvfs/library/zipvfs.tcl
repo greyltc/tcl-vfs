@@ -1,8 +1,8 @@
-
-package provide vfs::zip 1.0
+# Removed provision of the backward compatible name. Moved to separate
+# file/package.
+package provide vfs::zip 1.0.1
 
 package require vfs
-package provide zipvfs 1.0
 
 # Using the vfs, memchan and Trf extensions, we ought to be able
 # to write a Tcl-only zip virtual filesystem.  What we have below

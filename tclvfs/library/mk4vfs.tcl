@@ -16,8 +16,9 @@
 # 17mar03 jcw	1.9	start with mode translucent or readwrite
 # 18oct05 jcw	1.10	add fallback to MK Compatible Lite driver (vfs::mkcl)
 
-package provide mk4vfs 1.10
-package provide vfs::mk4 1.10
+# Removed provision of the backward compatible name. Moved to separate
+# file/package.
+package provide vfs::mk4 1.10.1
 package require vfs
 
 # need this so init failure in interactive mode does not mess up errorInfo
