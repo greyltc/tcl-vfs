@@ -1,5 +1,8 @@
 2008-04-15  Andreas Kupries  <andreask@activestate.com>
 
+	* pkgIndex.tcl.in: Updated to handle the new files, and
+	* Makefile.in: sync'd generated index with manual one.
+
 	* library/pkgIndex.tcl: Moved the backward compatibility package
 	* library/mkvfs.tcl: names (mk4vfs, zipvfs) into separate files,
 	* library/zipvfs.tcl: as true packages. They properly load the new
