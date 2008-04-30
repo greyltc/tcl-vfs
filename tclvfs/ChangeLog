@@ -1,3 +1,9 @@
+2008-04-30  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* win/makefile.vc:  Updated the NMAKE build files.
+	* win/rules.vc:
+	* win/nmakehlp.c:
+
 2008-04-15  Andreas Kupries  <andreask@activestate.com>
 
 	* pkgIndex.tcl.in: Updated to handle the new files, and
