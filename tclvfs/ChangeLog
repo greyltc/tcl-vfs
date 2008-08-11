@@ -1,3 +1,7 @@
+2008-08-11  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* http2.6/http.tcl: Merged zlib crc fix from Tcl.
+
 2008-04-30  Pat Thoyts  <patthoyts@users.sourceforge.net>
 
 	* win/makefile.vc:  Updated the NMAKE build files.
