@@ -39,6 +39,10 @@
 #define TCL_GLOB_TYPE_MOUNT		(1<<7)
 #endif
 
+#ifndef CONST86
+#define CONST86
+#endif
+
 /*
  * Only the _Init function is exported.
  */
@@ -1656,7 +1660,7 @@ VfsRemoveDirectory(
     return returnVal;
 }
 
-static CONST char**
+static CONST char * CONST86 *
 VfsFileAttrStrings(pathPtr, objPtrRef)
     Tcl_Obj* pathPtr;
     Tcl_Obj** objPtrRef;
