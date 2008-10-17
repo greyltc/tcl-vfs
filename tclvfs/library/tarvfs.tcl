@@ -15,7 +15,7 @@
 ################################################################################
 
 package require vfs
-package provide vfs::tar 0.9
+package provide vfs::tar 0.91
 
 # Using the vfs, memchan and Trf extensions, we're able
 # to write a Tcl-only tar filesystem.  
@@ -23,7 +23,7 @@ package provide vfs::tar 0.9
 namespace eval vfs::tar {}
 
 proc vfs::tar::Mount {tarfile local} {
-    set fd [::tar::open [::file normalize $tarfile]]
+    set fd [vfs::tar::_open [::file normalize $tarfile]]
     vfs::filesystem mount $local [list ::vfs::tar::handler $fd]
     # Register command to unmount
     vfs::RegisterMount $local [list ::vfs::tar::Unmount $fd]
@@ -32,7 +32,7 @@ proc vfs::tar::Mount {tarfile local} {
 
 proc vfs::tar::Unmount {fd local} {
     vfs::filesystem unmount $local
-    ::tar::_close $fd
+    vfs::tar::_close $fd
 }
 
 proc vfs::tar::handler {tarfd cmd root relative actualpath args} {
@@ -55,11 +55,11 @@ proc vfs::tar::state {tarfd args} {
 # Completely copied from zipvfs.tcl
 
 proc vfs::tar::matchindirectory {tarfd path actualpath pattern type} {
-    # This call to tar::getdir handles empty patterns properly as asking
+    # This call to vfs::tar::_getdir handles empty patterns properly as asking
     # for the existence of a single file $path only
-    set res [::tar::getdir $tarfd $path $pattern]
+    set res [vfs::tar::_getdir $tarfd $path $pattern]
     if {![string length $pattern]} {
-	if {![::tar::exists $tarfd $path]} { return {} }
+	if {![vfs::tar::_exists $tarfd $path]} { return {} }
 	set res [list $actualpath]
 	set actualpath ""
     }
@@ -73,7 +73,7 @@ proc vfs::tar::matchindirectory {tarfd path actualpath pattern type} {
 
 # return the necessary "array"
 proc vfs::tar::stat {tarfd name} {
-    ::tar::stat $tarfd $name sb
+    vfs::tar::_stat $tarfd $name sb
     array get sb
 }
 
@@ -83,12 +83,11 @@ proc vfs::tar::access {tarfd name mode} {
     }
     # Readable, Exists and Executable are treated as 'exists'
     # Could we get more information from the archive?
-    if {[::tar::exists $tarfd $name]} {
+    if {[vfs::tar::_exists $tarfd $name]} {
 	return 1
     } else {
 	error "No such file"
     }
-    
 }
 
 proc vfs::tar::open {tarfd name mode permissions} {
@@ -100,21 +99,21 @@ proc vfs::tar::open {tarfd name mode permissions} {
     switch -- $mode {
 	"" -
 	"r" {
-	    if {![::tar::exists $tarfd $name]} {
+	    if {![vfs::tar::_exists $tarfd $name]} {
 		vfs::filesystem posixerror $::vfs::posix(ENOENT)
 	    }
-	    
-	    ::tar::stat $tarfd $name sb
-	    
+
+	    vfs::tar::_stat $tarfd $name sb
+
 	    set nfd [vfs::memchan]
 	    fconfigure $nfd -translation binary
-	    
+
 	    # get the starting point from structure
 	    seek $tarfd $sb(start) start
-	    tar::Data $tarfd sb data
-	    
+	    vfs::tar::_data $tarfd sb data
+
 	    puts -nonewline $nfd $data
-	    
+
 	    fconfigure $nfd -translation auto
 	    seek $nfd 0
 	    return [list $nfd]
@@ -192,11 +191,10 @@ proc vfs::tar::utime {fd path actime mtime} {
 # of seconds since January 1, 1970, 00:00 Coordinated Universal Time
 
 
-namespace eval tar {
-    
+namespace eval vfs::tar {
     set HEADER_SIZE 500
     set BLOCK_SIZE 512
-    
+
     # fields of header with start/end-index in "comments": length of
     # field in bytes (just for documentation) prefix is the
     # "datatype": s == null-terminated string o == zero-filled octal
@@ -221,7 +219,7 @@ namespace eval tar {
 	devminor  {o 337 344}     # "8   - not used"
 	prefix    {o 345 499}     # "155 - not used"
     }
-    
+
     # just for compatibility with posix-header
     # only DIRTYPE is used
     array set aTypeFlag {
@@ -237,25 +235,18 @@ namespace eval tar {
     }
 }
 
-proc tar::Data {fd arr {varPtr ""}} {
+proc vfs::tar::_data {fd arr {varPtr ""}} {
     upvar 1 $arr sb
 
-    if { $varPtr != "" } {
-	upvar 1 $varPtr data
-    }
-
-    if { $varPtr == "" } {
+    if {$varPtr eq ""} {
 	seek $fd $sb(size) current
     } else {
+	upvar 1 $varPtr data
 	set data [read $fd $sb(size)]
-    }
-
-    if { $varPtr == "" } {
-	return ""
     }
 }
 
-proc tar::TOC {fd arr toc} {
+proc vfs::tar::TOC {fd arr toc} {
     variable aPosixHeader
     variable aTypeFlag
     variable HEADER_SIZE
@@ -271,23 +262,23 @@ proc tar::TOC {fd arr toc} {
     while {![eof $fd]} {
 	seek $fd $pos
 	set hdr [read $fd $BLOCK_SIZE]
-	
+
 	# read header-fields from block (see aPosixHeader)
 	foreach key {name typeflag size mtime uid gid} {
 	    set type [lindex $aPosixHeader($key) 0]
 	    set positions [lrange $aPosixHeader($key) 1 2]
 	    switch $type {
 		s {
-		    set $key [eval string range [list $hdr] $positions]
+		    set $key [eval [list string range $hdr] $positions]
 		    # cut the trailing Nulls
 		    set $key [string range [set $key] 0 [expr [string first "\000" [set $key]]-1]]
 		}
 		o {
 		    # leave it as is (octal value)
-		    set $key [eval string range [list $hdr] $positions]
+		    set $key [eval [list string range $hdr] $positions]
 		}
 		n {
-		    set $key [eval string range [list $hdr] $positions]
+		    set $key [eval [list string range $hdr] $positions]
 		    # change to integer
 		    scan [set $key] "%o" $key
 		    # if not set, set default-value "0"
@@ -299,24 +290,24 @@ proc tar::TOC {fd arr toc} {
 		}
 	    }
 	}
-	
+
 	# only the last three octals are interesting for mode
 	# ignore mode now, should this be added??
 	# set mode 0[string range $mode end-3 end]
-	
+
 	# get the increment to the next valid block
 	# (ignore file-blocks in between)
 	# if size == 0 the minimum incr is 512
-	set incr [expr int(ceil($size/double($BLOCK_SIZE)))*$BLOCK_SIZE+$BLOCK_SIZE]
-	
-	set startPosition [expr $pos+$BLOCK_SIZE]
+	set incr [expr {int(ceil($size/double($BLOCK_SIZE)))*$BLOCK_SIZE+$BLOCK_SIZE}]
+
+	set startPosition [expr {$pos+$BLOCK_SIZE}]
 	# make it relative to this working-directory, remove the
 	# leading "relative"-paths
 	regexp -- {^(?:\.\.?/)*/?(.*)} $name -> name
-	
+
 	if {$name != ""} {
 	    incr sb(nitems)
-	    set sb($name,start) [expr $pos+$BLOCK_SIZE]
+	    set sb($name,start) [expr {$pos+$BLOCK_SIZE}]
 	    set sb($name,size) $size
 	    set type "file"
 	    # the mode should be 0777?? or must be changed to decimal?
@@ -343,15 +334,13 @@ proc tar::TOC {fd arr toc} {
     return
 }
 
-proc tar::open {path} {
+proc vfs::tar::_open {path} {
     set fd [::open $path]
     
     if {[catch {
-	upvar #0 tar::$fd.toc toc
-	
+	upvar #0 vfs::tar::$fd.toc toc
 	fconfigure $fd -translation binary ;#-buffering none
-	
-	tar::TOC $fd sb toc
+	vfs::tar::TOC $fd sb toc
     } err]} {
 	close $fd
 	return -code error $err
@@ -360,18 +349,18 @@ proc tar::open {path} {
     return $fd
 }
 
-proc tar::exists {fd path} {
+proc vfs::tar::_exists {fd path} {
     #::vfs::log "$fd $path"
     if {$path == ""} {
 	return 1
     } else {
-	upvar #0 tar::$fd.toc toc
-	return [expr [info exists toc($path)] || [info exists toc([string trimright $path "/"]/)]]
+	upvar #0 vfs::tar::$fd.toc toc
+	return [expr {[info exists toc($path)] || [info exists toc([string trimright $path "/"]/)]}]
     }
 }
 
-proc tar::stat {fd path arr} {
-    upvar #0 tar::$fd.toc toc
+proc vfs::tar::_stat {fd path arr} {
+    upvar #0 vfs::tar::$fd.toc toc
     upvar 1 $arr sb
 
     if { $path == "" || $path == "." } {
@@ -385,7 +374,7 @@ proc tar::stat {fd path arr} {
 	array set sb $toc($path)
     }
 
-	# set missing attributes
+    # set missing attributes
     set sb(dev) -1
     set sb(nlink) 1
     set sb(atime) $sb(mtime)
@@ -396,8 +385,8 @@ proc tar::stat {fd path arr} {
 
 # Treats empty pattern as asking for a particular file only.
 # Directly copied from zipvfs.
-proc tar::getdir {fd path {pat *}} {
-    upvar #0 tar::$fd.toc toc
+proc vfs::tar::_getdir {fd path {pat *}} {
+    upvar #0 vfs::tar::$fd.toc toc
     
     if { $path == "." || $path == "" } {
 	set path $pat
@@ -412,13 +401,13 @@ proc tar::getdir {fd path {pat *}} {
     if {$depth} {
 	set ret {}
 	foreach key [array names toc $path] {
-	    if {[string index $key end] == "/"} {
+	    if {[string index $key end] eq "/"} {
 		# Directories are listed twice: both with and without
 		# the trailing '/', so we ignore the one with
 		continue
 	    }
 	    array set sb $toc($key)
-	    
+
 	    if { $sb(depth) == $depth } {
 		if {[info exists toc(${key}/)]} {
 		    array set sb $toc(${key}/)
@@ -436,7 +425,7 @@ proc tar::getdir {fd path {pat *}} {
     }
 }
 
-proc tar::_close {fd} {
+proc vfs::tar::_close {fd} {
     variable $fd.toc
     unset -nocomplain $fd.toc
     ::close $fd

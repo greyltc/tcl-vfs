@@ -1,3 +1,9 @@
+2008-10-17  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* library/pkgIndex.tcl: update vfs::tar to 0.91
+	* library/tarvfs.tcl: update vfs::tar to use only its own
+	namespace and not conflict with tcllib tar. [Bug 80465]
+
 2008-10-10  Pat Thoyts  <patthoyts@users.sourceforge.net>
 
 	* generic/vfs.c: Make use of CONST86 for 8.6a3 support.
