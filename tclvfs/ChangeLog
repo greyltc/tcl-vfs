@@ -1,6 +1,6 @@
 2008-10-17  Jeff Hobbs  <jeffh@ActiveState.com>
 
-	* library/pkgIndex.tcl: update vfs::tar to 0.91
+	* pkgIndex.tcl.in, library/pkgIndex.tcl: update vfs::tar to 0.91
 	* library/tarvfs.tcl: update vfs::tar to use only its own
 	namespace and not conflict with tcllib tar. [Bug 80465]
 
