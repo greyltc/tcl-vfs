@@ -1,3 +1,10 @@
+2008-11-20  Andreas Kupries  <andreask@activestate.com>
+
+	* library/starkit.tcl (_startup, autoextend): Replaced the buggy
+	  'vfs::filesystem fullynormalize' with the ok 'fullnormalize'
+	  defined in the same file. Now 'starkit::startup' handles
+	  sym-links to a starpack ok when detecting the wrap mode.
+
 2008-10-17  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* pkgIndex.tcl.in, library/pkgIndex.tcl: update vfs::tar to 0.91

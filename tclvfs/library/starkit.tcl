@@ -72,16 +72,16 @@ namespace eval starkit {
 	# 2003/02/11: new behavior, if starkit::topdir exists, don't disturb it
 	if {![info exists starkit::topdir]} { variable topdir }
 
-	set script [vfs::filesystem fullynormalize [info script]]
+	set script [fullnormalize [info script]]
 	set topdir [file dirname $script]
 
-	if {$topdir eq [vfs::filesystem fullynormalize [info nameofexe]]} { return starpack }
+	if {$topdir eq [fullnormalize [info nameofexe]]} { return starpack }
 
 	# pkgs live in the $topdir/lib/ directory
 	set lib [file join $topdir lib]
 	if {[file isdir $lib]} { autoextend $lib }
 
-	set a0 [vfs::filesystem fullynormalize $argv0]
+	set a0 [fullnormalize $argv0]
 	if {$topdir eq $a0} { return starkit }
 	if {$script eq $a0} { return unwrapped }
 
@@ -100,7 +100,7 @@ namespace eval starkit {
     # append an entry to auto_path if it's not yet listed
     proc autoextend {dir} {
 	global auto_path
-	set dir [vfs::filesystem fullynormalize $dir]
+	set dir [fullnormalize $dir]
 	if {[lsearch $auto_path $dir] < 0} {
 	    lappend auto_path $dir
 	}
