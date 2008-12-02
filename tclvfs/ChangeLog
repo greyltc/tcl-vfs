@@ -1,3 +1,8 @@
+2008-12-02  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Makefile.in (install-lib-binaries): use lib_BINARIES for the
+	binary install list. [Bug 1699827]
+
 2008-11-20  Andreas Kupries  <andreask@activestate.com>
 
 	* library/starkit.tcl (_startup, autoextend): Replaced the buggy
