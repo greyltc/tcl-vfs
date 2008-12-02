@@ -269,6 +269,9 @@ VPATH = $(srcdir)/generic:$(srcdir)/unix:$(srcdir)/win
 
 #pkgIndex.tcl:
 #	( echo pkg_mkIndex . $(PKG_LIB_FILE) \; exit; ) | $(TCLSH)
+pkgIndex.tcl: $(srcdir)/pkgIndex.tcl.in
+	cd $(top_builddir) \
+	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
 #========================================================================
 # Don't modify the file to clean here.  Instead, set the "CLEANFILES"
