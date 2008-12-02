@@ -2,6 +2,7 @@
 
 	* Makefile.in (install-lib-binaries): use lib_BINARIES for the
 	binary install list. [Bug 1699827]
+	Install pkgIndex.tcl for static or shared build. [Bug 699176]
 
 2008-11-20  Andreas Kupries  <andreask@activestate.com>
 
