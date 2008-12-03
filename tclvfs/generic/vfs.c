@@ -45,7 +45,7 @@
  * some vfs implementation.  -1 is what Tcl expects, adopts from posix's
  * standard error value.
  */
-#define TCLVFS_POSIXERROR -1
+#define TCLVFS_POSIXERROR (-1)
 
 #ifndef CONST86
 #define CONST86
