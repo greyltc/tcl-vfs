@@ -26,17 +26,6 @@ if {[info exists env(VFS_DEBUG)] && [info commands history] == ""} {
     proc history {args} {}
 }
 
-# things that can no longer really be left out (but this is the wrong spot!)
-# be as non-invasive as possible, using these definitions as last resort
-
-if {![info exists auto_index(lassign)] && [info commands lassign] == ""} {
-    set auto_index(lassign) {
-	proc lassign {l args} {
-	    foreach v $l a $args { uplevel 1 [list set $a $v] }
-	}
-    }
-}
-
 namespace eval vfs::mk4 {
     proc Mount {mkfile local args} {
         # 2005-10-19 switch to MK Compatible Lite driver if there is no Mk4tcl 
