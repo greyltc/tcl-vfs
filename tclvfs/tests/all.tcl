@@ -19,11 +19,9 @@ set ::tcltest::testSingleFile false
 set ::tcltest::testsDirectory [file dir [info script]]
 
 proc vfsCreateInterp {name} {
-    # Have to make sure we load the same dll else we'll have multiple
-    # copies!
+    # Use the same setup to access vfs as the master
     if {[catch {
-	interp create $name 
-	$name eval [list package ifneeded vfs 1.3 [package ifneeded vfs 1.3]]
+	interp create $name
 	$name eval [list set ::auto_path $::auto_path]
 	$name eval {package require vfs}
     } err]} {
@@ -31,30 +29,10 @@ proc vfsCreateInterp {name} {
     }
 }
 
-# Set up auto_path and package indices for loading.  Must make sure we 
-# can load the same dll into the main interpreter and sub interps.
-proc setupForVfs {lib} {
-    namespace eval vfs {}
-    global auto_path dir vfs::dll
-    set dir [file norm $lib]
-    set auto_path [linsert $auto_path 0 $dir]
-    uplevel \#0 [list source [file join $dir pkgIndex.tcl]]
-    set orig [package ifneeded vfs 1.3]
-    set vfs::dll [lindex $orig 2]
-    if {![file exists $vfs::dll]} {
-	set vfs::dll [file join [pwd] [file tail $vfs::dll]]
-	package ifneeded vfs 1.3 [list [lindex $orig 0] [lindex $orig 1] $vfs::dll]
-    }
-}
-
 # We need to ensure that the testsDirectory is absolute
 ::tcltest::normalizePath ::tcltest::testsDirectory
 
-if {[lindex [file system $::tcltest::testsDirectory] 0] == "native"} {
-    setupForVfs [file join [file dir $::tcltest::testsDirectory] library]
-}
-
-package require vfs
+package require vfs 1.4
 
 puts stdout "Tests running in interp:  [info nameofexecutable]"
 puts stdout "Tests running in working dir:  $::tcltest::testsDirectory"
