@@ -1,5 +1,5 @@
 
-package provide vfs::ns 0.5
+package provide vfs::ns 0.5.1
 
 package require vfs 1.0
 
@@ -123,7 +123,7 @@ proc vfs::ns::matchindirectory {ns path actualpath pattern type} {
 	    }
 	}
     }
-    
+
     if {[::vfs::matchFiles $type]} {
 	# add matching files to $res
 	if {[string length $pattern]} {
@@ -134,11 +134,11 @@ proc vfs::ns::matchindirectory {ns path actualpath pattern type} {
     }
     set realres [list]
     foreach r $res {
-	regsub "^(::)?${ns}(::)?${path}(::)?" $r $actualpath rr
+	regsub "^(::)?${ns}(::)?${path}(::)?" $r $actualpath/ rr
 	lappend realres $rr
     }
     #::vfs::log $realres
-    
+
     return $realres
 }
 
