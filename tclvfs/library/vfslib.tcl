@@ -1,18 +1,10 @@
 # Remnants of what used to be VFS init, this is TclKit-specific
 
 package require Tcl 8.4; # vfs is all new for 8.4
-package provide vfslib 1.3.1
-
-namespace eval ::vfs {
-    variable zseq 0	;# used to generate temp zstream cmd names
-}
-
-# for backwards compatibility
-proc vfs::normalize {path} { ::file normalize $path }
+package provide vfslib 1.4
 
 # use zlib to define zip and crc if available
 if {[llength [info command zlib]] || ![catch {load "" zlib}]} {
-
     proc vfs::zip {flag value args} {
 	switch -glob -- "$flag $value" {
 	    {-mode d*} { set mode decompress }
@@ -37,7 +29,6 @@ if {[llength [info command zlib]] || ![catch {load "" zlib}]} {
 
 # use rechan to define memchan and zstream if available
 if {[info command rechan] != "" || ![catch {load "" rechan}]} {
-
     proc vfs::memchan_handler {cmd fd args} {
 	upvar 1 ::vfs::_memchan_buf($fd) buf
 	upvar 1 ::vfs::_memchan_pos($fd) pos
@@ -140,6 +131,7 @@ if {[info command rechan] != "" || ![catch {load "" rechan}]} {
 	}
     }
 
+    variable ::vfs::zseq 0	;# used to generate temp zstream cmd names
     proc vfs::zstream {mode ifd clen ilen} {
 	set cname _zstream_[incr ::vfs::zseq]
 	zlib s$mode $cname
@@ -149,3 +141,4 @@ if {[info command rechan] != "" || ![catch {load "" rechan}]} {
 	return $fd
     }
 }
+
