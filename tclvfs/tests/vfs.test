@@ -87,6 +87,29 @@ test vfs-2.2 {mount, delete sub interp} {
     filelistrelative $res $remove
 } {foo2 foo foo}
 
+test vfs-2.3 {mount where command doesn't exist} {
+    # This is failing in 8.4.0-19, ok in 8.5, but changed message in 8.5.6
+    # and causes the 'error reading package index' in other tests for 8.4
+    vfs::filesystem mount foo bar
+    set code [catch {glob foo/pkgIndex.tcl} msg]
+    vfs::filesystem unmount foo
+    list $code $msg
+} {1 {invalid command name "bar"}}
+
+test vfs-2.4 {mount where command doesn't exist} {
+    # Building on vfs-2.3, but -nocomplain changed in 8.5 to still complain
+    # on real underlying issues (just not on empty result)
+    vfs::filesystem mount foo bar
+    set code [catch {glob -nocomplain foo/pkgIndex.tcl} msg]
+    vfs::filesystem unmount foo
+    if {![package vsatisfies [package require Tcl] 8.5]} {
+	if {$code == 0} {
+	    set code 1 ; set msg {invalid command name "bar"}
+	}
+    }
+    list $code $msg
+} {1 {invalid command name "bar"}}
+
 test vfs-3.1 {vfs helpers: in memory channels} {
     close [::vfs::memchan]
     # If we get here, it's ok.  If this test fails,
@@ -128,6 +151,30 @@ test vfs-3.4 {vfs helpers: zip} {
     # the Try extension for example.
     ::vfs::zip -mode decompress "\x78\x9c\x33\x34\x32\x36\x31\x35\x33\xb7\xb0\x34\x0\x0\xb\x2c\x2\xe"
 } {1234567890}
+
+test vfs-4.1 {vfs glob with .. [Bug 2378350]} -setup {
+    package require vfs::ns 0.5.1
+} -body {
+    namespace eval ::test {}
+    namespace eval ::test {}
+    namespace eval ::test::bar {}
+    namespace eval ::test::baz {}
+    proc ::test::waz {args} { blah blah}
+    proc ::test::bar::lol {args} { body body }
+    proc ::test::baz::noz {args} { moo moo }
+    vfs::ns::Mount :: nstest
+    set res [list]
+    lappend res [catch {lsort [glob nstest/test/*]} msg] $msg \
+	[catch {lsort [glob nstest/test/baz/*]} msg] $msg \
+	[catch {lsort [glob nstest/test/bar/../baz/*]} msg] $msg
+} -cleanup {
+    catch {vfs::unmount nstest}
+    catch {namespace delete ::test}
+} -result [list \
+	       0 {nstest/test/bar nstest/test/baz nstest/test/waz} \
+	       0 {nstest/test/baz/noz} \
+	       0 {nstest/test/bar/../baz/noz} \
+	       ]
 
 # cleanup
 ::tcltest::cleanupTests

@@ -1,5 +1,11 @@
 2008-12-02  Jeff Hobbs  <jeffh@ActiveState.com>
 
+	* tests/vfs.test (vfs-2.3,2.4,4.1): add tests for mount command
+	not existing and for an issue with .. resolution.
+
+	* pkgIndex.tcl.in, library/tclprocvfs.tcl: vfs::ns bump to 0.5.1
+	Correct glob of namespaces. [Bug 1280914]
+
 	* generic/vfs.c (TCLVFS_POSIXERROR): note use of -1 return code to
 	indicate a posix error passing through.
 
