@@ -39,6 +39,14 @@
 #define TCL_GLOB_TYPE_MOUNT		(1<<7)
 #endif
 
+/*
+ * tclvfs will return this code instead of TCL_OK/ERROR/etc. to propagate
+ * through the Tcl_Eval* calls to indicate a posix error has been raised by
+ * some vfs implementation.  -1 is what Tcl expects, adopts from posix's
+ * standard error value.
+ */
+#define TCLVFS_POSIXERROR -1
+
 #ifndef CONST86
 #define CONST86
 #endif
@@ -752,7 +760,12 @@ VfsFilesystemObjCmd(dummy, interp, objc, objv)
 		return TCL_ERROR;
 	    }
 	    Tcl_SetErrno(posixError);
-	    return -1;
+	    /*
+	     * This special error code propagate to the Tcl_Eval* calls in
+	     * other parts of the vfs C code to indicate a posix error
+	     * being raised by some vfs implementation.
+	     */
+	    return TCLVFS_POSIXERROR;
 	}
 	case VFS_NORMALIZE: {
 	    Tcl_Obj *path;
@@ -931,8 +944,8 @@ VfsFullyNormalizePath(Tcl_Interp *interp, Tcl_Obj *pathPtr) {
  *	internal representation for a vfs path.
  *	
  * Results:
- *	Returns TCL_OK on success, or '-1' on failure.  If Tcl is
- *	exiting, we always return a failure code.
+ *	Returns TCL_OK on success, or 'TCLVFS_POSIXERROR' on failure.
+ *	If Tcl is exiting, we always return a failure code.
  *
  * Side effects:
  *	On success, we allocate some memory for our internal
@@ -956,12 +969,12 @@ VfsPathInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
 	 * in the middle of the exit sequence.  We could perhaps be
 	 * more subtle than this!
 	 */
-	return -1;
+	return TCLVFS_POSIXERROR;
     }
 
     normedObj = Tcl_FSGetNormalizedPath(NULL, pathPtr);
     if (normedObj == NULL) {
-        return -1;
+        return TCLVFS_POSIXERROR;
     }
     normed = Tcl_GetStringFromObj(normedObj, &len);
     splitPosition = len;
@@ -985,7 +998,7 @@ VfsPathInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
 	 * must return then.
 	 */
 	if (splitPosition == 0) {
-	    return -1;
+	    return TCLVFS_POSIXERROR;
 	}
 	
 	/* Is the path up to 'splitPosition' a valid moint point? */
@@ -998,7 +1011,7 @@ VfsPathInFilesystem(Tcl_Obj *pathPtr, ClientData *clientDataPtr) {
 		 * We've reached the beginning of the string without
 		 * finding a mount, so we've failed.
 		 */
-		return -1;
+		return TCLVFS_POSIXERROR;
 	    }
 	}
 	
@@ -1089,7 +1102,7 @@ VfsStat(pathPtr, bufPtr)
     
     mountCmd = VfsBuildCommandForPath(&interp, "stat", pathPtr);
     if (mountCmd == NULL) {
-	return -1;
+	return TCLVFS_POSIXERROR;
     }
 
     Tcl_SaveResult(interp, &savedResult);
@@ -1211,16 +1224,16 @@ VfsStat(pathPtr, bufPtr)
 	}
     }
     
-    if (returnVal != TCL_OK && returnVal != -1) {
+    if (returnVal != TCL_OK && returnVal != TCLVFS_POSIXERROR) {
 	VfsInternalError(interp);
     }
 
     Tcl_RestoreResult(interp, &savedResult);
     Tcl_DecrRefCount(mountCmd);
     
-    if (returnVal != TCL_OK && returnVal != -1) {
+    if (returnVal != TCL_OK && returnVal != TCLVFS_POSIXERROR) {
 	Tcl_SetErrno(ENOENT);
-        return -1;
+        return TCLVFS_POSIXERROR;
     } else {
 	return returnVal;
     }
@@ -1238,7 +1251,7 @@ VfsAccess(pathPtr, mode)
     
     mountCmd = VfsBuildCommandForPath(&interp, "access", pathPtr);
     if (mountCmd == NULL) {
-	return -1;
+	return TCLVFS_POSIXERROR;
     }
 
     Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewIntObj(mode));
@@ -1246,7 +1259,7 @@ VfsAccess(pathPtr, mode)
     Tcl_SaveResult(interp, &savedResult);
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
-    if (returnVal != TCL_OK && returnVal != -1) {
+    if (returnVal != TCL_OK && returnVal != TCLVFS_POSIXERROR) {
 	VfsInternalError(interp);
     }
     Tcl_RestoreResult(interp, &savedResult);
@@ -1254,7 +1267,7 @@ VfsAccess(pathPtr, mode)
 
     if (returnVal != 0) {
 	Tcl_SetErrno(ENOENT);
-	return -1;
+	return TCLVFS_POSIXERROR;
     } else {
 	return returnVal;
     }
@@ -1337,7 +1350,7 @@ VfsOpenFileChannel(cmdInterp, pathPtr, mode, permissions)
     } else {
 	/* Leave an error message if the cmdInterp is non NULL */
 	if (cmdInterp != NULL) {
-	    if (returnVal == -1) {
+	    if (returnVal == TCLVFS_POSIXERROR) {
 		Tcl_ResetResult(cmdInterp);
 		Tcl_AppendResult(cmdInterp, "couldn't open \"", 
 				 Tcl_GetString(pathPtr), "\": ",
@@ -1352,7 +1365,7 @@ VfsOpenFileChannel(cmdInterp, pathPtr, mode, permissions)
 	    }
 	} else {
 	    /* Report any error, since otherwise it is lost */
-	    if (returnVal != -1) {
+	    if (returnVal != TCLVFS_POSIXERROR) {
 		VfsInternalError(interp);
 	    }
 	}
@@ -1525,7 +1538,7 @@ VfsMatchInDirectory(
 	
 	mountCmd = VfsBuildCommandForPath(&interp, "matchindirectory", dirPtr);
 	if (mountCmd == NULL) {
-	    return -1;
+	    return TCLVFS_POSIXERROR;
 	}
 
 	if (types != NULL) {
@@ -1543,7 +1556,7 @@ VfsMatchInDirectory(
 	/* Now we execute this mount point's callback. */
 	returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 				  TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
-	if (returnVal != -1) {
+	if (returnVal != TCLVFS_POSIXERROR) {
 	    vfsResultPtr = Tcl_DuplicateObj(Tcl_GetObjResult(interp));
 	}
 	Tcl_RestoreResult(interp, &savedResult);
@@ -1577,14 +1590,14 @@ VfsDeleteFile(
     
     mountCmd = VfsBuildCommandForPath(&interp, "deletefile", pathPtr);
     if (mountCmd == NULL) {
-	return -1;
+	return TCLVFS_POSIXERROR;
     }
 
     /* Now we execute this mount point's callback. */
     Tcl_SaveResult(interp, &savedResult);
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
-    if (returnVal != TCL_OK && returnVal != -1) {
+    if (returnVal != TCL_OK && returnVal != TCLVFS_POSIXERROR) {
 	VfsInternalError(interp);
     }
     Tcl_RestoreResult(interp, &savedResult);
@@ -1603,14 +1616,14 @@ VfsCreateDirectory(
     
     mountCmd = VfsBuildCommandForPath(&interp, "createdirectory", pathPtr);
     if (mountCmd == NULL) {
-	return -1;
+	return TCLVFS_POSIXERROR;
     }
 
     /* Now we execute this mount point's callback. */
     Tcl_SaveResult(interp, &savedResult);
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
-    if (returnVal != TCL_OK && returnVal != -1) {
+    if (returnVal != TCL_OK && returnVal != TCLVFS_POSIXERROR) {
 	VfsInternalError(interp);
     }
     Tcl_RestoreResult(interp, &savedResult);
@@ -1635,7 +1648,7 @@ VfsRemoveDirectory(
     
     mountCmd = VfsBuildCommandForPath(&interp, "removedirectory", pathPtr);
     if (mountCmd == NULL) {
-	return -1;
+	return TCLVFS_POSIXERROR;
     }
 
     Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewIntObj(recursive));
@@ -1643,7 +1656,7 @@ VfsRemoveDirectory(
     Tcl_SaveResult(interp, &savedResult);
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
-    if (returnVal != TCL_OK && returnVal != -1) {
+    if (returnVal != TCL_OK && returnVal != TCLVFS_POSIXERROR) {
 	VfsInternalError(interp);
     }
     Tcl_RestoreResult(interp, &savedResult);
@@ -1680,7 +1693,7 @@ VfsFileAttrStrings(pathPtr, objPtrRef)
     /* Now we execute this mount point's callback. */
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
-    if (returnVal != TCL_OK && returnVal != -1) {
+    if (returnVal != TCL_OK && returnVal != TCLVFS_POSIXERROR) {
 	VfsInternalError(interp);
     }
     if (returnVal == TCL_OK) {
@@ -1707,7 +1720,7 @@ VfsFileAttrsGet(cmdInterp, index, pathPtr, objPtrRef)
     
     mountCmd = VfsBuildCommandForPath(&interp, "fileattributes", pathPtr);
     if (mountCmd == NULL) {
-	return -1;
+	return TCLVFS_POSIXERROR;
     }
 
     Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewIntObj(index));
@@ -1715,13 +1728,13 @@ VfsFileAttrsGet(cmdInterp, index, pathPtr, objPtrRef)
     /* Now we execute this mount point's callback. */
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
-    if (returnVal != -1) {
+    if (returnVal != TCLVFS_POSIXERROR) {
 	*objPtrRef = Tcl_DuplicateObj(Tcl_GetObjResult(interp));
     }
     Tcl_RestoreResult(interp, &savedResult);
     Tcl_DecrRefCount(mountCmd);
     
-    if (returnVal != -1) {
+    if (returnVal != TCLVFS_POSIXERROR) {
 	if (returnVal == TCL_OK) {
 	    /* 
 	     * Our caller expects a ref count of zero in
@@ -1763,7 +1776,7 @@ VfsFileAttrsSet(cmdInterp, index, pathPtr, objPtr)
     
     mountCmd = VfsBuildCommandForPath(&interp, "fileattributes", pathPtr);
     if (mountCmd == NULL) {
-	return -1;
+	return TCLVFS_POSIXERROR;
     }
 
     Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewIntObj(index));
@@ -1772,7 +1785,7 @@ VfsFileAttrsSet(cmdInterp, index, pathPtr, objPtr)
     /* Now we execute this mount point's callback. */
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
-    if (returnVal != -1 && returnVal != TCL_OK) {
+    if (returnVal != TCLVFS_POSIXERROR && returnVal != TCL_OK) {
 	errorPtr = Tcl_DuplicateObj(Tcl_GetObjResult(interp));
     }
 
@@ -1780,7 +1793,7 @@ VfsFileAttrsSet(cmdInterp, index, pathPtr, objPtr)
     Tcl_DecrRefCount(mountCmd);
     
     if (cmdInterp != NULL) {
-	if (returnVal == -1) {
+	if (returnVal == TCLVFS_POSIXERROR) {
 	    Tcl_ResetResult(cmdInterp);
 	    Tcl_AppendResult(cmdInterp, "couldn't set attributes for \"", 
 			     Tcl_GetString(pathPtr), "\": ",
@@ -1810,7 +1823,7 @@ VfsUtime(pathPtr, tval)
     
     mountCmd = VfsBuildCommandForPath(&interp, "utime", pathPtr);
     if (mountCmd == NULL) {
-	return -1;
+	return TCLVFS_POSIXERROR;
     }
 
     Tcl_ListObjAppendElement(interp, mountCmd, Tcl_NewLongObj(tval->actime));
@@ -1819,7 +1832,7 @@ VfsUtime(pathPtr, tval)
     Tcl_SaveResult(interp, &savedResult);
     returnVal = Tcl_EvalObjEx(interp, mountCmd, 
 			      TCL_EVAL_GLOBAL | TCL_EVAL_DIRECT);
-    if (returnVal != TCL_OK && returnVal != -1) {
+    if (returnVal != TCL_OK && returnVal != TCLVFS_POSIXERROR) {
 	VfsInternalError(interp);
     }
     Tcl_RestoreResult(interp, &savedResult);

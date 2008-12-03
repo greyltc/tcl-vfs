@@ -1,5 +1,8 @@
 2008-12-02  Jeff Hobbs  <jeffh@ActiveState.com>
 
+	* generic/vfs.c (TCLVFS_POSIXERROR): note use of -1 return code to
+	indicate a posix error passing through.
+
 	* tclconfig/tcl.m4, generic/vfs.c, doc/vfs.n:
 	* configure, configure.in: update to TEA 3.7, bump vfs to v1.4
 
