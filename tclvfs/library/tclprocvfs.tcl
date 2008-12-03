@@ -115,14 +115,13 @@ proc vfs::ns::matchindirectory {ns path actualpath pattern type} {
 
     set ns ::[string trim $ns :]
     set nspath ${ns}::${path}
+    set slash 1
     if {[::vfs::matchDirectories $type]} {
 	# add matching directories to $res
 	if {[string length $pattern]} {
 	    eval [linsert [namespace children $nspath $pattern] 0 lappend res]
-	} else {
-	    if {[namespace exists $nspath]} {
-		eval [linsert $nspath 0 lappend res]
-	    }
+	} elseif {[namespace exists $nspath]} {
+	    lappend res $nspath
 	}
     }
 
@@ -130,14 +129,15 @@ proc vfs::ns::matchindirectory {ns path actualpath pattern type} {
 	# add matching files to $res
 	if {[string length $pattern]} {
 	    eval [linsert [info procs ${nspath}::$pattern] 0 lappend res]
-	} else {
-	    eval [linsert [info procs $ns] 0 lappend res]
+	} elseif {[llength [info procs $nspath]]} {
+ 	    lappend res $nspath
+	    set slash 0
 	}
     }
 
     # There is a disconnect between 8.4 and 8.5 with the / handling
     # Make sure actualpath gets just one trailing /
-    if {![string match */ $actualpath]} { append actualpath / }
+    if {$slash && ![string match */ $actualpath]} { append actualpath / }
 
     set realres [list]
     foreach r $res {

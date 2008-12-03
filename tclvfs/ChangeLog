@@ -1,3 +1,8 @@
+2008-12-03  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* library/tclprocvfs.tcl (vfs::ns::matchindirectory): Handle the
+	single item dir/file, and don't add a slash for single proc.
+
 2008-12-02  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* tests/vfs.test (vfs-2.3,2.4,4.1): add tests for mount command
