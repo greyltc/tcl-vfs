@@ -1,5 +1,7 @@
 2008-12-03  Jeff Hobbs  <jeffh@ActiveState.com>
 
+	* tests/vfsFtp.test: correct unmount ordering
+
 	* library/tclprocvfs.tcl (vfs::ns::matchindirectory): Handle the
 	single item dir/file, and don't add a slash for single proc.
 

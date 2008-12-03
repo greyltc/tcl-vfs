@@ -38,10 +38,8 @@ test vfsFtp-1.3 {mount and source} {
 } {This was returned from a remote file}
 
 # cleanup
-catch {
-    vfs::ftp::Unmount ftp://ftp.ucsd.edu/pub/alpha/ localmount
-}
 cd $dir
+catch {vfs::unmount localmount}
 
 ::tcltest::cleanupTests
 return
