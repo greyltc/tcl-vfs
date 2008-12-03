@@ -1,7 +1,7 @@
 # Starkit support, see http://www.equi4.com/starkit/
 # by Jean-Claude Wippler, July 2002
 
-package provide starkit 1.3.2
+package provide starkit 1.3.3
 
 package require vfs
 
@@ -18,15 +18,6 @@ package require vfs
 #
 # The code in here is only called directly from the current starkits.
 
-# lassign is used so widely by now, make sure it is always available
-if {![info exists auto_index(lassign)] && [info commands lassign] eq ""} {
-    set auto_index(lassign) {
-	proc lassign {l args} {
-	    foreach v $l a $args { uplevel 1 [list set $a $v] }
-	}
-    }
-}
-
 namespace eval starkit {
     # these variables are defined after the call to starkit::startup
     # they are special in that a second call will not alter them
@@ -39,7 +30,7 @@ namespace eval starkit {
 	if {[catch {
 	    set self [fullnormalize [info script]]
 
-	    package require ${driver}vfs
+	    package require vfs::${driver}
 	    eval [list ::vfs::${driver}::Mount $self $self] $args
 
 	    uplevel [list source [file join $self main.tcl]]
@@ -109,10 +100,10 @@ namespace eval starkit {
     # remount a starkit with different options
     proc remount {args} {
 	variable topdir
-	lassign [vfs::filesystem info $topdir] drv arg
+	foreach {drv arg} [vfs::filesystem info $topdir] { break }
 	vfs::unmount $topdir
-	
-	eval [list [regsub handler $drv Mount] $topdir $topdir] $args
+
+	eval [list [string map {handler Mount} $drv] $topdir $topdir] $args
     }
 
     # terminate with an error message, using most appropriate mechanism
