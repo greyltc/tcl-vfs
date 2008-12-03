@@ -78,6 +78,7 @@ mount -read C:/install/package/images FTP:/pub/releases/package/images -collect 
 }
 
 package require vfs::template 1.5
+package provide vfs::template::collate 1.5.2
 
 namespace eval ::vfs::template::collate {
 

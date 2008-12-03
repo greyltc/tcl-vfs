@@ -1,5 +1,36 @@
 2008-12-02  Jeff Hobbs  <jeffh@ActiveState.com>
 
+	* tclconfig/tcl.m4, generic/vfs.c, doc/vfs.n:
+	* configure, configure.in: update to TEA 3.7, bump vfs to v1.4
+
+	* pkgIndex.tcl.in: this is now the sole pkgIndex.tcl script.
+	vfs::loadvfs updated to source vfsUtils.tcl right after loading
+	the dll.  Package versions updated, removed mk4vfs and zipvfs
+	compat packages.
+
+	* Makefile.in, win/makefile.vc: update for removed files
+
+	* library/template/*: add package provide 1.5.2 for each template
+
+	* library/mk4vfscompat.tcl (removed): remove old compat pkg
+	* library/zipvfscompat.tcl (removed): remove old compat pkg
+
+	* library/tclIndex (removed): users should package require the
+	appropriate driver, not rely on autoload
+	* library/pkgIndex.tcl (removed): impotent index files
+	* library/template/pkgIndex.tcl (removed):
+
+	* tests/all.tcl (vfsCreateInterp): simplify the test to require
+	vfs as the main interps do.
+
+	* library/vfslib.tcl: remove vfs::normalize compat proc
+	bump vfslib to 1.4
+
+	* library/mk4vfs.tcl: remove unused lassign defn
+
+	* library/starkit.tcl (header): require namespace-based vfs driver
+	(eg. vfs::mk4 instead of mk4vfs).  bump starkit to v1.3.3
+
 	* mac/* (removed): removed outdated Mac classic pieces
 
 	* Makefile.in (install-lib-binaries): use lib_BINARIES for the

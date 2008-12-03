@@ -336,7 +336,7 @@ Vfs_Init(interp)
 
 #ifndef PACKAGE_VERSION
     /* keep in sync with actual version */
-#define PACKAGE_VERSION "1.3"
+#define PACKAGE_VERSION "1.4"
 #endif
     if (Tcl_PkgProvide(interp, "vfs", PACKAGE_VERSION) == TCL_ERROR) {
         return TCL_ERROR;

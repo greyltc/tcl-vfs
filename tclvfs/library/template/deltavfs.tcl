@@ -25,6 +25,9 @@ The delta vfs inherits the -cache and -volume options of the template vfs.
 }
 
 package require vfs::template 1.5
+package require vfs::template::version 1.5
+
+package provide vfs::template::version::delta 1.5.2
 
 namespace eval ::vfs::template::version::delta {
 

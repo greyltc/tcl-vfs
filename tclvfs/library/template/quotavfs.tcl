@@ -95,8 +95,9 @@ mount -filename !*.log -quota 0 -mtime {expr [clock scan {7 days ago}] >} -quota
 }
 
 package require vfs::template 1.5
-
 package require fileutil::globfind
+
+package provide vfs::template::quota 1.5.2
 
 namespace eval ::vfs::template::quota {
 

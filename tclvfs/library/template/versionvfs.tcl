@@ -73,8 +73,9 @@ The versioning vfs inherits the -cache and -volume options of the template vfs.
 }
 
 package require vfs::template 1.5
-
 package require fileutil::globfind
+
+package provide vfs::template::version 1.5.2
 
 namespace eval ::vfs::template::version {
 

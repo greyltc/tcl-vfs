@@ -44,6 +44,7 @@ filesystem access but presents security threats that make access limitations des
 namespace eval ::vfs::template::chroot {
 
 package require vfs::template 1.5
+package provide vfs::template::chroot 1.5.2
 
 # read template procedures into current namespace. Do not edit:
 foreach templateProc [namespace eval ::vfs::template {info procs}] {

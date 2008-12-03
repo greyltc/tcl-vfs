@@ -106,6 +106,7 @@ Client configuration:
 }
 
 package require vfs::template 1.5
+package provide vfs::template::fish 1.5.2
 
 namespace eval ::vfs::template::fish {
 

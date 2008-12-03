@@ -164,7 +164,7 @@ PROJECT = vfs
 #PROJECT_REQUIRES_TK=1
 !include "rules.vc"
 
-DOTVERSION      = 1.3
+DOTVERSION      = 1.4
 VERSION         = $(DOTVERSION:.=)
 STUBPREFIX      = $(PROJECT)stub
 
@@ -185,10 +185,7 @@ TCL_FILES = \
 	vfslib.tcl \
 	webdavvfs.tcl \
 	zipvfs.tcl \
-	tkvfs.tcl \
-	mk4vfscompat.tcl \
-	zipvfscompat.tcl \
-	tclIndex
+	tkvfs.tcl
 
 TEMPLATEVFS = \
 	collatevfs.tcl \
@@ -198,7 +195,8 @@ TEMPLATEVFS = \
 	quotavfs.tcl \
 	tdelta.tcl \
 	templatevfs.tcl \
-	versionvfs.tcl
+	versionvfs.tcl \
+	chrootvfs.tcl
 
 #-------------------------------------------------------------------------
 # Target names and paths ( shouldn't need changing )
