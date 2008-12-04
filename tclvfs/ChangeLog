@@ -1,3 +1,9 @@
+2008-12-04  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Makefile.in: change VPATH to ensure that configure munging of
+	VPATH when configuring in the main directory does not break it.
+	[Bug 2389466]
+
 2008-12-03  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* tests/vfsFtp.test: correct unmount ordering

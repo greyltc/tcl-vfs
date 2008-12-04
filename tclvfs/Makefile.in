@@ -252,9 +252,12 @@ $(PKG_STUB_LIB_FILE): $(PKG_STUB_OBJECTS)
 # Setting the VPATH variable to a list of paths will cause the makefile
 # to look into these paths when resolving .c to .obj dependencies.
 # As necessary, add $(srcdir):$(srcdir)/compat:....
+#
+# The first $(srcdir) isn't necessary, but configure will strip it the
+# first $(srcdir) it sees in VPATH when configuring in the toplevel dir.
 #========================================================================
 
-VPATH = $(srcdir)/generic:$(srcdir)/unix:$(srcdir)/win
+VPATH = $(srcdir):$(srcdir)/generic
 
 .c.@OBJEXT@:
 	$(COMPILE) -c `@CYGPATH@ $<` -o $@
