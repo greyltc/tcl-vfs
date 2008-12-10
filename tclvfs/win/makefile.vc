@@ -341,8 +341,9 @@ TESTFLAGS = $(TESTFLAGS) -file $(TESTPAT)
 #---------------------------------------------------------------------
 
 all:	    setup $(PROJECT)
-$(PROJECT): setup $(OUT_DIR)\pkgIndex.tcl $(PRJLIB)
+$(PROJECT): setup $(PRJLIB) pkgIndex
 install:    install-binaries install-libraries install-docs
+pkgIndex:   setup $(OUT_DIR)\pkgIndex.tcl
 
 test: setup $(PROJECT)
 	@set VFS_LIBRARY=$(LIBDIR:\=/)
@@ -464,20 +465,11 @@ install-binaries:
 	@if not exist "$(SCRIPT_INSTALL_DIR)" mkdir "$(SCRIPT_INSTALL_DIR)"
 	@$(CPY) $(PRJLIB) "$(SCRIPT_INSTALL_DIR)" >NUL
 
-install-libraries:
+install-libraries: pkgIndex
         @echo Installing libraries to '$(SCRIPT_INSTALL_DIR)'
         @if exist $(LIBDIR) $(CPY) $(LIBDIR)\*.tcl "$(SCRIPT_INSTALL_DIR)"
-        @if exist $(LIBDIR) $(CPY) $(LIBDIR)\tclIndex "$(SCRIPT_INSTALL_DIR)"
         @echo Installing package index in '$(SCRIPT_INSTALL_DIR)'
-	$(TCLSH) <<
-  set f [open $(ROOT)/pkgIndex.tcl.in r]
-  set data [read $$f]
-  close $$f
-  set data [string map {@PACKAGE_VERSION@ $(DOTVERSION) @PKG_LIB_FILE@ $(PRJLIBNAME)} $$data]
-  set f [open [file join [file normalize {$(SCRIPT_INSTALL_DIR)}] pkgIndex.tcl] w]
-  puts $$f $$data
-  close $$f
-<<
+	@$(CPY) $(OUT_DIR)\pkgIndex.tcl "$(SCRIPT_INSTALL_DIR)"
 
 install-docs:
 	@echo Installing documentation files to '$(DOC_INSTALL_DIR)'
