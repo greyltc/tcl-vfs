@@ -168,7 +168,6 @@ namespace eval vfs::mk4 {
 		if { $sb(csize) != $sb(size) } {
 		    if {$::mk4vfs::zstreamed} {
 		      set fd [mk::channel $sb(ino) contents r]
-		      fconfigure $fd -translation binary
 		      set fd [vfs::zstream decompress $fd $sb(csize) $sb(size)]
 		    } else {
 		      set fd [vfs::memchan]

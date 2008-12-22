@@ -1,3 +1,8 @@
+2008-12-22  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* library/mk4vfs.tcl: Fix vfs::ztream to support 8.6 core zlib
+	* library/vfslib.tcl:
+
 2008-12-12  Pat Thoyts  <patthoyts@users.sourceforge.net>
 
 	* library/zipvfs.tcl: Cleaned up the zip stream read function to

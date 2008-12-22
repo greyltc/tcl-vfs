@@ -132,13 +132,33 @@ if {[info command rechan] != "" || ![catch {load "" rechan}]} {
     }
 
     variable ::vfs::zseq 0	;# used to generate temp zstream cmd names
-    proc vfs::zstream {mode ifd clen ilen} {
-	set cname _zstream_[incr ::vfs::zseq]
-	zlib s$mode $cname
-	set cmd [list ::vfs::zstream_handler $cname $ifd $clen $ilen s$mode]
-	set fd [rechan $cmd 2]
-	set ::vfs::_zstream_pos($fd) 0
-	return $fd
+
+    # vfs::zstream --
+    #	wrapper to manage a stacked zlib channel. If we have the core
+    #	zlib implementation then make use of that. Otherwise we can use
+    #	rechan and the tclkit zlib package to do the same thing.
+    #
+    #	  mode - compress or decompress
+    #	  ifd  - input channel (should be binary)
+    #	  clen - size of compressed data in bytes
+    #	  ilen - size of decompressed data in bytes
+    # Result:
+    #	A stacked channel then handles compression for us.
+    #
+    if {[package vsatisfies [package provide Tcl] 8.6]} {
+        proc vfs::zstream {mode ifd clen ilen} {
+            return [zlib push $mode $ifd]
+        }
+    } else {
+        proc vfs::zstream {mode ifd clen ilen} {
+            set cname _zstream_[incr ::vfs::zseq]
+            zlib s$mode $cname
+            fconfigure $fd -translation binary
+            set cmd [list ::vfs::zstream_handler $cname $ifd $clen $ilen s$mode]
+            set fd [rechan $cmd 2]
+            set ::vfs::_zstream_pos($fd) 0
+            return $fd
+        }
     }
 }
 
