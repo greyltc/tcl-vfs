@@ -153,7 +153,7 @@ if {[info command rechan] != "" || ![catch {load "" rechan}]} {
         proc vfs::zstream {mode ifd clen ilen} {
             set cname _zstream_[incr ::vfs::zseq]
             zlib s$mode $cname
-            fconfigure $fd -translation binary
+            fconfigure $ifd -translation binary
             set cmd [list ::vfs::zstream_handler $cname $ifd $clen $ilen s$mode]
             set fd [rechan $cmd 2]
             set ::vfs::_zstream_pos($fd) 0
