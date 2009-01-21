@@ -1,6 +1,6 @@
 # Removed provision of the backward compatible name. Moved to separate
 # file/package.
-package provide vfs::zip 1.0.2
+package provide vfs::zip 1.0.3
 
 package require vfs
 
@@ -380,7 +380,13 @@ proc zip::EndOfArchive {fd arr} {
 
 	seek $fd $n end
 	set hdr [read $fd $len]
-	set pos [string first "PK\05\06" $hdr]
+
+	# We are using 'string last' as we are searching the first
+	# from the end, which is the last from the beginning. See [SF
+	# Bug 2256740]. A zip archive stored in a zip archive can
+	# confuse the unmodified code, triggering on the magic
+	# sequence for the inner, uncompressed archive.
+	set pos [string last "PK\05\06" $hdr]
 	if {$pos == -1} {
 	    if {$at >= $sz} {
 		return -code error "no header found"

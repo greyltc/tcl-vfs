@@ -1,3 +1,10 @@
+2009-01-21  Andreas Kupries  <andreask@activestate.com>
+
+	* pkgIndex.tcl.in: Incremented version of vfs::zip
+	* library/zipvfs.tcl (zip::EndOfArchive): Fixed Schelte Bron's
+	[Bug 2256740]. Trigger on outermost magic sequence, not an inner
+	sequence from a n uncompressed zip archive stored in the zip.
+
 2008-12-22  Pat Thoyts  <patthoyts@users.sourceforge.net>
 
 	* library/mk4vfs.tcl: Fix vfs::ztream to support 8.6 core zlib
