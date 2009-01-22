@@ -129,8 +129,8 @@ test vfs-3.2 {vfs helpers: crc} {
     # What this means is that tclvfs can't find some other
     # extension/code it requires -- you may need to install
     # the Trf extension for example.
-    ::vfs::crc abcd
-} {Kc*}
+    format %08x [::vfs::crc abcd]
+} {ed82cd11}
 
 test vfs-3.3 {vfs helpers: zip} {
     # If this test fails, probably many other tests will fail too (at

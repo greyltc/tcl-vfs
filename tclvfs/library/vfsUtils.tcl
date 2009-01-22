@@ -13,18 +13,21 @@ namespace eval ::vfs {
 }
 
 # This can be overridden to use a different memchan implementation
+# With Tcl 8.6 will be overridden using [chan create] via vfslib.tcl
 proc ::vfs::memchan {args} {
     ::package require Memchan
     uplevel 1 [list ::memchan] $args
 }
 
 # This can be overridden to use a different crc implementation
+# With Tcl 8.6 will be overridden using [zlib crc32] via vfslib.tcl
 proc ::vfs::crc {args} {
-    ::package require Trf
-    uplevel 1 [linsert [linsert $args end-1 "--"] 0 ::crc]
+    ::package require crc32 ;# tcllib
+    uplevel 1 [linsert [linsert $args end-1 "--"] 0 ::crc::crc32]
 }
 
 # This can be overridden to use a different zip implementation
+# With Tcl 8.6 will be overridden using core zlib via vfslib.tcl
 proc ::vfs::zip {args} {
     ::package require Trf
     uplevel 1 [linsert [linsert $args end-1 "--"] 0 ::zip]
