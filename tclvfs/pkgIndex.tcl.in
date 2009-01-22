@@ -22,6 +22,9 @@ proc ::vfs::loadvfs {libdir dll} {
     }
     uplevel #0 [list load $dll]
     uplevel #0 [list source [file join $libdir vfsUtils.tcl]]
+    if {[package vsatisfies [package provide Tcl] 8.6]} {
+        uplevel #0 [list source [file join $libdir vfslib.tcl]]
+    }
 }
 
 # Allow optional redirect of VFS_LIBRARY components.  Only necessary

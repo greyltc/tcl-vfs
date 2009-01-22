@@ -1,5 +1,8 @@
 2009-01-22  Pat Thoyts  <patthoyts@users.sourceforge.net>
 
+	* tests/vfslib.test: Make use of the core zlib and refchan features
+	* pkgIndex.tcl.in:   by default for Tcl 8.6.
+
 	* win/makefile.vc:  Updated windows build files
 	* win/rules.vc:
 	* win/nmakehlp.c:

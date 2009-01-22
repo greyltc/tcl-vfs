@@ -1,4 +1,6 @@
-# Remnants of what used to be VFS init, this is TclKit-specific
+# Remnants of what used to be VFS init. This uses either the 8.6 core zlib
+# command or the tclkit zlib package with rechan to provide a memory channel
+# and a streaming decompression channel transform.
 
 package require Tcl 8.4; # vfs is all new for 8.4
 package provide vfslib 1.4
@@ -27,11 +29,126 @@ if {[llength [info command zlib]] || ![catch {load "" zlib}]} {
     }
 }
 
-# use rechan to define memchan and zstream if available
-if {[info command rechan] != "" || ![catch {load "" rechan}]} {
+# Use 8.6 reflected channels or the rechan package in earlier versions to
+# provide a memory channel implementation.
+# Also provide an abstract zlib streaming channel transform using the core
+# zlib command (8.6) or the tclkit zlib package.
+#
+if {[package vsatisfies [package provide Tcl] 8.6]} {
+
+    proc vfs::zstream {mode ifd clen ilen} {
+        return [zlib push $mode $ifd]
+    }
+    proc vfs::memchan {{filename {}}} {
+        return [chan create {read write} \
+                    [list [namespace origin _memchan_handler] $filename]]
+    }
+    proc vfs::_memchan_handler {filename cmd chan args} {
+        upvar #0 ::vfs::_memchan(buf,$chan) buf
+        upvar #0 ::vfs::_memchan(pos,$chan) pos
+        upvar #0 ::vfs::_memchan(name,$chan) name
+        upvar #0 ::vfs::_memchan(timer) timer
+        switch -exact -- $cmd {
+            initialize {
+                foreach {mode} $args break
+                set buf ""
+                set pos 0
+                set watch {}
+                set name $filename
+                if {![info exists timer]} { set timer "" }
+                return {initialize finalize watch read write seek cget cgetall}
+            }
+            finalize {
+                unset buf pos name
+            }
+            seek {
+                foreach {offset base} $args break
+                switch -exact -- $base {
+                    current { incr offset $pos }
+                    end     { incr offset [string length $buf] }
+                }
+                if {$offset < 0} {
+                    return -code error "error during seek on \"$chan\":\
+                        invalid argument"
+                } elseif {$offset > [string length $buf]} {
+                    set extend [expr {$offset - [string length $buf]}]
+                    append buf [binary format @$extend]
+                }
+                return [set pos $offset]
+            }
+            read {
+                foreach {count} $args break
+                set r [string range $buf $pos [expr {$pos + $count - 1}]]
+                incr pos [string length $r]
+                return $r
+            }
+            write {
+                foreach {data} $args break
+		set count [string length $data]
+		if { $pos >= [string length $buf] } {
+		    append buf $data
+		} else {
+		    set last [expr { $pos + $count - 1 }]
+		    set buf [string replace $buf $pos $last $data]
+		}
+		incr pos $count
+		return $count
+            }
+            cget {
+                foreach {option} $args break
+                switch -exact -- $option {
+                    -length { return [string length $buf] }
+                    -allocated { return [string length $buf] }
+                    default {
+                        return -code error "bad option \"$option\":\
+                            should be one of -blocking, -buffering,\
+                            -buffersize, -encoding, -eofchar, -translation,\
+                            -length or -allocated" 
+                    }
+                }
+            }
+            cgetall {
+                return [list -length [string length $buf] \
+                            -allocated [string length $buf]]
+            }
+            watch {
+                foreach {eventspec} $args break
+                after cancel $timer
+                foreach event {read write} {
+                    upvar #0 ::vfs::_memchan(watch,$event) watch
+                    if {![info exists watch]} { set watch {} }
+                    set ndx [lsearch -exact $watch $chan]
+                    if {$event in $eventspec} {
+                        if {$ndx == -1} { lappend watch $chan }
+                    } else {
+                        if {$ndx != -1} {
+                            set watch [lreplace $watch $ndx $ndx]
+                        }
+                    }
+                }
+                set timer [after 10 [list ::vfs::_memchan_timer]]
+            }
+        }
+    }
+    # memchan channels are always writable and always readable
+    proc ::vfs::_memchan_timer {} {
+        set continue 0
+        foreach event {read write} {
+            upvar #0 ::vfs::_memchan(watch,$event) watch
+            incr continue [llength $watch]
+            foreach chan $watch { chan postevent $chan $event }
+        }
+        if {$continue > 0} {
+            set ::vfs::_memchan(timer) [after 10 [info level 0]]
+        }
+    }
+
+} elseif {[info command rechan] ne "" || ![catch {load "" rechan}]} {
+
     proc vfs::memchan_handler {cmd fd args} {
 	upvar 1 ::vfs::_memchan_buf($fd) buf
 	upvar 1 ::vfs::_memchan_pos($fd) pos
+        upvar 1 ::vfs::_memchan_nam($fd) nam
 	set arg1 [lindex $args 0]
 
 	switch -- $cmd {
@@ -60,16 +177,17 @@ if {[info command rechan] != "" || ![catch {load "" rechan}]} {
 		return $n
 	    }
 	    close {
-		unset buf pos
+		unset buf pos nam
 	    }
 	    default { error "bad cmd in memchan_handler: $cmd" }
 	}
     }
 
-    proc vfs::memchan {} {
+    proc vfs::memchan {{filename {}}} {
 	set fd [rechan ::vfs::memchan_handler 6]
 	set ::vfs::_memchan_buf($fd) ""
 	set ::vfs::_memchan_pos($fd) 0
+        set ::vfs::_memchan_nam($fd) $filename
 	return $fd
     }
 
