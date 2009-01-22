@@ -15,7 +15,7 @@
 # Copyright (c) 1998-2000 Ajuba Solutions.
 # Copyright (c) 2001 ActiveState Corporation.
 # Copyright (c) 2001-2002 David Gravereaux.
-# Copyright (c) 2003-2006 Pat Thoyts
+# Copyright (c) 2003-2008 Pat Thoyts
 #
 #-------------------------------------------------------------------------
 # RCS: @(#)$Id$
@@ -278,12 +278,15 @@ TCL_CFLAGS	= -DPACKAGE_NAME="\"$(PROJECT)\"" \
 		  -DPACKAGE_VERSION="\"$(DOTVERSION)\"" \
                   -DBUILD_$(PROJECT) $(BASE_CFLAGS) $(OPTDEFINES)
 
+### Stubs files should not be compiled with -GL
+STUB_CFLAGS     = $(cflags) $(cdebug:-GL=) #$(TK_DEFINES)
+
 #---------------------------------------------------------------------
 # Link flags
 #---------------------------------------------------------------------
 
 !if $(DEBUG)
-ldebug	= -debug:full -debugtype:cv
+ldebug	= -debug
 !if $(MSVCRT)
 ldebug = $(ldebug) -nodefaultlib:msvcrt
 !endif
@@ -328,13 +331,19 @@ baselibs   = $(baselibs) bufferoverflowU.lib
 !endif
 !endif
 
+!if exist("$(TCLDIR)\win\coffbase.txt")
+dllbase	= -base:@$(TCLDIR)\win\coffbase.txt,tdbc
+!else
+dllbase = -base:0x10A70000 
+!endif
+
 #---------------------------------------------------------------------
 # TclTest flags
 #---------------------------------------------------------------------
 
-!IF "$(TESTPAT)" != ""
+!if "$(TESTPAT)" != ""
 TESTFLAGS = $(TESTFLAGS) -file $(TESTPAT)
-!ENDIF
+!endif
 
 #---------------------------------------------------------------------
 # Project specific targets (EDIT)
@@ -346,9 +355,9 @@ install:    install-binaries install-libraries install-docs
 pkgIndex:   setup $(OUT_DIR)\pkgIndex.tcl
 
 test: setup $(PROJECT)
-	@set VFS_LIBRARY=$(LIBDIR:\=/)
 	@set TCL_LIBRARY=$(TCL_LIBRARY:\=/)
-	@set TCLLIBPATH=$(OUT_DIR:\=/)
+        @set TCLLIBPATH=$(OUT_DIR_PATH:\=/)
+	@set VFS_LIBRARY=$(LIBDIR:\=/)
 !if $(TCLINSTALL)
 	@set PATH=$(_TCLDIR)\bin;$(PATH)
 !else
@@ -363,9 +372,9 @@ test: setup $(PROJECT)
 !endif
 
 shell: setup $(PROJECT)
-	@set VFS_LIBRARY=$(LIBDIR:\=/)
 	@set TCL_LIBRARY=$(TCL_LIBRARY:\=/)
-	@set TCLLIBPATH=$(OUT_DIR:\=/)
+        @set TCLLIBPATH=$(OUT_DIR_PATH:\=/)
+	@set VFS_LIBRARY=$(LIBDIR:\=/)
 !if $(TCLINSTALL)
 	@set PATH=$(_TCLDIR)\bin;$(PATH)
 !else
@@ -383,14 +392,13 @@ setup:
 	@if not exist $(OUT_DIR)\nul mkdir $(OUT_DIR)
 	@if not exist $(TMP_DIR)\nul mkdir $(TMP_DIR)
 
-# See <tcl>/win/coffbase.txt for extension base addresses.
 $(PRJLIB): $(DLLOBJS)
 !if $(STATIC_BUILD)
 	$(lib32) -nologo -out:$@ @<<
 $**
 <<
 !else
-	$(link32) $(dlllflags) -base:0x10A70000 -out:$@ $(baselibs) @<<
+	$(link32) $(dlllflags) $(dllbase) -out:$@ $(baselibs) @<<
 $**
 <<
 	$(_VC_MANIFEST_EMBED_DLL)
@@ -481,7 +489,7 @@ install-docs:
 
 clean:
 	@if exist $(TMP_DIR)\nul $(RMDIR) $(TMP_DIR)
-	@if exist $(WINDIR)\version.vc del $(WINDIR)\version.vc
+	@if exist $(WINDIR)\versions.vc del $(WINDIR)\versions.vc
 	@if exist $(WINDIR)\vercl.i del $(WINDIR)\vercl.i
 	@if exist $(WINDIR)\vercl.x del $(WINDIR)\vercl.x
 	@if exist $(WINDIR)\_junk.pch del $(WINDIR)\_junk.pch

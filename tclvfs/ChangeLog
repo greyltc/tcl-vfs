@@ -1,5 +1,11 @@
 2009-01-22  Pat Thoyts  <patthoyts@users.sourceforge.net>
 
+	* win/makefile.vc:  Updated windows build files
+	* win/rules.vc:
+	* win/nmakehlp.c:
+
+	* tests/*.test: Tidied up the tests. Added lots of zipfs tests.
+	
 	* library/zipvfs.tcl: Applied patch from [Bug 1011492] to ensure
 	we handle zipfiles with a prefix block robustly.
 
