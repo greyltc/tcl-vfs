@@ -450,7 +450,7 @@ proc zip::TOC {fd arr} {
     } else {
 	set sb(type) file
     }
-    set sb(name) [read $fd [u_short $flen]]
+    set sb(name) [string trimleft [read $fd [u_short $flen]] "./"]
     set sb(extra) [read $fd [u_short $elen]]
     set sb(comment) [read $fd [u_short $clen]]
     if {$sb(flags) & (1 << 10)} {

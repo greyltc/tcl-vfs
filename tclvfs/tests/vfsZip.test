@@ -33,6 +33,16 @@ if {[testConstraint zipfs] && [testConstraint zipexe]} {
     makeFile {File aleph two} zipfs.test/Aleph/Two.txt
     eval exec [auto_execok zip] [list -r zipfs.zip zipfs.test]
     eval exec [auto_execok zip] [list zipnest.zip zipfs.zip]
+
+    testConstraint zipcat [expr {![catch {
+        makeFile {} zipcat.zip
+        set f [open zipcat.zip w] ; fconfigure $f -translation binary
+        set fin [open zipfs.zip r] ; fconfigure $fin -translation binary
+        puts -nonewline $f "[string repeat # 4095]\xff"
+        fcopy $fin $f
+        close $fin ; close $f
+        eval exec [auto_execok zip] [list -A zipcat.zip]
+    }]}]
 }
 
 test vfsZip-1.1 "mount non-existent zip file" -constraints {zipfs} -setup {
@@ -259,6 +269,24 @@ test vfsZip-3.1 "bug #: ./ prefixed filenames" -constraints {zipfs zipexe bug153
     vfs::unmount vfszip31
 } -result {1}
 
+test vfsZip-4.0 "zip with preface code" -constraints {zipfs zipcat} -body {
+    vfs::zip::Mount zipcat.zip local
+    set r [glob -nocomplain -directory local -tails *]
+    vfs::unmount local
+    set r
+} -result {zipfs.test}
+
+test vfsZip-4.1 "zip with preface code" -constraints {zipfs zipcat} -setup {
+    vfs::zip::Mount zipcat.zip local
+} -body {
+    set f [open local/zipfs.test/Aleph/One.txt r]
+    set r [string trim [read $f]]
+    close $f
+    set r
+} -cleanup {
+    vfs::unmount local
+} -result {File aleph one}
+
 test vfsZip-9.0 "attempt to delete mounted file" -constraints {zipfs zipexe} -setup {
     vfs::zip::Mount zipfs.zip local
 } -body {
@@ -266,6 +294,7 @@ test vfsZip-9.0 "attempt to delete mounted file" -constraints {zipfs zipexe} -se
 } -cleanup {
     vfs::unmount local
 } -returnCodes {error} -result {error deleting "zipfs.zip": permission denied}
+
 
 # cleanup
 if {[testConstraint zipfs] && [testConstraint zipexe]} {
