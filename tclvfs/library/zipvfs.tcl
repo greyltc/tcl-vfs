@@ -434,6 +434,9 @@ proc zip::TOC {fd arr} {
 	return -code error "bad central header: $x"
     }
 
+    upvar #0 zip::$fd cb
+    incr sb(ino) $cb(base) ;# adjust ino for start of archive offset
+
     foreach v {vem ver flags method disk attr} {
 	set sb($v) [expr {$sb($v) & 0xffff}]
     }
@@ -469,7 +472,7 @@ proc zip::open {path} {
 	
 	zip::EndOfArchive $fd cb
 
-	seek $fd $cb(coff) start
+	seek $fd [expr {$cb(coff) + $cb(base)}] start
 
 	set toc(_) 0; unset toc(_); #MakeArray
 	
