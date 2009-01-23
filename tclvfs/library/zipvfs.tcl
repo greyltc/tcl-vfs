@@ -307,6 +307,10 @@ proc zip::Data {fd arr verify} {
 
     set sb(name)   [read $fd [expr {$namelen & 0xffff}]]
     set sb(extra)  [read $fd [expr {$xtralen & 0xffff}]]
+    if {$sb(flags) & (1 << 10)} {
+        set sb(name) [encoding convertfrom utf-8 $sb(name)]
+    }
+    set sb(name) [string trimleft $sb(name) "./"]
 
     # APPNOTE B: File data
     #   if bit 3 of flags is set the csize comes from the central directory
@@ -399,8 +403,8 @@ proc zip::EndOfArchive {fd arr} {
 	}
     }
 
-    set hdr [string range $hdr [expr $pos + 4] [expr $pos + 21]]
-    set pos [expr [tell $fd] + $pos - 512]
+    set hdr [string range $hdr [expr {$pos + 4}] [expr {$pos + 21}]]
+    set pos [expr {[tell $fd] + $pos - 512}]
 
     binary scan $hdr ssssiis \
 	cb(ndisk) cb(cdisk) \
@@ -434,9 +438,6 @@ proc zip::TOC {fd arr} {
 	return -code error "bad central header: $x"
     }
 
-    upvar #0 zip::$fd cb
-    incr sb(ino) $cb(base) ;# adjust ino for start of archive offset
-
     foreach v {vem ver flags method disk attr} {
 	set sb($v) [expr {$sb($v) & 0xffff}]
     }
@@ -450,14 +451,14 @@ proc zip::TOC {fd arr} {
     } else {
 	set sb(type) file
     }
-    set sb(name) [string trimleft [read $fd [u_short $flen]] "./"]
+    set sb(name) [read $fd [u_short $flen]]
     set sb(extra) [read $fd [u_short $elen]]
     set sb(comment) [read $fd [u_short $clen]]
     if {$sb(flags) & (1 << 10)} {
-        foreach thing {name extra comment} {
-            set sb($thing) [encoding convertfrom utf8 $sb($thing)]
-        }
+        set sb(name) [encoding convertfrom utf-8 $sb(name)]
+        set sb(comment) [encoding convertfrom utf-8 $sb(comment)]
     }
+    set sb(name) [string trimleft $sb(name) "./"]
 }
 
 proc zip::open {path} {
@@ -472,7 +473,7 @@ proc zip::open {path} {
 	
 	zip::EndOfArchive $fd cb
 
-	seek $fd [expr {$cb(coff) + $cb(base)}] start
+	seek $fd $cb(coff) start
 
 	set toc(_) 0; unset toc(_); #MakeArray
 	
