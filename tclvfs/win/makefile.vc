@@ -352,7 +352,7 @@ TESTFLAGS = $(TESTFLAGS) -file $(TESTPAT)
 all:	    setup $(PROJECT)
 $(PROJECT): setup $(PRJLIB) pkgIndex
 install:    install-binaries install-libraries install-docs
-pkgIndex:   setup $(OUT_DIR)\pkgIndex.tcl
+pkgIndex:   setup $(OUT_DIR)\pkgIndex.tcl $(OUT_DIR)\vfs.tcl
 
 test: setup $(PROJECT)
 	@set TCL_LIBRARY=$(TCL_LIBRARY:\=/)
@@ -451,9 +451,16 @@ $<
 #
 #-------------------------------------------------------------------------
 
-.PHONY: $(OUT_DIR)\pkgIndex.tcl
+.PHONY: $(OUT_DIR)\pkgIndex.tcl $(OUT_DIR)\vfs.tcl
 
 $(OUT_DIR)\pkgIndex.tcl: $(ROOT)\pkgIndex.tcl.in
+	nmakehlp -s << $** > $@
+@PACKAGE_NAME@     $(PROJECT)
+@PACKAGE_VERSION@  $(DOTVERSION)
+@PKG_LIB_FILE@     $(PRJLIBNAME)
+<<
+
+$(OUT_DIR)\vfs.tcl: $(ROOT)\library\vfs.tcl.in
 	nmakehlp -s << $** > $@
 @PACKAGE_NAME@     $(PROJECT)
 @PACKAGE_VERSION@  $(DOTVERSION)
@@ -476,6 +483,8 @@ install-binaries:
 install-libraries: pkgIndex
         @echo Installing libraries to '$(SCRIPT_INSTALL_DIR)'
         @if exist $(LIBDIR) $(CPY) $(LIBDIR)\*.tcl "$(SCRIPT_INSTALL_DIR)"
+        @echo Installing package entrypoint in '$(SCRIPT_INSTALL_DIR)'
+	@$(CPY) $(OUT_DIR)\vfs.tcl "$(SCRIPT_INSTALL_DIR)"
         @echo Installing package index in '$(SCRIPT_INSTALL_DIR)'
 	@$(CPY) $(OUT_DIR)\pkgIndex.tcl "$(SCRIPT_INSTALL_DIR)"
 
