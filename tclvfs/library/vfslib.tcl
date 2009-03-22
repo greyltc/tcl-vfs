@@ -31,14 +31,16 @@ if {[llength [info command zlib]] || ![catch {load "" zlib}]} {
 
 # Use 8.6 reflected channels or the rechan package in earlier versions to
 # provide a memory channel implementation.
-# Also provide an abstract zlib streaming channel transform using the core
-# zlib command (8.6) or the tclkit zlib package.
 #
 if {[package vsatisfies [package provide Tcl] 8.6]} {
 
-    proc vfs::zstream {mode ifd clen ilen} {
-        return [zlib push $mode $ifd]
-    }
+    # As the core zlib channel stacking make non-seekable channels we cannot
+    # implement vfs::zstream and this feature is disabled in tclkit boot.tcl
+    # when the command is not present (it is only used by mk4vfs)
+    #
+    #proc vfs::zstream {mode ifd clen ilen} {
+    #    return -code error "vfs::zstream is unsupported with core zlib"
+    #}
     proc vfs::memchan {{filename {}}} {
         return [chan create {read write} \
                     [list [namespace origin _memchan_handler] $filename]]
@@ -251,32 +253,24 @@ if {[package vsatisfies [package provide Tcl] 8.6]} {
 
     variable ::vfs::zseq 0	;# used to generate temp zstream cmd names
 
-    # vfs::zstream --
-    #	wrapper to manage a stacked zlib channel. If we have the core
-    #	zlib implementation then make use of that. Otherwise we can use
-    #	rechan and the tclkit zlib package to do the same thing.
+    # vfs::zstream -- 
+    #
+    #  Create a read-only seekable compressed channel using rechan and
+    #  the streaming mode of tclkit's zlib extension.
     #
     #	  mode - compress or decompress
     #	  ifd  - input channel (should be binary)
     #	  clen - size of compressed data in bytes
     #	  ilen - size of decompressed data in bytes
-    # Result:
-    #	A stacked channel then handles compression for us.
     #
-    if {[package vsatisfies [package provide Tcl] 8.6]} {
-        proc vfs::zstream {mode ifd clen ilen} {
-            return [zlib push $mode $ifd]
-        }
-    } else {
-        proc vfs::zstream {mode ifd clen ilen} {
-            set cname _zstream_[incr ::vfs::zseq]
-            zlib s$mode $cname
-            fconfigure $ifd -translation binary
-            set cmd [list ::vfs::zstream_handler $cname $ifd $clen $ilen s$mode]
-            set fd [rechan $cmd 2]
-            set ::vfs::_zstream_pos($fd) 0
-            return $fd
-        }
+    proc vfs::zstream {mode ifd clen ilen} {
+        set cname _zstream_[incr ::vfs::zseq]
+        zlib s$mode $cname
+        fconfigure $ifd -translation binary
+        set cmd [list ::vfs::zstream_handler $cname $ifd $clen $ilen s$mode]
+        set fd [rechan $cmd 2]
+        set ::vfs::_zstream_pos($fd) 0
+        return $fd
     }
 }
 
