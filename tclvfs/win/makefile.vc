@@ -356,8 +356,8 @@ pkgIndex:   setup $(OUT_DIR)\pkgIndex.tcl $(OUT_DIR)\vfs.tcl
 
 test: setup $(PROJECT)
 	@set TCL_LIBRARY=$(TCL_LIBRARY:\=/)
-        @set TCLLIBPATH=$(OUT_DIR_PATH:\=/)
-	@set VFS_LIBRARY=$(LIBDIR:\=/)
+	@set TCLLIBPATH=$(OUT_DIR_PATH:\=/)
+	$(CPY) $(LIBDIR)\*.tcl $(OUT_DIR)
 !if $(TCLINSTALL)
 	@set PATH=$(_TCLDIR)\bin;$(PATH)
 !else

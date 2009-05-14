@@ -1,3 +1,9 @@
+2009-05-14  Pat Thoyts  <patthoyts@users.sourceforge.net>
+
+	* library/zipvfs.tcl: Handle directory names that include
+	* tests/vfsZip.test:  glob chars. Added some tests.
+	* win/makefile.vc: fix running the tests.
+
 2009-02-06  Andreas Kupries  <andreask@activestate.com>
 
 	* library/vfs.tcl.in: New file encapsulating the package load

@@ -34,6 +34,13 @@ if {[testConstraint zipfs] && [testConstraint zipexe]} {
     eval exec [auto_execok zip] [list -r zipfs.zip zipfs.test]
     eval exec [auto_execok zip] [list zipnest.zip zipfs.zip]
 
+    file mkdir zipglob.test
+    makeFile {Glob one} "zipglob.test/one\[1\].txt"
+    makeFile {Glob two} "zipglob.test/two \[2\].txt"
+    file mkdir zipglob.test/a\[0\]
+    makeFile {Glob three} "zipglob.test/a\[0\]/three.txt"
+    eval exec [auto_execok zip] [list -r zipglob.zip zipglob.test]
+
     testConstraint zipcat [expr {![catch {
         makeFile {} zipcat.zip
         set f [open zipcat.zip w] ; fconfigure $f -translation binary
@@ -143,6 +150,47 @@ test vfsZip-1.11 "cd directory" -constraints {zipfs zipexe} -setup {
     cd $cwd
     vfs::unmount local
 } -result {One.txt Two.txt}
+
+test vfsZip-1.12 "globby filenames" -constraints {zipfs zipexe} -setup {
+    vfs::zip::Mount zipglob.zip local
+} -body {
+    glob -type f -tail -directory local/zipglob.test *
+} -cleanup {
+    vfs::unmount local
+} -result [list "one\[1\].txt" "two \[2\].txt"]
+
+test vfsZip-1.13 "globby filenames" -constraints {zipfs zipexe} -setup {
+    vfs::zip::Mount zipglob.zip local
+} -body {
+    set result {}
+    foreach file [glob -type f -directory local/zipglob.test *] {
+        set f [open $file r]
+        lappend result [string trim [read $f]]
+    }
+    set result
+} -cleanup {
+    vfs::unmount local
+} -result [list "Glob one" "Glob two"]
+
+test vfsZip-1.14 "globby subdir" -constraints {zipfs zipexe} -setup {
+    vfs::zip::Mount zipglob.zip local
+} -body {
+    glob -type d -tail -directory local/zipglob.test *
+} -cleanup {
+    vfs::unmount local
+} -result [list "a\[0\]"]
+
+test vfsZip-1.15 "globby subdir" -constraints {zipfs zipexe} -setup {
+    vfs::zip::Mount zipglob.zip local
+} -body {
+    set result {}
+    foreach dir [glob -type d -directory local/zipglob.test *] {
+        lappend result [glob -nocomplain -tail -directory $dir *]
+    }
+    set result
+} -cleanup {
+    vfs::unmount local
+} -returnCodes {ok error} -result {three.txt}
 
 test vfsZip-2.0 "nested stat file" -constraints {zipfs zipexe} -setup {
     vfs::zip::Mount zipnest.zip local
@@ -299,8 +347,10 @@ test vfsZip-9.0 "attempt to delete mounted file" -constraints {zipfs zipexe} -se
 # cleanup
 if {[testConstraint zipfs] && [testConstraint zipexe]} {
     file delete -force zipfs.test
+    file delete -force zipglob.test
     file delete zipfs.zip
     file delete zipnest.zip
+    file delete zipglob.zip
 }
 tcltest::cleanupTests
 return

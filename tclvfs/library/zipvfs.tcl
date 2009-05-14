@@ -551,16 +551,20 @@ proc zip::getdir {fd path {pat *}} {
     upvar #0 zip::$fd.toc toc
 
     if { $path == "." || $path == "" } {
-	set path [string tolower $pat]
+	set path [set tmp [string tolower $pat]]
     } else {
-	set path [string tolower $path]
+        set globmap [list "\[" "\\\[" "*" "\\*" "?" "\\?"]
+	set tmp [string tolower $path]
+        set path [string map $globmap $tmp]
 	if {$pat != ""} {
+	    append tmp /[string tolower $pat]
 	    append path /[string tolower $pat]
 	}
     }
-    set depth [llength [file split $path]]
+    # file split can be confused by the glob quoting so split tmp string
+    set depth [llength [file split $tmp]]
 
-    #puts stderr "getdir $fd $path $depth $pat [array names toc $path]"
+    #vfs::log "getdir $fd $path $depth $pat [array names toc $path]"
     if {$depth} {
 	set ret {}
 	foreach key [array names toc $path] {
