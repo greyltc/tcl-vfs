@@ -332,9 +332,10 @@ baselibs   = $(baselibs) bufferoverflowU.lib
 !endif
 
 !if exist("$(TCLDIR)\win\coffbase.txt")
-dllbase	= -base:@$(TCLDIR)\win\coffbase.txt,tdbc
+#dllbase	= -base:@$(TCLDIR)\win\coffbase.txt,tclvfs
+dllbase = -base:0x10A70000
 !else
-dllbase = -base:0x10A70000 
+dllbase = -base:0x10A70000
 !endif
 
 #---------------------------------------------------------------------
