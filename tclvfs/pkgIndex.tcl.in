@@ -44,7 +44,7 @@ package ifneeded vfs::template::fish 1.5.2 \
     [list source [file join $dir template fishvfs.tcl]]
 package ifneeded vfs::template::quota 1.5.2 \
     [list source [file join $dir template quotavfs.tcl]]
-package ifneeded vfs::template 1.5.2 \
+package ifneeded vfs::template 1.5.3 \
     [list source [file join $dir template templatevfs.tcl]]
 #
 # Helpers
