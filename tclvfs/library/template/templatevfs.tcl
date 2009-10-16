@@ -550,7 +550,7 @@ proc memchan {args} {
 		set chan [uplevel 1 ::memchan $args]
 		return $chan
 	} else {
-	    return [eval [linsert $args 0 ::vfs::memchan]]
+		return [eval [linsert $args 0 ::vfs::memchan]]
 	}
 }
 
