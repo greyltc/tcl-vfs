@@ -1,3 +1,9 @@
+2008-10-20  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	* tclIndex: Corrected version number.
+	* pkgIndex.tcl.in: Edited to replace function of deleted 
+	pkgIndex.tcl in template subdir.
+
 2008-10-15  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	vfs::template package update ver. 1.5.3:
