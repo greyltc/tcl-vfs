@@ -1,10 +1,16 @@
-2008-10-20  Steve Huntley  <stephen.huntley@alum.mit.edu>
+2010-01-30  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	* templatevfs.tcl: workaround for bug in how virtual volumes
+	are mounted. Version bumped to 1.5.4.  See:
+http://sf.net/tracker/?func=detail&aid=2886914&group_id=10894&atid=110894
+
+2009-10-20  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	* tclIndex: Corrected version number.
 	* pkgIndex.tcl.in: Edited to replace function of deleted 
 	pkgIndex.tcl in template subdir.
 
-2008-10-15  Steve Huntley  <stephen.huntley@alum.mit.edu>
+2009-10-15  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	vfs::template package update ver. 1.5.3:
 

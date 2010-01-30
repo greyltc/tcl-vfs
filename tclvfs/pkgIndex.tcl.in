@@ -35,7 +35,7 @@ package ifneeded vfs::tk      0.5 [list source [file join $dir tkvfs.tcl]]
 if {[lsearch -exact $::auto_path [file join $dir template]] == -1} {
     lappend ::auto_path [file join $dir template]
 }
-package ifneeded vfs::template 1.5.3 \
+package ifneeded vfs::template 1.5.4 \
     [list source [file join $dir template templatevfs.tcl]]
 #
 # Helpers
