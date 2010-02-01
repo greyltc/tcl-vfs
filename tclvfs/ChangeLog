@@ -1,3 +1,8 @@
+2010-02-01  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	* Makefile.in (PKG_TCL_SOURCES): Added 'template/tclIndex' to the list 
+	of installed files. Required for vfs's based on template vfs to load.
+
 2010-01-30  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	* templatevfs.tcl: workaround for bug in how virtual volumes

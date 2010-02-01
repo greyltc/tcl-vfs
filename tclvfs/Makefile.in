@@ -49,7 +49,7 @@ PKG_TCL_SOURCES = @PKG_TCL_SOURCES@ \
 		  template/fishvfs.tcl template/globfind.tcl \
 		  template/quotavfs.tcl template/tdelta.tcl \
 		  template/templatevfs.tcl template/versionvfs.tcl \
-		  template/chrootvfs.tcl vfs.tcl
+		  template/chrootvfs.tcl template/tclIndex vfs.tcl
 
 
 #========================================================================
