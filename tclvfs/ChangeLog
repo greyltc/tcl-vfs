@@ -1,3 +1,8 @@
+2010-05-16  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	* library/vfslib.tcl: Changed memchan condition from Tcl version 8.6 or
+	greater to presence of chan command (since chan now in later 8.5 builds)
+
 2010-02-01  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	* Makefile.in (PKG_TCL_SOURCES): Added 'template/tclIndex' to the list 
