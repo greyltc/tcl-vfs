@@ -107,6 +107,10 @@ proc vfs::zip::open {zipfd name mode permissions} {
 	    
 	    ::zip::stat $zipfd $name sb
 
+            if {$sb(ino) == -1} {
+                vfs::filesystem posixerror $::vfs::posix(EISDIR)
+            }
+
 	    set nfd [vfs::memchan]
 	    fconfigure $nfd -translation binary
 
@@ -263,21 +267,21 @@ proc zip::DosTime {date time} {
     set year [expr { (($date >> 9) & 0xFF) + 1980 }]
 
     # Fix up bad date/time data, no need to fail
-    while {$sec  > 59} {incr sec  -60}
-    while {$min  > 59} {incr sec  -60}
-    while {$hour > 23} {incr hour -24}
-    if {$mday < 1}  {incr mday}
-    if {$mon  < 1}  {incr mon}
-    while {$mon > 12} {incr hour -12}
+    if {$sec  > 59} {set sec  59}
+    if {$min  > 59} {set min  59}
+    if {$hour > 23} {set hour 23}
+    if {$mday < 1}  {set mday 1}
+    if {$mday > 31} {set mday 31}
+    if {$mon  < 1}  {set mon  1}
+    if {$mon > 12}  {set mon  12}
 
-    while {[catch {
+    set res 0
+    catch {
 	set dt [format {%4.4d-%2.2d-%2.2d %2.2d:%2.2d:%2.2d} \
 		    $year $mon $mday $hour $min $sec]
 	set res [clock scan $dt -gmt 1]
-    }]} {
-	# Only mday can be wrong, at end of month
-	incr mday -1
     }
+
     return $res
 }
 
@@ -377,6 +381,11 @@ proc zip::EndOfArchive {fd arr} {
     # after the whole file has been searched.
 
     set sz  [tell $fd]
+    if {[info exists ::zip::max_header_seek]} {
+        if {$::zip::max_header_seek < $sz} {
+            set sz $::zip::max_header_seek
+        }
+    }
     set len 512
     set at  512
     while {1} {
@@ -403,8 +412,13 @@ proc zip::EndOfArchive {fd arr} {
 	}
     }
 
-    set hdr [string range $hdr [expr {$pos + 4}] [expr {$pos + 21}]]
-    set pos [expr {[tell $fd] + $pos - 512}]
+    set hdr [string range $hdr [expr $pos + 4] [expr $pos + 21]]
+ 
+     set seekstart [expr {[tell $fd] - 512}]
+     if {$seekstart < 0} {
+         set seekstart 0
+     }
+     set pos [expr {$seekstart + $pos}]
 
     binary scan $hdr ssssiis \
 	cb(ndisk) cb(cdisk) \
@@ -419,10 +433,15 @@ proc zip::EndOfArchive {fd arr} {
 
     # Compute base for situations where ZIP file
     # has been appended to another media (e.g. EXE)
-    set cb(base)	[expr { $pos - $cb(csize) - $cb(coff) }]
+    set base            [expr { $pos - $cb(csize) - $cb(coff) }]
+    if {$base < 0} {
+        set base 0
+    }
+    set cb(base)	$base
 }
 
 proc zip::TOC {fd arr} {
+    upvar #0 zip::$fd cb
     upvar 1 $arr sb
 
     set buf [read $fd 46]
@@ -432,6 +451,8 @@ proc zip::TOC {fd arr} {
       sb(crc) sb(csize) sb(size) \
       flen elen clen sb(disk) sb(attr) \
       sb(atx) sb(ino)
+
+    set sb(ino) [expr {$cb(base) + $sb(ino)}]
 
     if { ![string equal "PK\01\02" $hdr] } {
 	binary scan $hdr H* x
@@ -473,7 +494,7 @@ proc zip::open {path} {
 	
 	zip::EndOfArchive $fd cb
 
-	seek $fd $cb(coff) start
+	seek $fd [expr {$cb(base) + $cb(coff)}] start
 
 	set toc(_) 0; unset toc(_); #MakeArray
 	

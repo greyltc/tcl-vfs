@@ -1,3 +1,11 @@
+2010-12-29  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	* generic/vfs.c: include sys/stat.h so build under MinGW64 will succeed.
+	See bug #3107382.
+	* library/zipvfs.tcl: Fixed issues with clock handling, dealing with 
+	trying to [open] a directory, reading a zip file that has been appended
+	to another file.  See bugs 3103687, 3107380
+
 2010-05-16  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	* library/vfslib.tcl: Changed memchan condition from Tcl version 8.6 or
