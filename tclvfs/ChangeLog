@@ -1,5 +1,10 @@
 2010-12-30  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
+	* pkgIndex.tcl.in, vfs.tcl: Switched "package require Tcl 8.4" statement
+	to vfs.tcl to conform with accepted practice.
+
+2010-12-30  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
 	* library/zipvfs.tcl: Applied patch 3005441 to fix issue with UTF-8
 	detection for filename encoding.  Applied patch 3132957 to enable
 	streaming of large files.
