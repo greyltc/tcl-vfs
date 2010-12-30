@@ -1,3 +1,9 @@
+2010-12-30  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	* library/zipvfs.tcl: Applied patch 3005441 to fix issue with UTF-8
+	detection for filename encoding.  Applied patch 3132957 to enable
+	streaming of large files.
+
 2010-12-29  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	* generic/vfs.c: include sys/stat.h so build under MinGW64 will succeed.
