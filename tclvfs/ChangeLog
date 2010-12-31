@@ -1,3 +1,9 @@
+2010-12-31  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	* vfs.tcl: Removed requirement for 8.6 for sourcing of vfslib.tcl, since
+	that file contains 8.5-relevant utils for chan command.  Vfslib.tcl
+	includes adequate conditional checks for version-dependent commands.
+
 2010-12-30  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	* library/zipvfs.tcl: Wojciech Kocjan contributed tweaks to my latest
