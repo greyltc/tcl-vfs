@@ -1,5 +1,10 @@
 2010-12-30  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
+	* library/zipvfs.tcl: Wojciech Kocjan contributed tweaks to my latest
+	"Frankenstein" patch, which I incorporated.
+
+2010-12-30  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
 	* pkgIndex.tcl.in, vfs.tcl: Switched "package require Tcl 8.4" statement
 	to vfs.tcl to conform with accepted practice.
 

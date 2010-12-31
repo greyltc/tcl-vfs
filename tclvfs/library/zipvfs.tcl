@@ -154,7 +154,7 @@ proc vfs::zip::open {zipfd name mode permissions} {
 		set nfd [vfs::memchan]
 		fconfigure $nfd -translation binary
 
-		zip::Data $zipfd sb data
+		set data [zip::Data $zipfd sb 0]
 
 		puts -nonewline $nfd $data
 
@@ -454,13 +454,14 @@ proc zip::EndOfArchive {fd arr} {
 	}
     }
 
-    set hdr [string range $hdr [expr $pos + 4] [expr $pos + 21]]
+     set hdrlen [string length $hdr]
+     set hdr [string range $hdr [expr $pos + 4] [expr $pos + 21]]
  
-     set seekstart [expr {wide([tell $fd]) + $pos - 512}]
-     if {$seekstart < 0} {
-         set seekstart 0
+     set pos [expr {wide([tell $fd]) + $pos - $hdrlen}]
+ 
+     if {$pos < 0} {
+         set pos 0
      }
-     set pos [expr {$seekstart + $pos}]
 
     binary scan $hdr ssssiis \
 	cb(ndisk) cb(cdisk) \
