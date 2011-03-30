@@ -5,7 +5,7 @@ globfind.tcl --
 
 Written by Stephen Huntley (stephen.huntley@alum.mit.edu)
 License: Tcl license
-Version 1.5
+Version 1.5.3
 
 The proc globfind is a replacement for tcllib's fileutil::find
 
@@ -34,10 +34,10 @@ available switches are:
 Side effects:
 
 If somewhere within the search space a directory is a link to another directory within
-the search space, then the variable ::globfind::REDUNDANCY will be set to 1 (otherwise
-it will be set to 0).  The name of the redundant directory will be appended to the
-variable ::globfind::redundant_files.  This may be used to help track down and eliminate
-infinitely looping links in the search space.
+the search space, then the variable ::fileutil::globfind::REDUNDANCY will be set to 1 
+(otherwise it will be set to 0).  The name of the redundant directory will be appended to the
+variable ::fileutil::globfind::redundant_files.  This information may be used to help track down 
+and eliminate infinitely looping links in the search space.
 
 Unlike fileutil::find, the name of the basedir will be included in the results if it fits
 the prefilter and filtercmd criteria (thus emulating the behavior of the standard Unix 
@@ -299,7 +299,7 @@ proc globtraverse {{basedir .} args} {
 			set linkValue [file dirname [file normalize [file join $item __dummy__]]]
 
 			# if item is a link, and native name is already in the search space, skip it:
-			if {($linkValue != $item) && (![string first $basedir $linkValue])} {
+			if {($linkValue != $item) && (![string first $basedir/ $linkValue/])} {
 				set [namespace current]::REDUNDANCY 1
 				lappend [namespace current]::redundant_files $item
 				continue
@@ -332,6 +332,184 @@ if [package vsatisfies [package present Tcl] 8.4] {
 	rename ::fileutil::globfind::file {}
 } else {
 	package require fileutil 1.13
+}
+
+
+# -----------------
+# Following are sample filter commands that can be used with globfind:
+
+# scfind: a command suitable for use as a filtercmd with globfind, arguments
+# duplicate a subset of GNU find args.
+
+proc scfind {args} {
+	set filename [file join [pwd] [lindex $args end]]
+	set switches [lrange $args 0 end-1]
+
+	array set types {
+		f	file
+		d	directory
+		c	characterSpecial
+		b	blockSpecial
+		p	fifo
+		l	link
+		s	socket
+	}
+
+	array set signs {
+		- <
+		+ >
+	}
+
+	array set multiplier {
+		time 86400
+		min   3600
+	}
+	file stat $filename fs
+	set pass 1
+	set switchLength [llength $switches]
+	for {set i 0} {$i < $switchLength} {incr i} {
+		set sw [lindex $switches $i]
+		switch -- $sw {
+			-type {
+				set value [lindex $switches [incr i]]
+				if ![string equal $fs(type) $types($value)] {return 0}
+			}
+			-regex {
+				set value [lindex $switches [incr i]]
+				if ![regexp $value $filename] {return 0}
+			}
+			-size {
+				set value [lindex $switches [incr i]]
+				set sign "=="
+				if [info exists signs([string index $value 0])] {
+					set sign $signs([string index $value 0])
+					set value [string range $value 1 end]
+				}
+				set sizetype [string index $value end]
+				set value [string range $value 0 end-1]
+				if [string equal $sizetype b] {set value [expr $value * 512]}
+				if [string equal $sizetype k] {set value [expr $value * 1024]}
+				if [string equal $sizetype w] {set value [expr $value * 2]}
+
+				if ![expr $fs(size) $sign $value] {return 0}
+			}
+			-atime -
+			-mtime -
+			-ctime -
+			-amin -
+			-mmin -
+			-cmin {
+				set value [lindex $switches [incr i]]
+
+				set sw [string range $sw 1 end]
+				set time "[string index $sw 0]time"
+				set interval [string range $sw 1 end]
+				set sign "=="
+				if [info exists signs([string index $value 0])] {
+					set sign $signs([string index $value 0])
+					set value [string range $value 1 end]
+				}
+				set value [expr [clock seconds] - ($value * $multiplier($interval))]
+				if ![expr $value $sign $fs($time)] {return 0}
+			}
+ 		}
+	}
+	return 1
+}
+
+# find: example use of globfind and scfind to duplicate a subset of the
+# command line interface of GNU find.
+# ex: 
+#	find $env(HOME) -type l -atime +1
+
+proc find {args} {
+	globfind [lindex $args 0] [list [subst "scfind $args"]]
+}
+
+# -----------------
+
+# globsync: sync two locations so that the target looks just like the source:
+
+# If "destructive" is set to 1, files in the target will be deleted if files in equivalent
+# locations in source don't exist.   If 0, files that exist only in target will be left
+# alone, leaving target not an exact duplicate of source.
+
+# if "log" is set to 1, progress messages will be written to stdout.  If 0, not.
+
+# "source" is location to be duplicated.
+# "target" is location to be synced to look like source.
+# file is parameter fed to globsync by globfind.
+
+# ex: globfind ~user_a {globsync 1 1 ~user_a ~user_b}
+
+proc globsync {destructive log source target file} {
+	set source [file normalize $source]
+	set target [file normalize $target]
+	set sourceLength [llength [file split $source]]
+	set targetLength [llength [file split $target]]
+	set targetFile [file normalize [file join $target [join [lrange [file split $file] $sourceLength end] /]]]
+	array set sourceAttr [file attributes $file]
+	file stat $file fs
+	array set sourceAttr "mtime $fs(mtime)"
+	if ![file isdirectory $file] {
+
+		if [file isdirectory $targetFile] {file delete -force -- $targetFile}
+		set err [catch {file copy -force -- $file $targetFile} result]
+		if $err {set err [catch {file mkdir [file dirname $targetFile] ; file copy -force -- $file $targetFile} result]}
+		if $err {errHandle $result}
+		if $log {puts "copied $file to $targetFile"}
+
+		array set targetAttr [file attributes $targetFile]
+		foreach attr [array names sourceAttr] {
+			if {[array get sourceAttr $attr] != [array get targetAttr $attr]} {catch {file attributes $targetFile $attr $sourceAttr($attr)}}
+		}
+		return 0
+	}
+	set err [catch {file mkdir $targetFile} result]
+	if $err {set err [catch {file delete -force -- $targetFile ; file mkdir $targetFile} result]}
+	if $err {errHandle $result}
+	array set targetAttr [file attributes $targetFile]
+	file stat $targetFile fs
+	array set targetAttr "mtime $fs(mtime)"
+	foreach attr [array names sourceAttr] {
+		if {[array get sourceAttr $attr] != [array get targetAttr $attr]} {
+			catch {file attributes $targetFile $attr $sourceAttr($attr)}
+		}
+	}
+	set sourceDirs [glob -dir $file -nocomplain -type d *]
+	if {[lindex [file system $file] 0] != "tclvfs"} {append sourceDirs " [glob -dir $file -nocomplain -type {d hidden} *]"}
+	set targetDirs [glob -dir $targetFile -nocomplain -type d *]
+	if {[lindex [file system $targetFile] 0] != "tclvfs"} {append sourceDirs " [glob -dir $targetFile -nocomplain -type {d hidden} *]"}
+
+	if !$destructive {set targetDirs {}}
+	foreach td $targetDirs {
+		set sd [file join $source [join [lrange [file split $td] $targetLength end] /]]
+		if {[lsearch $sourceDirs $sd] < 0} {	
+			file delete -force -- $td
+			if $log {puts "deleted directory $td"}
+
+		}
+	}
+	set sourceFiles [glob -dir $file -nocomplain -types {b c f l p s} *]
+	if {[lindex [file system $file] 0] != "tclvfs"} {append sourceFiles " [glob -dir $file -nocomplain -types {b c f l p s hidden} *]"}
+		
+	set targetFiles {}
+	if $destructive {
+		set targetFiles [glob -dir $targetFile -nocomplain -types {b c f l p s} *]
+		if {[lindex [file system $targetFile] 0] != "tclvfs"} {append targetFiles " [glob -dir $targetFile -nocomplain -types {b c f l p s hidden} *]"}
+	}
+	foreach tf $targetFiles {
+		set sf [file join $source [join [lrange [file split $tf] $targetLength end] /]]
+		if {[lsearch $sourceFiles $sf] < 0} {
+			file delete -force -- $tf
+			if $log {puts "deleted file $tf"}
+		}	
+	}
+	return 0
+}
+
+proc errHandle {result} {
+	error $result
 }
 
 }

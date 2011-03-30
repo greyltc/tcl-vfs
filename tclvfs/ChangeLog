@@ -1,3 +1,7 @@
+2011-03-30  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	* globfind.tcl: Updated to latest file version (1.5.3).
+
 2010-12-31  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	* vfs.tcl: Removed requirement for 8.6 for sourcing of vfslib.tcl, since
