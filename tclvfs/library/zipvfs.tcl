@@ -500,8 +500,6 @@ proc zip::TOC {fd arr} {
       flen elen clen sb(disk) sb(attr) \
       sb(atx) sb(ino)
 
-    set sb(ino) [expr {$cb(base) + $sb(ino)}]
-
     if { ![string equal "PK\01\02" $hdr] } {
 	binary scan $hdr H* x
 	return -code error "bad central header: $x"

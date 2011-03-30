@@ -192,7 +192,9 @@ if {[info command ::chan] ne {}} {
         set ::vfs::_memchan_nam($fd) $filename
 	return $fd
     }
+}
 
+if {[info command rechan] ne "" || ![catch {load "" rechan}]} {
     proc vfs::zstream_handler {zcmd ifd clen ilen imode cmd fd {a1 ""} {a2 ""}} {
 	#puts stderr "z $zcmd $ifd $ilen $cmd $fd $a1 $a2"
 	upvar ::vfs::_zstream_pos($fd) pos
