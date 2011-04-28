@@ -490,6 +490,7 @@ proc zip::EndOfArchive {fd arr} {
 
 proc zip::TOC {fd arr} {
     upvar #0 zip::$fd cb
+    upvar #0 zip::$fd.dir cbdir
     upvar 1 $arr sb
 
     set buf [read $fd 46]
@@ -529,6 +530,9 @@ proc zip::TOC {fd arr} {
         set sb(comment) [encoding convertfrom utf-8 $sb(comment)]
     }
     set sb(name) [string trimleft $sb(name) "./"]
+    set parent [file dirname $sb(name)]
+    if {$parent == "."} {set parent ""}
+    lappend cbdir([string tolower $parent]) [file tail [string trimright $sb(name) /]]
 }
 
 proc zip::open {path} {
@@ -538,6 +542,7 @@ proc zip::open {path} {
     if {[catch {
 	upvar #0 zip::$fd cb
 	upvar #0 zip::$fd.toc toc
+	upvar #0 zip::$fd.dir cbdir
 
 	fconfigure $fd -translation binary ;#-buffering none
 	
@@ -552,9 +557,13 @@ proc zip::open {path} {
 	    
 	    set sb(depth) [llength [file split $sb(name)]]
 	    
-	    set name [string tolower $sb(name)]
-	    set toc($name) [array get sb]
-	    FAKEDIR toc [file dirname $name]
+	    set name [string trimright [string tolower $sb(name)] /]
+	    set sba [array get sb]
+	    set toc($name) $sba
+	    FAKEDIR toc cbdir [file dirname $name]
+	}
+	foreach {n v} [array get cbdir] {
+	    set cbdir($n) [lsort -unique $v]
 	}
     } err]} {
 	close $fd
@@ -564,8 +573,8 @@ proc zip::open {path} {
     return $fd
 }
 
-proc zip::FAKEDIR {arr path} {
-    upvar 1 $arr toc
+proc zip::FAKEDIR {tocarr cbdirarr path} {
+    upvar 1 $tocarr toc $cbdirarr cbdir
 
     if { $path == "."} { return }
 
@@ -576,8 +585,12 @@ proc zip::FAKEDIR {arr path} {
 		name $path \
 		type directory mtime 0 size 0 mode 0777 \
 		ino -1 depth [llength [file split $path]]
+	
+	set parent [file dirname $path]
+	if {$parent == "."} {set parent ""}
+	lappend cbdir($parent) [file tail $path]
     }
-    FAKEDIR toc [file dirname $path]
+    FAKEDIR toc cbdir [file dirname $path]
 }
 
 proc zip::exists {fd path} {
@@ -619,55 +632,44 @@ proc zip::stat {fd path arr} {
 proc zip::getdir {fd path {pat *}} {
     #::vfs::log [list getdir $fd $path $pat]
     upvar #0 zip::$fd.toc toc
+    upvar #0 zip::$fd.dir cbdir
 
     if { $path == "." || $path == "" } {
-	set path [set tmp [string tolower $pat]]
-    } else {
-        set globmap [list "\[" "\\\[" "*" "\\*" "?" "\\?"]
-	set tmp [string tolower $path]
-        set path [string map $globmap $tmp]
-	if {$pat != ""} {
-	    append tmp /[string tolower $pat]
-	    append path /[string tolower $pat]
+	set path ""
+    }  else  {
+	set path [string tolower $path]
+    }
+
+    if {$pat == ""} {
+	if {[info exists cbdir($path)]} {
+	    return [list $path]
+	}  else  {
+	    return [list]
 	}
     }
-    # file split can be confused by the glob quoting so split tmp string
-    set depth [llength [file split $tmp]]
 
-    #vfs::log "getdir $fd $path $depth $pat [array names toc $path]"
-    if {$depth} {
-	set ret {}
-	foreach key [array names toc $path] {
-	    if {[string index $key end] == "/"} {
-		# Directories are listed twice: both with and without
-		# the trailing '/', so we ignore the one with
-		continue
-	    }
-	    array set sb $toc($key)
-
-	    if { $sb(depth) == $depth } {
-		if {[info exists toc(${key}/)]} {
-		    array set sb $toc(${key}/)
+    set rc [list]
+    if {[info exists cbdir($path)]} {
+	if {$pat == "*"} {
+	    set rc $cbdir($path)
+	}  else  {
+	    foreach f $cbdir($path) {
+		if {[string match -nocase $pat $f]} {
+		    lappend rc $f
 		}
-		lappend ret [file tail $sb(name)]
-	    } else {
-		#::vfs::log "$sb(depth) vs $depth for $sb(name)"
 	    }
-	    unset sb
 	}
-	return $ret
-    } else {
-	# just the 'root' of the zip archive.  This obviously exists and
-	# is a directory.
-	return [list {}]
     }
+    return $rc
 }
 
 proc zip::_close {fd} {
     variable $fd
     variable $fd.toc
+    variable $fd.dir
     unset $fd
     unset $fd.toc
+    unset $fd.dir
     ::close $fd
 }
 

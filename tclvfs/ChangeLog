@@ -1,3 +1,8 @@
+2011-04-28  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	* zipvfs.tcl: Added contributed patch to speed up zipvfs directory 
+	listing.  See patch 3279418.
+
 2011-03-30  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	* vfslib.tcl, zipvfs.tcl: Added contributed patches to fix bugs 3160686
