@@ -1,3 +1,8 @@
+2011-11-28  Steve Huntley  <stephen.huntley@alum.mit.edu>
+
+	* zipvfs.tcl: Reverted bug fix for 3224057.  See bug ID 3303287.
+
+
 2011-04-28  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	* zipvfs.tcl: Added contributed patch to speed up zipvfs directory 
