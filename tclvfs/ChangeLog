@@ -1,3 +1,7 @@
+2012-03-15  Wojciech Kocjan <zoro2@users.sourceforge.net>
+
+	* zipvfs.tcl: Fix for zip symlinks not supported anymore, bug 3505283
+
 2011-11-28  Steve Huntley  <stephen.huntley@alum.mit.edu>
 
 	* vfslib.tcl: Applied contributed patch for bug 3412801.  Clean up watch
