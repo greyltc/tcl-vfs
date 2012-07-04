@@ -128,26 +128,7 @@ proc vfs::zip::open {zipfd name mode permissions} {
 #	    return [list $nfd]
 	    # use streaming for files larger than 1MB
 	    if {$::zip::useStreaming && $sb(size) >= 1048576} {
-		set buf [read $zipfd 30]
-		set n [binary scan $buf A4sssssiiiss \
-			    hdr sb(ver) sb(flags) sb(method) \
-			    time date \
-			    sb(crc) sb(csize) sb(size) flen elen]
-	    
-		if { ![string equal "PK\03\04" $hdr] } {
-		    binary scan $hdr H* x
-		    error "bad header: $x"
-		}
-	    
-		set sb(name) [read $zipfd [::zip::u_short $flen]]
-		set sb(extra) [read $zipfd [::zip::u_short $elen]]
-	    
-		if { $sb(flags) & 0x4 } {
-		    # Data Descriptor used
-		    set buf [read $zipfd 12]
-		    binary scan $buf iii sb(crc) sb(csize) sb(size)
-		}
-	    
+		seek $zipfd [zip::ParseDataHeader $zipfd sb] start
 		if { $sb(method) != 0} {
 		    set nfd [::zip::zstream $zipfd $sb(csize) $sb(size)]
 		}  else  {
@@ -331,8 +312,9 @@ proc zip::DosTime {date time} {
     return $res
 }
 
+proc zip::ParseDataHeader {fd arr {dataVar ""}} {
+    upvar 1 $arr sb
 
-proc zip::Data {fd arr verify} {
     upvar 1 $arr sb
 
     # APPNOTE A: Local file header
@@ -364,7 +346,13 @@ proc zip::Data {fd arr verify} {
 
     # APPNOTE B: File data
     #   if bit 3 of flags is set the csize comes from the central directory
-    set data [read $fd $sb(csize)]
+    set offset [tell $fd]
+    if {$dataVar != ""} {
+	upvar 1 $dataVar data
+	set data [read $fd $sb(csize)]
+    }  else  {
+	seek $fd $sb(csize) current
+    }
 
     # APPNOTE C: Data descriptor
     if { $sb(flags) & (1<<3) } {
@@ -379,7 +367,12 @@ proc zip::Data {fd arr verify} {
         set sb(csize) [expr {$sb(csize) & 0xffffffff}]
         set sb(size) [expr {$sb(size) & 0xffffffff}]
     }
-    
+    return $offset
+}
+
+proc zip::Data {fd arr verify} {
+    upvar 1 $arr sb
+    ParseDataHeader $fd $arr data
     switch -exact -- $sb(method) {
         0 {
             # stored; no compression

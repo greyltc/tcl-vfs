@@ -1,3 +1,8 @@
+2012-07-04  Wojciech Kocjan <zoro2@users.sourceforge.net>
+
+	* zipvfs.tcl: Fix for streaming not working properly in certain zip
+	files; refactoring of zip::Data to reuse header parsing code for streams
+
 2012-03-15  Wojciech Kocjan <zoro2@users.sourceforge.net>
 
 	* zipvfs.tcl: Fix for zip symlinks not supported anymore, bug 3505283
