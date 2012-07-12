@@ -1,3 +1,8 @@
+2012-07-12  Wojciech Kocjan <zoro2@users.sourceforge.net>
+
+	* zipvfs.tcl: Fix for Tcl 8.6 not properly streaming large files with
+	very big compression ratio, bug 3542959
+
 2012-07-04  Wojciech Kocjan <zoro2@users.sourceforge.net>
 
 	* zipvfs.tcl: Fix for streaming not working properly in certain zip

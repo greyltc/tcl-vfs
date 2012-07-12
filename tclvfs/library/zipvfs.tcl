@@ -852,7 +852,9 @@ proc ::zip::zstream_handler {istart ifd clen ilen cmd fd {a1 ""} {a2 ""}} {
 		    set data [read $ifd $c]
 		    set tell [tell $ifd]
 		    zstream_put $fd $data
-		    append buf [zstream_get $fd]
+		    while {[string length [set bufdata [zstream_get $fd]]] > 0} {
+			append buf $bufdata
+		    }
 		}
 	    }
 	    return $r
