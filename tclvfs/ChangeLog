@@ -1,3 +1,10 @@
+2012-12-12  Andreas Kupries <andreask@activestate.com>
+
+	* configure.in: Long overdue bump to version 1.4.2.
+	* configure: (1.4.1 was in 2009-02-07). Regenerated.
+	  Please bump the patchlevel for any future bug fixes,
+	  of the relevant sub-package(s).
+
 2012-07-12  Wojciech Kocjan <zoro2@users.sourceforge.net>
 
 	* zipvfs.tcl: Fix for Tcl 8.6 not properly streaming large files with
