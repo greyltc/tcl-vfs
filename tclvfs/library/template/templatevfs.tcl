@@ -54,7 +54,7 @@ set vfs::posix(load) x
 vfs::posixError load
 unset vfs::posix(load)
 
-package provide vfs::template 1.5.4
+package provide vfs::template 1.5.5
 
 namespace eval ::vfs::template {
 
@@ -571,11 +571,12 @@ proc memchan {args} {
 catch {rename ::exit ::vfs::template::exit}
 
 proc ::exit {args} {
-	foreach vfs [::vfs::filesystem info] {
-		if [catch {$::vfs::_unmountCmd([file normalize $vfs]) $vfs} result] {
-			puts "$vfs: $result"
-		}		
-	}
-	::vfs::template::exit [lindex $args 0]
+    foreach vfs [::vfs::filesystem info] {
+	if [catch {$::vfs::_unmountCmd([file normalize $vfs]) $vfs} result] {
+	    puts "$vfs: $result"
+	}		
+    }
+    if {![llength $args]} { lappend args 0}
+    ::vfs::template::exit [lindex $args 0]
 }
 
