@@ -1,6 +1,6 @@
 # Removed provision of the backward compatible name. Moved to separate
 # file/package.
-package provide vfs::zip 1.0.3
+package provide vfs::zip 1.0.4
 
 package require vfs
 

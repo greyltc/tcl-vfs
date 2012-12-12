@@ -1,5 +1,8 @@
 2012-12-12  Andreas Kupries <andreask@activestate.com>
 
+	* pkgIndex.tcl.in: Long overdue bump of vfs::zip to
+	* library/zipvfs.tcl: 1.0.4. (Since 2009-02-07 or earlier).
+
 	* configure.in: Long overdue bump to version 1.4.2.
 	* configure: (1.4.1 was in 2009-02-07). Regenerated.
 	  Please bump the patchlevel for any future bug fixes,
