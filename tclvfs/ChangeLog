@@ -1,5 +1,8 @@
 2012-12-12  Andreas Kupries <andreask@activestate.com>
 
+	* pkgIndex.tcl.in: Added the various template filesystems to the
+	  index.
+
 	* pkgIndex.tcl.in: Long overdue bump of vfs::zip to
 	* library/zipvfs.tcl: 1.0.4. (Since 2009-02-07 or earlier).
 
