@@ -73,9 +73,21 @@ proc vfs::zip::stat {zipfd name} {
     #::vfs::log "stat $name"
     ::zip::stat $zipfd $name sb
     #::vfs::log [array get sb]
-    # remove socket mode bit (0xc000) to prevent Tcl from reporting Fossil archives as socket types
-    if {($sb(mode) & 0xc000) == 0xc000} {
+    # remove socket mode file type (0xc000) to prevent Tcl from reporting Fossil archives as socket types
+    if {($sb(mode) & 0xf000) == 0xc000} {
         set sb(mode) [expr {$sb(mode) ^ 0xc000}]
+    }
+    # remove block device bit file type (0x6000)
+    if {($sb(mode) & 0xf000) == 0x6000} {
+        set sb(mode) [expr {$sb(mode) ^ 0x6000}]
+    }
+    # remove FIFO mode file type (0x1000)
+    if {($sb(mode) & 0xf000) == 0x1000} {
+        set sb(mode) [expr {$sb(mode) ^ 0x1000}]
+    }
+    # remove character device mode file type (0x2000)
+    if {($sb(mode) & 0xf000) == 0x2000} {
+        set sb(mode) [expr {$sb(mode) ^ 0x2000}]
     }
     array get sb
 }
