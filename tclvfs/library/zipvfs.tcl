@@ -89,6 +89,11 @@ proc vfs::zip::stat {zipfd name} {
     if {($sb(mode) & 0xf000) == 0x2000} {
         set sb(mode) [expr {$sb(mode) ^ 0x2000}]
     }
+    # workaround for certain errorneus zip archives
+    if {($sb(mode) & 0xffff) == 0xffff} {
+	# change to directory type and set mode to 0777 + directory flag
+	set sb(mode) 0x41ff
+    }
     array get sb
 }
 
