@@ -567,12 +567,13 @@ proc zip::open {path} {
 	for {set i 0} {$i < $cb(nitems)} {incr i} {
 	    zip::TOC $fd sb
 	    
+	    set origname [string trimright $sb(name) /]
 	    set sb(depth) [llength [file split $sb(name)]]
 	    
-	    set name [string trimright [string tolower $sb(name)] /]
+	    set name [string tolower $origname]
 	    set sba [array get sb]
 	    set toc($name) $sba
-	    FAKEDIR toc cbdir [file dirname $name]
+	    FAKEDIR toc cbdir [file dirname $origname]
 	}
 	foreach {n v} [array get cbdir] {
 	    set cbdir($n) [lsort -unique $v]
@@ -585,24 +586,24 @@ proc zip::open {path} {
     return $fd
 }
 
-proc zip::FAKEDIR {tocarr cbdirarr path} {
+proc zip::FAKEDIR {tocarr cbdirarr origpath} {
     upvar 1 $tocarr toc $cbdirarr cbdir
 
+    set path [string tolower $origpath]
     if { $path == "."} { return }
-
 
     if { ![info exists toc($path)] } {
 	# Implicit directory
 	lappend toc($path) \
-		name $path \
+		name $origpath \
 		type directory mtime 0 size 0 mode 0777 \
 		ino -1 depth [llength [file split $path]]
 	
 	set parent [file dirname $path]
 	if {$parent == "."} {set parent ""}
-	lappend cbdir($parent) [file tail $path]
+	lappend cbdir($parent) [file tail $origpath]
     }
-    FAKEDIR toc cbdir [file dirname $path]
+    FAKEDIR toc cbdir [file dirname $origpath]
 }
 
 proc zip::exists {fd path} {
